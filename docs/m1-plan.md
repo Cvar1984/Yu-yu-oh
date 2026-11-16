@@ -175,3 +175,30 @@ What changed from the plan while building:
 - `EnterBattlePhase` is offered only when the turn player may attack, so
   turn 1 of the first player goes straight from Main Phase 1 to the End
   Phase.
+
+## Gate report (2026-11-16)
+
+All three gate conditions pass on this cloud container (4 cores, one used).
+
+| Condition | Evidence |
+| --- | --- |
+| Random games finish | 1,000,000 random-vs-random games over four deck pairs, every one ended by life points or deck-out, no draws, no panics, no refused action |
+| Invariant tests and fuzzing pass | `tests/invariants.rs` with 2,000 proptest cases in release mode plus the million-game run above; 86 tests in the workspace |
+| Speed measured | 6,100 to 12,800 games/s depending on the decks, 1.36 to 1.55 million actions/s, single core, release build |
+
+Random-play results, 250,000 games per pair, half with each player first:
+
+| A | B | A wins | A first | B first | Mean turns |
+| --- | --- | --- | --- | --- | --- |
+| Owner's main 45 | Umiiruka WATER 40 | 68.5% ±0.2 | 69.5% | 67.5% | 51 |
+| Defense-tuned 45 | Exodia stall 40 | 100% | 100% | 100% | 31 |
+| Owner's main 45 | Owner's main 45 | 50.0% ±0.2 | 53.8% | 46.2% | 48 |
+| Umiiruka WATER 40 | Defense-tuned 45 | 59.0% ±0.2 | 60.3% | 57.7% | 52 |
+
+Reading these numbers: the mirror match lands on 50.0%, which is the
+symmetry check, and going first is worth about 4 points under random
+play. The other rows say nothing about deck strength yet, because only
+Normal Monsters act in M1: the Exodia deck has none and cannot summon at
+all, and a deck wins by how many vanilla attackers it draws. Re-run this
+table at every milestone; the handoff's prototype numbers are the ones to
+converge toward once effects exist.
