@@ -37,6 +37,7 @@ Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a mil
 - Paths inside `rules.toml` are relative to `--data-root` (default: the working directory).
 - Every behaviour switch in `rules.toml` gets a test that flips it. Every scripted card gets a rulings test.
 - CI runs `cargo fmt --check`, `cargo clippy --workspace --all-targets` with `-D warnings`, and `cargo test --workspace`. Run all three before committing.
+- The workflow lives in `docs/ci-workflow.yml` until someone with the GitHub `workflow` scope moves it to `.github/workflows/ci.yml`; sessions here cannot push workflow files.
 
 ## Commands
 
