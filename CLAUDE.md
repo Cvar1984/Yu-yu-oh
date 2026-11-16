@@ -57,19 +57,23 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 - `decks/*.json`: `{ schema_version, name, notes, main: [ { id, name, count } ], extra: [ ... ] }`. Copy limits count Main and Extra Deck together.
 - `tools/refresh_cards.py [root]` rebuilds `cards.json` and fetches missing images from YGOPRODeck; it never touches the ban list. `reference/python_prototype/` is the simplified Python simulator, reference only.
 
-## Open questions for the owner
+## Owner's answers (2026-11-16)
 
-Each answer sets a key in `rules.toml` or a project choice. Defaults apply until answered.
+- Turn 1: the first player may Normal Summon or Set a monster, Set and activate Spells and Traps, but may not attack (`first_player_can_attack = false`).
+- Hand: no cap during a turn (Pot of Greed may push it past 6); the limit of 6 is checked once per turn cycle (`max_size = 6`).
+- Field Spells: one on the whole field; a new one destroys the old whoever owns it (`field_spells_on_field = 1`).
+- Flip and Special Summons do not count toward a per-turn limit, but this may change, so both stay config keys.
+- Fusion and Ritual Summons are allowed (`fusion_summons`, `ritual_summons`).
+- Card text: support both modern and original 2002 text. `cards.json` holds only modern text; the original text needs a second data source, keyed by id, before `text_version = "original_2002"` can do anything. Effect scripts whose rulings differ by printing (Sangan, Witch of the Black Forest) must branch on this key.
+- Ban list: empty for now (`data/banlist.json`). The four limit-1 badges seen earlier are recorded in its `note` in case the game enforces them.
+- Deck-out is a loss.
+- Training hardware: likely NVIDIA. Pick the neural-net crate at M6 with a spike on CUDA (candidates: burn, candle, tch-rs).
+- VR games cannot be exported; human games come only from this project's CLI and browser.
+- Bot thinking time against a human is adjustable: a bot setting, not a rule, introduced at M5.
 
-- Does the player going first skip their first draw, and can they attack on turn 1?
-- Hand limit 6: only checked in the End Phase, or never more than 6?
-- Does the 5 Spell/Trap limit per turn count Sets, and cards activated on the opponent's turn?
-- Field Spells: one on the whole field, a new one destroying the old even if the other player owns it?
-- Do Flip Summons and Special Summons count toward any per-turn monster limit?
-- Are Fusion Summons and Ritual Summons allowed?
-- Which card text: modern official text or the original 2002 printing?
-- The full ban list: which other cards show a 0, 1 or 2 badge in the game?
-- Is deck-out a loss?
-- Training hardware (NVIDIA, AMD, Apple Silicon, CPU only)? Decides the neural-net crate.
-- Can games from the VR game be exported?
-- How long may the bot think per decision against a human?
+## Still open
+
+- Does the player going first skip their first draw? (`first_player_skips_draw`, default true)
+- Hand limit timing: discard in your own End Phase, or when the opponent's turn ends? (`hand_limit_check`)
+- Is "5 Spells/Traps per turn" a per-turn activation count or only the 5 zones, and do Sets count? (`spell_trap_plays_per_turn`)
+- Can a Trap be activated in the same turn it was Set? Official rules say no; the owner's answer "as early as possible" may mean yes. Would become a new key.
