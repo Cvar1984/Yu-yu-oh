@@ -186,3 +186,38 @@ chains because every choice is an action.
   whether a pass was automatic.
 - Speed will drop with windows and stat computation. The fuzz step
   measures it; the target is to stay within a factor of two of M1.
+
+## Progress
+
+All seven steps are done; the gate report is at the end of this file.
+
+What changed from the plan while building:
+
+- `Flow::Ask` joined `Flow::Choose` so an effect can ask a labelled
+  question (Messenger of Peace: pay or destroy).
+- Swords of Revealing Light uses a continuous `restrict` effect and a
+  per-card counter instead of the generic lingering list, which Change
+  of Heart still uses; `Tag::StaysOnField` keeps a Normal Spell on the
+  field after resolving.
+- A summon-declaration window and the damage-calculation window leave
+  their events to the window that follows them, so Sangan's search
+  happens after the Tribute Summon completes and a flipped Man-Eater Bug
+  fires after damage calculation.
+- Triggers belong to the window that fired them; each SEGOC group is
+  offered through a `Triggers` decision, and a lone mandatory trigger
+  goes on the chain by itself.
+- Graveyard triggers are only looked for on cards the window moved
+  there; every Graveyard trigger in these sets fires on its own move.
+- The text-version switch changes nothing for Sangan and Witch: their
+  2002 and modern texts play the same for mandatory effects. The key
+  stays for M3 cards whose rulings differ.
+- Monster Reborn Special Summons in Attack Position only; a position
+  choice at resolution is an M3 item.
+- Field Spells activate from the hand only; Setting one into the Field
+  Zone is an M3 item.
+- An attack whose target left the field is cancelled rather than
+  replayed; attack replays are an M3 item.
+- Paying Life Points as a cost can reach zero and ends the game, which
+  the scripted invariants found.
+- Speed ended at 2,600 to 3,500 games/s, outside the plan's factor-two
+  target; the profile and the next step are in CLAUDE.md.

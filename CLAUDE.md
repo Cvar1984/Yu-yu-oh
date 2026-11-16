@@ -27,7 +27,7 @@ Full spec: `docs/handoff.md`. This file holds what every session must know.
 | `config/rules.toml` | House rules, also names the card and ban list files | |
 | `data/` | JSON data; see `data/README.md` | |
 
-Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 and M1 gates passed. M1 (`docs/m1-plan.md`) plays Normal Monsters through every phase with summons, positions and battle; random games finish, invariants and fuzzing pass, speed is measured. Next: M2, the chain system and about 30 key cards.
+Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0, M1 and M2 gates passed. M2 (`docs/m2-plan.md`) adds Spell and Trap plays, response windows, chains, triggers, continuous effects and 30 scripted cards with a rulings test each. Next: M3, every remaining non-Normal card.
 
 ## Conventions
 
@@ -52,10 +52,21 @@ cargo run --release -p ygo-cli -- sim data/decks/<a>.json data/decks/<b>.json -n
 
 - `Game` is a struct, not a trait; `Shared` (rules + `CardPool`) is built once and held by `Arc`, so a game clone is flat vectors plus a pointer bump. No `Rc`, no `RefCell`, no lifetimes in state.
 - Every choice is an `Action`; `legal_actions` enumerates all of them (tribute combinations included) and `apply` refuses anything else. Phases without a decision advance automatically.
-- Cards that need an effect are drawn, held and discarded but offer no actions until M2 scripts them. Only `CardKind::Normal` can be summoned today.
+- Any Main Deck monster can be Normal Summoned unless its script carries `Tag::CannotNormalSummon`; an Effect Monster without a script plays as vanilla until M3 scripts it.
+- Work that waits on the players sits on a stack of `Pending` items: response windows, a declared summon before its negation window closes, a declared attack, the damage calculation, a chain to resolve. `advance` works the top item and stops only when a player has a real choice; a window whose player has nothing to activate is passed automatically.
+- Windows open after Sets and position changes, at summon declaration and success, at attack declaration, inside the Damage Step before damage calculation, after battle, after each chain link and after a chain resolves, and at the Standby, Battle-start, Battle-end and End Phases. Trigger and Flip effects are collected when a window opens, in SEGOC order.
+- `scripts/check.sh` must pass before every commit; `cargo test --no-fail-fast` shows every failing binary at once.
 - `GameSetup.shuffle = false` keeps decks in listed order for scenario tests; `tests/common/mod.rs` has `stacked`, `shared_with` (rules with one change) and known card ids.
 - Instance ids are assigned in a seeded random order so an id never reveals a face-down card's identity. `observe(player)` is the only view bots get.
-- Speed baseline (M1, release, one core of this cloud container): about 7,300 random games/s, 1.5 million actions/s. Re-measure with `ygo sim` after engine changes and keep the number here current.
+- Speed baseline (M2, release, one core of this cloud container, every script active): 2,600 to 3,500 random games/s, about 520,000 actions/s. M1 without effects was 7,300 games/s. Profiling (`valgrind --tool=callgrind` on `ygo sim`) shows a third of the time in `observe` and a fifth in allocation; reusing an observation buffer is the next win when bots define what they need. Re-measure with `ygo sim` after engine changes and keep the numbers here current.
+
+## Writing a card script (ygo-cards)
+
+- One `CardScript` per card id, registered in the module for its kind (`spells`, `traps`, `monsters`, `continuous`). Function pointers only, no closures capturing state; everything an effect needs is in `EffectCtx` or read back from the `Game`.
+- `Effect::activate(speed, resolve)` for Spells and Traps, `Effect::trigger(mandatory, resolve)` for triggers, `Effect::flip(resolve)` for FLIP effects, `Effect::continuous()` with `modify` or `restrict` for static effects. Override `timing`, `targets`, `cost_choices` and `cost` as needed; set `damage_step: true` for effects that may start inside the Damage Step.
+- `timing` sees the open `Window` (its kind and events); `targets` and `cost_choices` enumerate every legal set and the engine turns them into `Activate` actions. A resolution that needs a pick returns `Flow::Choose` (cards) or `Flow::Ask` (labelled options) with a continuation.
+- Engine operations for scripts live in `ops.rs`: draw, destroy, discard, special_summon, change_control, gain_lp, pay_lp, take_damage, add_to_hand, place_on_top_of_deck, shuffle_deck, flip_face_up, equip, add_lingering, set_counter, negate_activation, negate_summon, prevent_battle_damage, and queries such as atk, def, on_field, spell_targetable, pending_summon, last_link, current_attack, window.
+- Every scripted card gets a rulings test in `crates/ygo-cards/tests`, built on `ygo_engine::testing` (stacked decks, `play`, `next_turn`, `pass_all`, `with_rules`).
 
 ## Data formats (from the data bundle, `schema_version` 1)
 
