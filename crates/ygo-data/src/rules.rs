@@ -39,10 +39,11 @@ pub struct FieldRules {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HandLimitCheck {
-    /// Discard down to the limit in the End Phase only.
+    /// Official: discard down to the limit in your own End Phase.
     EndPhase,
-    /// The hand may never exceed the limit.
-    Always,
+    /// Owner's game: after your Draw Phase, send cards above the limit to
+    /// the Graveyard. The hand is uncapped for the rest of the turn.
+    AfterDraw,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -63,7 +64,8 @@ pub struct LifeRules {
 pub struct TurnRules {
     pub first_player_skips_draw: bool,
     pub first_player_can_attack: bool,
-    pub spell_trap_plays_per_turn: usize,
+    /// Whether a Trap may be activated in the same turn it was Set.
+    pub trap_activation_turn_set: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

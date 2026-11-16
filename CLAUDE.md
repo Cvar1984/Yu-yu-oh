@@ -59,8 +59,10 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 
 ## Owner's answers (2026-11-16)
 
-- Turn 1: the first player may Normal Summon or Set a monster, Set and activate Spells and Traps, but may not attack (`first_player_can_attack = false`).
-- Hand: no cap during a turn (Pot of Greed may push it past 6); the limit of 6 is checked once per turn cycle (`max_size = 6`).
+- Turn 1: the first player does not draw (`first_player_skips_draw = true`), may Normal Summon or Set a monster, Set and activate Spells and Traps, but may not attack (`first_player_can_attack = false`).
+- Hand: no cap during a turn (Pot of Greed may push it past 6). After your Draw Phase, cards above 6 go to the Graveyard (`hand_limit_check = "after_draw"`; `"end_phase"` is the official timing).
+- Spells and Traps per turn: no count. The only limit is the 5 zones (`spell_trap_zones`); the earlier `spell_trap_plays_per_turn` key was removed.
+- Traps may be activated in the turn they were Set (`trap_activation_turn_set = true`; `false` is official).
 - Field Spells: one on the whole field; a new one destroys the old whoever owns it (`field_spells_on_field = 1`).
 - Flip and Special Summons do not count toward a per-turn limit, but this may change, so both stay config keys.
 - Fusion and Ritual Summons are allowed (`fusion_summons`, `ritual_summons`).
@@ -73,7 +75,4 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 
 ## Still open
 
-- Does the player going first skip their first draw? (`first_player_skips_draw`, default true)
-- Hand limit timing: discard in your own End Phase, or when the opponent's turn ends? (`hand_limit_check`)
-- Is "5 Spells/Traps per turn" a per-turn activation count or only the 5 zones, and do Sets count? (`spell_trap_plays_per_turn`)
-- Can a Trap be activated in the same turn it was Set? Official rules say no; the owner's answer "as early as possible" may mean yes. Would become a new key.
+- The owner added: "a face-down card that was just placed can't use a Spell card until next turn." Unclear whether this means a Set Spell waits a turn (the reverse of official), a Set monster cannot be the target of a Spell such as an Equip in the turn it was Set, or something else. Ask before M1 touches activation timing.
