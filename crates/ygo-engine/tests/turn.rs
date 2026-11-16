@@ -103,19 +103,24 @@ fn flip_deck_out_loses_then_the_turn_cap_draws_the_game() {
     let mut s = setup(1);
     s.max_turns = 80;
     let mut g = Game::new(shared, &s).unwrap();
-    let played = end_turns_until_over(&mut g);
-    assert_eq!(played, 80);
+    end_turns_until_over(&mut g);
+    assert_eq!(g.turn(), 80);
     assert_eq!(
         g.result(),
         Some(GameResult::Draw {
             reason: DrawReason::TurnLimit
         })
     );
-    assert_eq!(
-        g.player(PlayerId(0)).hand.len(),
-        40,
-        "every card drawn, none lost"
-    );
+    for p in PlayerId::BOTH {
+        let s = g.player(p);
+        assert!(s.deck.is_empty(), "empty decks are not a loss here");
+        assert_eq!(
+            s.hand.len() + s.graveyard.len(),
+            40,
+            "drawn, discarded, never lost"
+        );
+        assert!(s.hand.len() <= 6);
+    }
 }
 
 #[test]
