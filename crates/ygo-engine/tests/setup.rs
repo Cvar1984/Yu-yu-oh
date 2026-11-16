@@ -19,7 +19,11 @@ fn opening_state_matches_the_rules() {
     let rules = &g.shared().rules;
     for p in PlayerId::BOTH {
         let s = g.player(p);
-        assert_eq!(s.hand.len(), rules.hand.opening_size);
+        assert_eq!(
+            s.hand.len(),
+            rules.hand.opening_size,
+            "first player skips the draw"
+        );
         assert_eq!(s.deck.len(), 40 - rules.hand.opening_size);
         assert_eq!(s.lp, rules.life.starting_lp);
         assert_eq!(s.monster_zones.len(), rules.field.monster_zones);
@@ -27,7 +31,11 @@ fn opening_state_matches_the_rules() {
         assert!(s.graveyard.is_empty() && s.extra.is_empty());
     }
     assert_eq!(g.turn(), 1);
-    assert_eq!(g.phase(), Phase::Draw);
+    assert_eq!(
+        g.phase(),
+        Phase::Main1,
+        "automatic phases advance to the first decision"
+    );
     assert!(g.result().is_none());
 }
 
