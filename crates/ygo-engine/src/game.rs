@@ -13,17 +13,17 @@ use crate::{
 /// rules and card pool.
 #[derive(Debug, Clone)]
 pub struct Game {
-    shared: Arc<Shared>,
+    pub(crate) shared: Arc<Shared>,
     /// Kept in the state so effects that shuffle (M2) stay deterministic.
     #[allow(dead_code)]
-    rng: ChaCha8Rng,
-    instances: Vec<CardInstance>,
-    players: [PlayerState; 2],
-    turn: u32,
-    turn_player: PlayerId,
-    phase: Phase,
-    max_turns: u32,
-    result: Option<GameResult>,
+    pub(crate) rng: ChaCha8Rng,
+    pub(crate) instances: Vec<CardInstance>,
+    pub(crate) players: [PlayerState; 2],
+    pub(crate) turn: u32,
+    pub(crate) turn_player: PlayerId,
+    pub(crate) phase: Phase,
+    pub(crate) max_turns: u32,
+    pub(crate) result: Option<GameResult>,
 }
 
 impl Game {
@@ -116,9 +116,9 @@ impl Game {
             rng,
             instances,
             players,
-            turn: 1,
+            turn: 0,
             turn_player,
-            phase: Phase::Draw,
+            phase: Phase::End,
             max_turns: setup.max_turns,
             result: None,
         };
@@ -127,19 +127,20 @@ impl Game {
                 game.draw_card(player);
             }
         }
+        let mut events = Vec::new();
+        game.start_turn(1, turn_player, &mut events);
+        game.advance(&mut events);
         Ok(game)
     }
 
-    /// Moves the top card of `player`'s Deck to their hand. Returns `false`
-    /// when the Deck is empty.
-    fn draw_card(&mut self, player: PlayerId) -> bool {
+    /// Moves the top card of `player`'s Deck to their hand, or returns
+    /// `None` when the Deck is empty.
+    pub(crate) fn draw_card(&mut self, player: PlayerId) -> Option<InstanceId> {
         let state = &mut self.players[player.index()];
-        let Some(id) = state.deck.pop() else {
-            return false;
-        };
+        let id = state.deck.pop()?;
         state.hand.push(id);
         self.instances[id.index()].location = Location::Hand;
-        true
+        Some(id)
     }
 
     pub fn shared(&self) -> &Shared {
