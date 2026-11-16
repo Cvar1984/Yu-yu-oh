@@ -3,7 +3,9 @@
 use serde::{Deserialize, Serialize};
 use ygo_data::CardId;
 
-use crate::{Decision, Game, InstanceId, Location, Phase, PlayerId, PlayerState, Position};
+use crate::{
+    Decision, Game, InstanceId, Lingering, Location, Phase, PlayerId, PlayerState, Position,
+};
 
 /// A card as seen from one side of the table.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,6 +51,17 @@ pub struct Side {
     pub spell_trap_zones: Vec<Option<VisibleCard>>,
 }
 
+/// A chain link as everyone sees it: activations are public.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ChainView {
+    pub instance: InstanceId,
+    pub card: CardId,
+    pub controller: PlayerId,
+    pub effect: u8,
+    pub targets: Vec<InstanceId>,
+    pub negated: bool,
+}
+
 /// The game from `viewer`'s point of view. This, not the `Game`, is what
 /// bots and the browser get.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -60,6 +73,12 @@ pub struct Observation {
     pub decision: Option<Decision>,
     /// Indexed by `PlayerId`.
     pub sides: [Side; 2],
+    /// First link first.
+    pub chain: Vec<ChainView>,
+    /// The options of a pending `Choose` decision when the viewer is the
+    /// one choosing, with their identities revealed; empty otherwise.
+    pub revealed: Vec<VisibleCard>,
+    pub lingering: Vec<Lingering>,
 }
 
 impl Observation {
@@ -122,6 +141,30 @@ impl Game {
                     .collect(),
             }
         };
+        let chain = self
+            .chain
+            .iter()
+            .map(|l| ChainView {
+                instance: l.card,
+                card: self.shared.pool.get(self.instances[l.card.index()].card).id,
+                controller: l.controller,
+                effect: l.effect,
+                targets: l.targets.clone(),
+                negated: l.negated,
+            })
+            .collect();
+        let revealed = match &self.pending_choice {
+            Some(pc) if pc.ctx.controller == viewer => pc
+                .options
+                .iter()
+                .map(|&id| VisibleCard::Known {
+                    instance: id,
+                    card: self.shared.pool.get(self.instances[id.index()].card).id,
+                    position: self.instances[id.index()].position,
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
         Observation {
             viewer,
             turn: self.turn,
@@ -129,6 +172,9 @@ impl Game {
             phase: self.phase,
             decision: self.pending_decision(),
             sides: [side(PlayerId(0)), side(PlayerId(1))],
+            chain,
+            revealed,
+            lingering: self.lingering.clone(),
         }
     }
 }

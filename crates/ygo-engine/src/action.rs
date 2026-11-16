@@ -19,6 +19,18 @@ pub enum Action {
     FlipSummon { card: InstanceId },
     /// Switch a face-up monster between Attack and Defense Position.
     ChangePosition { card: InstanceId },
+    /// Place a Spell or Trap from the hand face-down in a Spell/Trap zone.
+    SetSpellTrap { card: InstanceId },
+    /// Activate effect number `effect` of `card`, with the targets and
+    /// the cost cards chosen now.
+    Activate {
+        card: InstanceId,
+        effect: u8,
+        targets: Vec<InstanceId>,
+        cost: Vec<InstanceId>,
+    },
+    /// Answer a `Choose` decision during an effect's resolution.
+    Choose { card: InstanceId },
     /// Main Phase 1 to the Battle Phase.
     EnterBattlePhase,
     /// Declare an attack; `None` attacks the opponent directly.
@@ -41,6 +53,8 @@ pub enum DecisionKind {
     MainPhase,
     /// Attack or leave the Battle Phase.
     BattlePhase,
+    /// Pick one card for a resolving effect.
+    Choose,
 }
 
 /// Who must choose, and what kind of choice.
@@ -108,6 +122,47 @@ pub enum Event {
         player: PlayerId,
         amount: u32,
         lp: u32,
+    },
+    SetCard {
+        player: PlayerId,
+        card: InstanceId,
+    },
+    Activated {
+        card: InstanceId,
+        controller: PlayerId,
+        effect: u8,
+    },
+    Resolved {
+        card: InstanceId,
+        effect: u8,
+    },
+    DestroyedByEffect {
+        card: InstanceId,
+        source: InstanceId,
+    },
+    SpecialSummoned {
+        player: PlayerId,
+        card: InstanceId,
+        position: Position,
+    },
+    ControlChanged {
+        card: InstanceId,
+        to: PlayerId,
+    },
+    LifePointsGained {
+        player: PlayerId,
+        amount: u32,
+        lp: u32,
+    },
+    LifePointsPaid {
+        player: PlayerId,
+        amount: u32,
+        lp: u32,
+    },
+    AddedToHand {
+        player: PlayerId,
+        card: InstanceId,
+        from: Location,
     },
     GameOver {
         result: GameResult,

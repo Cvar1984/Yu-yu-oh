@@ -56,6 +56,29 @@ pub struct Window {
     pub events: Vec<Event>,
 }
 
+impl Effect {
+    /// An effect with no targets, no cost and nothing continuous; fill in
+    /// the rest with struct update syntax.
+    pub const fn activate(speed: Speed, resolve: fn(&mut Game, &mut EffectCtx) -> Flow) -> Self {
+        Self {
+            kind: EffectKind::Activate,
+            speed,
+            timing: always,
+            targets: None,
+            cost_choices: None,
+            cost: None,
+            resolve,
+            modify: None,
+        }
+    }
+}
+
+/// A timing that is always met: the card's own activation conditions
+/// are enough.
+pub fn always(_: &Game, _: Source, _: &Window) -> bool {
+    true
+}
+
 /// Everything an effect has while it runs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EffectCtx {
@@ -63,6 +86,8 @@ pub struct EffectCtx {
     pub controller: PlayerId,
     /// Chosen when the effect was activated.
     pub targets: Vec<InstanceId>,
+    /// Cards chosen for the cost when the effect was activated.
+    pub cost: Vec<InstanceId>,
     /// The event that triggered the effect, if any.
     pub event: Option<Event>,
 }
@@ -99,6 +124,9 @@ pub struct Effect {
     pub timing: fn(&Game, Source, &Window) -> bool,
     /// Every legal target set; `None` for effects without targets.
     pub targets: Option<fn(&Game, Source) -> TargetSets>,
+    /// Every legal choice of cards to pay the cost with (a discard, a
+    /// tribute); `None` when the cost needs no choice.
+    pub cost_choices: Option<fn(&Game, Source) -> TargetSets>,
     /// Paid when the effect is activated, before anything can respond.
     pub cost: Option<fn(&mut Game, &mut EffectCtx)>,
     pub resolve: fn(&mut Game, &mut EffectCtx) -> Flow,

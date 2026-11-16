@@ -41,27 +41,22 @@ impl Game {
                 Position::FaceUpAttack | Position::FaceUpDefense => {
                     actions.push(Action::ChangePosition { card });
                 }
-                Position::FaceDown => {}
+                Position::FaceDown | Position::FaceUp => {}
             }
         }
     }
 
-    pub(crate) fn flip_summon(
-        &mut self,
-        player: PlayerId,
-        card: InstanceId,
-        events: &mut Vec<Event>,
-    ) {
+    pub(crate) fn flip_summon(&mut self, player: PlayerId, card: InstanceId) {
         if self.shared.rules.summon.flip_summon_counts_toward_limit {
             self.players[player.index()].summons_used += 1;
         }
         let inst = &mut self.instances[card.index()];
         inst.position = Position::FaceUpAttack;
         inst.position_changed_this_turn = true;
-        events.push(Event::FlipSummoned { player, card });
+        self.emit(Event::FlipSummoned { player, card });
     }
 
-    pub(crate) fn change_position(&mut self, card: InstanceId, events: &mut Vec<Event>) {
+    pub(crate) fn change_position(&mut self, card: InstanceId) {
         let inst = &mut self.instances[card.index()];
         inst.position = match inst.position {
             Position::FaceUpAttack => Position::FaceUpDefense,
@@ -69,9 +64,7 @@ impl Game {
             other => other,
         };
         inst.position_changed_this_turn = true;
-        events.push(Event::PositionChanged {
-            card,
-            position: inst.position,
-        });
+        let position = inst.position;
+        self.emit(Event::PositionChanged { card, position });
     }
 }
