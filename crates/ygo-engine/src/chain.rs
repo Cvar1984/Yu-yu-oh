@@ -215,22 +215,33 @@ impl Game {
     /// Trigger and Flip effects on the field or in a Graveyard whose timing
     /// accepts this window, in SEGOC order: turn player's mandatory, the
     /// opponent's mandatory, turn player's optional, the opponent's optional.
+    ///
+    /// Cards on the field are always checked. A card in the Graveyard is
+    /// checked only if the window's events moved it there, which is what
+    /// every Graveyard trigger in these sets triggers on.
     fn collect_triggers(&self, kind: WindowKind, events: &[Event]) -> Vec<TriggerRef> {
-        let window = Window {
-            kind,
-            events: events.to_vec(),
-        };
+        let window = Window { kind, events };
         let mut found = Vec::new();
+        let moved: Vec<InstanceId> = events
+            .iter()
+            .filter_map(|e| match e {
+                Event::SentToGraveyard { card, .. } => Some(*card),
+                _ => None,
+            })
+            .collect();
         for player in [self.turn_player, self.turn_player.opponent()] {
             let state = &self.players[player.index()];
-            let cards: Vec<InstanceId> = state
+            let cards = state
                 .monster_zones
                 .iter()
                 .chain(state.spell_trap_zones.iter())
                 .flatten()
-                .chain(state.graveyard.iter())
                 .copied()
-                .collect();
+                .chain(state.field_zone)
+                .chain(moved.iter().copied().filter(|c| {
+                    self.instances[c.index()].location == Location::Graveyard
+                        && self.instances[c.index()].owner == player
+                }));
             for card in cards {
                 let Some(script) = self.script(card) else {
                     continue;
@@ -282,10 +293,7 @@ impl Game {
         let Some((kind, events)) = self.window() else {
             return actions;
         };
-        let window = Window {
-            kind,
-            events: events.to_vec(),
-        };
+        let window = Window { kind, events };
         for t in self.trigger_group() {
             self.push_activations(
                 t.controller,
@@ -465,20 +473,16 @@ impl Game {
         let Some((kind, events)) = self.window() else {
             return actions;
         };
-        let window = Window {
-            kind,
-            events: events.to_vec(),
-        };
+        let window = Window { kind, events };
         let min_speed = self.chain.last().map_or(2, |l| l.speed);
         let in_damage_step = kind == WindowKind::DamageCalculation;
         let state = &self.players[player.index()];
-        let candidates: Vec<InstanceId> = state
+        let candidates = state
             .hand
             .iter()
             .chain(state.spell_trap_zones.iter().flatten())
             .chain(state.monster_zones.iter().flatten())
-            .copied()
-            .collect();
+            .copied();
         for card in candidates {
             self.push_activations(
                 player,

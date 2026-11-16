@@ -10,39 +10,24 @@ use crate::{
 };
 
 impl Game {
-    /// Who must choose now, or `None` when the game is over or the
-    /// engine has automatic work to do first.
+    /// Who must choose now, or `None` when the game is over.
     pub fn pending_decision(&self) -> Option<Decision> {
-        if self.result.is_some() {
-            return None;
-        }
-        if let Some(pc) = &self.pending_choice {
-            return Some(Decision {
-                player: pc.ctx.controller,
-                kind: DecisionKind::Choose,
-            });
-        }
-        match self.pending.last() {
-            Some(Pending::Window { priority, .. }) => {
-                let group = self.trigger_group();
-                if let Some(first) = group.first() {
-                    let actions = self.trigger_actions();
-                    // One mandatory trigger with one way to activate needs
-                    // no decision; nothing legal to do drops the group.
-                    let automatic = actions.is_empty() || (first.mandatory && actions.len() == 1);
-                    return (!automatic).then_some(Decision {
-                        player: first.controller,
-                        kind: DecisionKind::Triggers,
-                    });
-                }
-                return (!self.response_actions(*priority).is_empty()).then_some(Decision {
-                    player: *priority,
-                    kind: DecisionKind::Respond,
-                });
-            }
-            Some(_) => return None,
-            None => {}
-        }
+        self.decision
+    }
+
+    /// Every legal answer to the pending decision; empty when none is pending.
+    pub fn legal_actions(&self) -> Vec<Action> {
+        self.actions.clone()
+    }
+
+    /// The same as `legal_actions`, borrowed: for players that pick one.
+    pub fn actions(&self) -> &[Action] {
+        &self.actions
+    }
+
+    /// The open-state decision for the current phase, if any, with its
+    /// actions.
+    fn phase_decision(&self) -> Option<(Decision, Vec<Action>)> {
         let player = self.turn_player;
         let kind = match self.phase {
             Phase::Draw if self.hand_over_limit(player, HandLimitCheck::AfterDraw) => {
@@ -55,45 +40,32 @@ impl Game {
             Phase::Battle(BattleStep::Battle) => DecisionKind::BattlePhase,
             _ => return None,
         };
-        Some(Decision { player, kind })
-    }
-
-    /// Every legal answer to the pending decision; empty when none is pending.
-    pub fn legal_actions(&self) -> Vec<Action> {
-        let Some(decision) = self.pending_decision() else {
-            return Vec::new();
-        };
         let mut actions = Vec::new();
-        match decision.kind {
+        match kind {
             DecisionKind::HandLimit => {
-                for &card in &self.players[decision.player.index()].hand {
+                for &card in &self.players[player.index()].hand {
                     actions.push(Action::Discard { card });
                 }
             }
             DecisionKind::MainPhase => {
-                self.summon_actions(decision.player, &mut actions);
-                self.position_actions(decision.player, &mut actions);
-                self.set_spell_trap_actions(decision.player, &mut actions);
-                self.activation_actions(decision.player, &mut actions);
+                self.summon_actions(player, &mut actions);
+                self.position_actions(player, &mut actions);
+                self.set_spell_trap_actions(player, &mut actions);
+                self.activation_actions(player, &mut actions);
                 if self.phase == Phase::Main1 && self.attacks_allowed() {
                     actions.push(Action::EnterBattlePhase);
                 }
                 actions.push(Action::EndTurn);
             }
-            DecisionKind::BattlePhase => self.battle_actions(decision.player, &mut actions),
-            DecisionKind::Choose => self.choose_actions(&mut actions),
-            DecisionKind::Respond => {
-                actions = self.response_actions(decision.player);
-                actions.push(Action::Pass);
-            }
-            DecisionKind::Triggers => {
-                actions = self.trigger_actions();
-                if !self.trigger_group()[0].mandatory {
-                    actions.push(Action::Pass);
-                }
-            }
+            DecisionKind::BattlePhase => self.battle_actions(player, &mut actions),
+            _ => unreachable!(),
         }
-        actions
+        Some((Decision { player, kind }, actions))
+    }
+
+    fn stop_at(&mut self, decision: Decision, actions: Vec<Action>) {
+        self.decision = Some(decision);
+        self.actions = actions;
     }
 
     /// Applies one legal action, then advances until the next decision or
@@ -102,10 +74,8 @@ impl Game {
         if self.result.is_some() {
             return Err(RuleError::GameOver);
         }
-        let decision = self
-            .pending_decision()
-            .ok_or(RuleError::NoDecisionPending)?;
-        if !self.legal_actions().contains(action) {
+        let decision = self.decision.ok_or(RuleError::NoDecisionPending)?;
+        if !self.actions.contains(action) {
             return Err(RuleError::IllegalAction(action.clone()));
         }
         let player = decision.player;
@@ -149,30 +119,70 @@ impl Game {
         Ok(std::mem::take(&mut self.events))
     }
 
-    /// Runs automatic steps until a decision is pending or the game ends.
-    /// Called at creation and after every action.
+    /// Runs automatic steps until a decision is pending or the game ends,
+    /// then stores that decision and its legal actions. Called at creation
+    /// and after every action. Every enumeration happens once per state.
     pub(crate) fn advance(&mut self) {
-        while self.result.is_none() && self.pending_decision().is_none() {
+        loop {
+            if self.result.is_some() {
+                self.decision = None;
+                self.actions.clear();
+                return;
+            }
+            if let Some(pc) = &self.pending_choice {
+                let decision = Decision {
+                    player: pc.ctx.controller,
+                    kind: DecisionKind::Choose,
+                };
+                let mut actions = Vec::new();
+                self.choose_actions(&mut actions);
+                self.stop_at(decision, actions);
+                return;
+            }
             match self.pending.last() {
-                Some(Pending::Window { .. }) => {
+                Some(Pending::Window { priority, .. }) => {
+                    let priority = *priority;
                     let group = self.trigger_group();
-                    if group.is_empty() {
-                        self.pass();
-                    } else {
+                    if let Some(first) = group.first() {
                         let actions = self.trigger_actions();
                         match actions.first() {
+                            None => self.drop_trigger_group(),
                             Some(Action::Activate {
                                 card,
                                 effect,
                                 targets,
                                 cost,
-                            }) if group[0].mandatory && actions.len() == 1 => {
+                            }) if first.mandatory && actions.len() == 1 => {
                                 let (card, effect, targets, cost) =
                                     (*card, *effect, targets.clone(), cost.clone());
-                                self.activate(group[0].controller, card, effect, targets, cost);
+                                self.activate(first.controller, card, effect, targets, cost);
                             }
-                            _ => self.drop_trigger_group(),
+                            Some(_) => {
+                                let mut actions = actions;
+                                if !first.mandatory {
+                                    actions.push(Action::Pass);
+                                }
+                                let decision = Decision {
+                                    player: first.controller,
+                                    kind: DecisionKind::Triggers,
+                                };
+                                self.stop_at(decision, actions);
+                                return;
+                            }
                         }
+                        continue;
+                    }
+                    let mut responses = self.response_actions(priority);
+                    if responses.is_empty() {
+                        self.pass();
+                    } else {
+                        responses.push(Action::Pass);
+                        let decision = Decision {
+                            player: priority,
+                            kind: DecisionKind::Respond,
+                        };
+                        self.stop_at(decision, responses);
+                        return;
                     }
                 }
                 Some(Pending::ResolveChain) => {
@@ -198,18 +208,24 @@ impl Game {
                     self.pending.pop();
                     self.damage_calculation(attacker, target);
                 }
-                None => match self.phase {
-                    Phase::Draw => self.enter_phase(Phase::Standby),
-                    Phase::Standby => self.enter_phase(Phase::Main1),
-                    Phase::Battle(BattleStep::Start) => {
-                        self.enter_phase(Phase::Battle(BattleStep::Battle))
+                None => {
+                    if let Some((decision, actions)) = self.phase_decision() {
+                        self.stop_at(decision, actions);
+                        return;
                     }
-                    Phase::Battle(BattleStep::End) => self.enter_phase(Phase::Main2),
-                    Phase::End => self.start_turn(self.turn + 1, self.turn_player.opponent()),
-                    Phase::Main1 | Phase::Main2 | Phase::Battle(_) => {
-                        unreachable!("these phases always have a decision")
+                    match self.phase {
+                        Phase::Draw => self.enter_phase(Phase::Standby),
+                        Phase::Standby => self.enter_phase(Phase::Main1),
+                        Phase::Battle(BattleStep::Start) => {
+                            self.enter_phase(Phase::Battle(BattleStep::Battle))
+                        }
+                        Phase::Battle(BattleStep::End) => self.enter_phase(Phase::Main2),
+                        Phase::End => self.start_turn(self.turn + 1, self.turn_player.opponent()),
+                        Phase::Main1 | Phase::Main2 | Phase::Battle(_) => {
+                            unreachable!("these phases always have a decision")
+                        }
                     }
-                },
+                }
             }
         }
     }

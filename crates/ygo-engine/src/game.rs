@@ -6,8 +6,8 @@ use ygo_data::CardId;
 
 use crate::chain::{Pending, PendingChoice};
 use crate::{
-    CardInstance, CardScript, CardStats, ChainLink, Event, GameResult, GameSetup, InstanceId,
-    Lingering, Location, Phase, PlayerId, PlayerState, SetupError, Shared,
+    Action, CardInstance, CardScript, CardStats, ChainLink, Decision, Event, GameResult, GameSetup,
+    InstanceId, Lingering, Location, Phase, PlayerId, PlayerState, SetupError, Shared,
 };
 
 /// A whole game. Cheap to clone: flat vectors plus one `Arc` to the shared
@@ -34,6 +34,9 @@ pub struct Game {
     pub(crate) lingering: Vec<Lingering>,
     /// Per player: battle damage prevented for the current battle.
     pub(crate) damage_prevented: [bool; 2],
+    /// Computed once by `advance` for the state it stopped in.
+    pub(crate) decision: Option<Decision>,
+    pub(crate) actions: Vec<Action>,
 }
 
 impl Game {
@@ -148,13 +151,15 @@ impl Game {
             phase: Phase::End,
             max_turns: setup.max_turns,
             result: None,
-            events: Vec::new(),
-            recent: Vec::new(),
-            chain: Vec::new(),
-            pending: Vec::new(),
+            events: Vec::with_capacity(32),
+            recent: Vec::with_capacity(32),
+            chain: Vec::with_capacity(4),
+            pending: Vec::with_capacity(8),
             pending_choice: None,
             lingering: Vec::new(),
             damage_prevented: [false, false],
+            decision: None,
+            actions: Vec::with_capacity(64),
         };
         for player in PlayerId::BOTH {
             for _ in 0..game.shared.rules.hand.opening_size {

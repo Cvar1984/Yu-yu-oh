@@ -53,18 +53,18 @@ pub struct Source {
 }
 
 /// A point where fast effects may start, with what just happened.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Window {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Window<'a> {
     pub kind: WindowKind,
-    pub events: Vec<Event>,
+    pub events: &'a [Event],
 }
 
-impl Default for Window {
+impl Default for Window<'_> {
     /// Open game state with nothing to respond to.
     fn default() -> Self {
         Self {
             kind: WindowKind::Open,
-            events: Vec::new(),
+            events: &[],
         }
     }
 }

@@ -104,6 +104,7 @@ impl Game {
     /// The state with everything `viewer` may not know removed: the
     /// opponent's hand and every face-down card are `Hidden`.
     pub fn observe(&self, viewer: PlayerId) -> Observation {
+        let modifiers = self.modifiers();
         let side = |player: PlayerId| {
             let state: &PlayerState = &self.players[player.index()];
             let own = player == viewer;
@@ -125,7 +126,7 @@ impl Game {
                         card: self.shared.pool.get(inst.card).id,
                         position,
                         stats: matches!(inst.location, Location::MonsterZone(_))
-                            .then(|| (self.atk(id), self.def(id))),
+                            .then(|| self.stats_with(&modifiers, id)),
                     }
                 } else {
                     VisibleCard::Hidden {

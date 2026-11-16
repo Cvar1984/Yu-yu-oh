@@ -152,7 +152,7 @@ pub fn register(r: &mut Registry) {
                             })
                     },
                     ..Effect::trigger(true, |g, ctx| {
-                        if g.player(ctx.controller).lp < 100 {
+                        if g.player(ctx.controller).lp <= 100 {
                             g.destroy(ctx.source, ctx.source);
                             return Flow::Done;
                         }

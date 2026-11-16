@@ -8,6 +8,9 @@ use crate::{
     PlayerId, Position, Source, StatMod, Tag, WinReason,
 };
 
+/// A continuous modifier on the field: its source and its function.
+pub(crate) type Modifier = (Source, fn(&Game, Source, InstanceId) -> StatMod);
+
 impl Game {
     pub(crate) fn emit(&mut self, event: Event) {
         self.events.push(event.clone());
@@ -204,12 +207,14 @@ impl Game {
         self.emit(Event::LifePointsGained { player, amount, lp });
     }
 
-    /// Pays Life Points as a cost. Scripts check affordability in `timing`.
+    /// Pays Life Points as a cost. Scripts check affordability in `timing`;
+    /// a payment that reaches 0 still ends the game.
     pub fn pay_lp(&mut self, player: PlayerId, amount: u32) {
         let state = &mut self.players[player.index()];
         state.lp = state.lp.saturating_sub(amount);
         let lp = state.lp;
         self.emit(Event::LifePointsPaid { player, amount, lp });
+        self.check_life_points();
     }
 
     /// Inflicts effect damage; the game may end at once.
@@ -250,10 +255,9 @@ impl Game {
 
     // ----- continuous effects -----
 
-    /// Face-up cards on the field whose scripts have continuous effects,
-    /// with their sources.
-    fn continuous_sources(&self) -> Vec<(Source, Effect)> {
-        let mut out = Vec::new();
+    /// Calls `f` for every continuous effect of a face-up card on the
+    /// field, without allocating.
+    fn for_each_continuous(&self, mut f: impl FnMut(Source, &Effect)) {
         for p in PlayerId::BOTH {
             let state = &self.players[p.index()];
             let cards = state
@@ -268,34 +272,55 @@ impl Game {
                 if !inst.position.is_face_up() {
                     continue;
                 }
-                let Some(script) = self.script(card) else {
+                let Some(script) = self.shared.script(inst.card) else {
                     continue;
+                };
+                let source = Source {
+                    card,
+                    controller: inst.controller,
                 };
                 for effect in &script.effects {
                     if effect.kind == EffectKind::Continuous {
-                        out.push((
-                            Source {
-                                card,
-                                controller: inst.controller,
-                            },
-                            *effect,
-                        ));
+                        f(source, effect);
                     }
                 }
             }
         }
+    }
+
+    /// The continuous modifiers currently on the field, collected once so
+    /// many cards' stats can be computed without rescanning.
+    pub(crate) fn modifiers(&self) -> Vec<Modifier> {
+        let mut out = Vec::new();
+        self.for_each_continuous(|source, effect| {
+            if let Some(modify) = effect.modify {
+                out.push((source, modify));
+            }
+        });
         out
+    }
+
+    /// ATK and DEF of `card` under the given modifiers.
+    pub(crate) fn stats_with(&self, modifiers: &[Modifier], card: InstanceId) -> (i32, i32) {
+        let base = self.stats(card);
+        let mut total = StatMod::default();
+        for (source, modify) in modifiers {
+            let m = modify(self, *source, card);
+            total.atk += m.atk;
+            total.def += m.def;
+        }
+        ((base.atk + total.atk).max(0), (base.def + total.def).max(0))
     }
 
     fn stat_mod(&self, card: InstanceId) -> StatMod {
         let mut total = StatMod::default();
-        for (source, effect) in self.continuous_sources() {
+        self.for_each_continuous(|source, effect| {
             if let Some(modify) = effect.modify {
                 let m = modify(self, source, card);
                 total.atk += m.atk;
                 total.def += m.def;
             }
-        }
+        });
         total
     }
 
@@ -311,9 +336,13 @@ impl Game {
 
     /// Whether some continuous effect forbids `card` from attacking.
     pub fn attack_restricted(&self, card: InstanceId) -> bool {
-        self.continuous_sources()
-            .into_iter()
-            .any(|(source, effect)| effect.restrict.is_some_and(|r| r(self, source, card)))
+        let mut restricted = false;
+        self.for_each_continuous(|source, effect| {
+            if !restricted && effect.restrict.is_some_and(|r| r(self, source, card)) {
+                restricted = true;
+            }
+        });
+        restricted
     }
 
     /// Attaches an Equip Spell on the field to a face-up monster.
