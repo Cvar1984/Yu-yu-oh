@@ -18,22 +18,41 @@ pub struct CardLimit {
 
 /// The owner's game's copy limits. Cards not listed use the default from
 /// `rules.toml`.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Banlist {
+    pub schema_version: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub updated: Option<String>,
+    /// Informational copy of `rules.toml`'s `default_copy_limit`; must agree.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_limit: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
     pub limits: Vec<CardLimit>,
 }
 
 impl Banlist {
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        crate::read_json(path)
+        let banlist: Self = crate::read_json(path)?;
+        crate::check_schema("banlist", banlist.schema_version)?;
+        Ok(banlist)
     }
 
     /// Every id must exist, appear once, and sit below the default limit
-    /// (a limit equal to or above the default would be dead data).
+    /// (a limit equal to or above the default would be dead data). The
+    /// file's own `default_limit`, if present, must match the rules.
     pub fn validate(&self, cards: &CardDb, default_limit: usize) -> Result<(), DataError> {
+        if let Some(own) = self.default_limit
+            && own != default_limit
+        {
+            return Err(DataError::DefaultLimitMismatch {
+                banlist: own,
+                rules: default_limit,
+            });
+        }
         let mut seen = HashSet::new();
         for entry in &self.limits {
             if !cards.contains(entry.id) {

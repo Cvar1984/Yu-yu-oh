@@ -1,4 +1,10 @@
 {
+ "schema_version": 1,
+ "owner": "fixture",
+ "read_from": "test",
+ "totals": {
+  "LOB": "1/126"
+ },
  "cards": [
   {
    "id": 89631139,

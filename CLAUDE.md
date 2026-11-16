@@ -27,7 +27,7 @@ Full spec: `docs/handoff.md`. This file holds what every session must know.
 | `config/rules.toml` | House rules, also names the card and ban list files | |
 | `data/` | JSON data; see `data/README.md` | |
 
-Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 scaffolded; waiting for the data bundle (`cards.json`, `collection.json`, sample decks, `tools/refresh_cards.py`).
+Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 gate passed (all data loads, `check-deck` flags illegal decks; pinned in `crates/ygo-data/tests/real_data.rs`). Next: M1, the core engine without chains.
 
 ## Conventions
 
@@ -47,14 +47,15 @@ cargo run -p ygo-cli -- check-data [--collection data/collection.json]
 cargo run -p ygo-cli -- check-deck data/decks/<deck>.json [--collection data/collection.json]
 ```
 
-## Data format assumptions to confirm against the bundle
+## Data formats (from the data bundle, `schema_version` 1)
 
-The handoff shows the `cards.json` entry format but not the others. These were chosen for M0 and must be checked when `ygo-rust-ai-data.zip` arrives:
+Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. `name` fields next to ids are for humans and are never checked.
 
-- `banlist.json`: `{ "updated": "...", "limits": [ { "id": 55144522, "name": "...", "limit": 1 } ] }`
-- `collection.json`: `{ "cards": [ { "id": 89631139, "name": "...", "copies": 1 } ] }`
-- `decks/*.json`: `{ "name": "...", "main": [ids, repeated per copy], "extra": [ids], "notes": any JSON }`
-- `cards.json` `type` values follow YGOPRODeck spelling ("Normal Monster", "Flip Effect Monster", "Toon Monster", "Spell Card", ...); `CardType` in `ygo-data` lists the ones expected in these three sets.
+- `cards.json`: `{ schema_version, source, sets, count, cards: [Card] }`. `count` must equal the array length. `type` uses YGOPRODeck spelling; the sets contain Normal, Effect, Flip Effect, Toon, Fusion, Ritual and Ritual Effect Monsters plus Spell and Trap Cards. Spells and Traps have `null` level, ATK, DEF and attribute, and `race` holds their subtype.
+- `banlist.json`: `{ schema_version, name, updated, default_limit, note, limits: [ { id, name, limit } ] }`. `default_limit` is informational and must equal `deck.default_copy_limit` in `rules.toml`; every listed limit must be below it.
+- `collection.json`: `{ schema_version, owner, read_from, totals: { set: "owned/total" }, cards: [ { id, name, copies } ] }`.
+- `decks/*.json`: `{ schema_version, name, notes, main: [ { id, name, count } ], extra: [ ... ] }`. Copy limits count Main and Extra Deck together.
+- `tools/refresh_cards.py [root]` rebuilds `cards.json` and fetches missing images from YGOPRODeck; it never touches the ban list. `reference/python_prototype/` is the simplified Python simulator, reference only.
 
 ## Open questions for the owner
 

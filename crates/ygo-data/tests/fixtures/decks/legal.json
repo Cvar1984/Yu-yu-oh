@@ -1,51 +1,106 @@
 {
+ "schema_version": 1,
  "name": "Fixture legal",
- "main": [
-  89631139,
-  89631139,
-  89631139,
-  70781052,
-  70781052,
-  70781052,
-  46986414,
-  46986414,
-  46986414,
-  39111158,
-  39111158,
-  39111158,
-  15025844,
-  15025844,
-  15025844,
-  6368038,
-  6368038,
-  6368038,
-  26202165,
-  26202165,
-  26202165,
-  54652250,
-  54652250,
-  54652250,
-  40640057,
-  40640057,
-  40640057,
-  5405694,
-  5405694,
-  5405694,
-  55144522,
-  12580477,
-  72302403,
-  4031928,
-  83764718,
-  83764718,
-  24094653,
-  24094653,
-  44095762,
-  4206964
- ],
- "extra": [
-  23995346
- ],
  "notes": {
   "source": "ygo-data test fixture"
- }
+ },
+ "main": [
+  {
+   "id": 89631139,
+   "name": "Blue-Eyes White Dragon",
+   "count": 3
+  },
+  {
+   "id": 70781052,
+   "name": "Summoned Skull",
+   "count": 3
+  },
+  {
+   "id": 46986414,
+   "name": "Dark Magician",
+   "count": 3
+  },
+  {
+   "id": 39111158,
+   "name": "Tri-Horned Dragon",
+   "count": 3
+  },
+  {
+   "id": 15025844,
+   "name": "Mystical Elf",
+   "count": 3
+  },
+  {
+   "id": 6368038,
+   "name": "Gaia The Fierce Knight",
+   "count": 3
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "count": 3
+  },
+  {
+   "id": 54652250,
+   "name": "Man-Eater Bug",
+   "count": 3
+  },
+  {
+   "id": 40640057,
+   "name": "Kuriboh",
+   "count": 3
+  },
+  {
+   "id": 5405694,
+   "name": "Black Luster Soldier",
+   "count": 3
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "count": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "count": 1
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "count": 1
+  },
+  {
+   "id": 4031928,
+   "name": "Change of Heart",
+   "count": 1
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "count": 2
+  },
+  {
+   "id": 24094653,
+   "name": "Polymerization",
+   "count": 2
+  },
+  {
+   "id": 44095762,
+   "name": "Mirror Force",
+   "count": 1
+  },
+  {
+   "id": 4206964,
+   "name": "Trap Hole",
+   "count": 1
+  }
+ ],
+ "extra": [
+  {
+   "id": 23995346,
+   "name": "Blue-Eyes Ultimate Dragon",
+   "count": 1
+  }
+ ]
 }

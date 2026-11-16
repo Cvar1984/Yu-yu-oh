@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 
 use ygo_data::{
-    Banlist, Bundle, CardDb, CardId, CardKind, Collection, DataError, Deck, DeckProblem,
+    Banlist, Bundle, CardDb, CardFile, CardId, CardKind, Collection, DataError, Deck, DeckProblem,
     HandLimitCheck, Rules, TextVersion, check_deck,
 };
 
@@ -91,11 +91,16 @@ fn impossible_rules_are_rejected() {
     assert!(matches!(rules.validate(), Err(DataError::InvalidRules(_))));
 }
 
-#[test]
-fn duplicate_card_id_is_rejected() {
-    let cards: Vec<ygo_data::Card> =
+fn fixture_cards() -> Vec<ygo_data::Card> {
+    let file: CardFile =
         serde_json::from_str(&std::fs::read_to_string(fixtures().join("cards.json")).unwrap())
             .unwrap();
+    file.cards
+}
+
+#[test]
+fn duplicate_card_id_is_rejected() {
+    let cards = fixture_cards();
     let mut dup = cards.clone();
     let mut copy = cards[0].clone();
     copy.name = "Different name".into();
@@ -108,9 +113,7 @@ fn duplicate_card_id_is_rejected() {
 
 #[test]
 fn monster_without_stats_is_rejected() {
-    let mut cards: Vec<ygo_data::Card> =
-        serde_json::from_str(&std::fs::read_to_string(fixtures().join("cards.json")).unwrap())
-            .unwrap();
+    let mut cards = fixture_cards();
     cards[0].level = None;
     assert!(matches!(
         CardDb::from_cards(cards),
@@ -121,7 +124,8 @@ fn monster_without_stats_is_rejected() {
 #[test]
 fn banlist_with_unknown_card_is_rejected() {
     let b = bundle();
-    let banlist: Banlist = serde_json::from_str(r#"{"limits":[{"id":1,"limit":1}]}"#).unwrap();
+    let banlist: Banlist =
+        serde_json::from_str(r#"{"schema_version":1,"limits":[{"id":1,"limit":1}]}"#).unwrap();
     assert!(matches!(
         banlist.validate(&b.cards, 3),
         Err(DataError::UnknownCard {
@@ -132,10 +136,42 @@ fn banlist_with_unknown_card_is_rejected() {
 }
 
 #[test]
+fn banlist_default_limit_must_match_rules() {
+    let b = bundle();
+    let banlist: Banlist =
+        serde_json::from_str(r#"{"schema_version":1,"default_limit":2,"limits":[]}"#).unwrap();
+    assert!(matches!(
+        banlist.validate(&b.cards, 3),
+        Err(DataError::DefaultLimitMismatch {
+            banlist: 2,
+            rules: 3
+        })
+    ));
+}
+
+#[test]
+fn unsupported_schema_version_is_rejected() {
+    let banlist: Banlist = serde_json::from_str(r#"{"schema_version":2,"limits":[]}"#).unwrap();
+    let dir = std::env::temp_dir().join("ygo-data-schema-test");
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("banlist.json");
+    std::fs::write(&path, serde_json::to_string(&banlist).unwrap()).unwrap();
+    assert!(matches!(
+        Banlist::load(&path),
+        Err(DataError::UnsupportedSchema {
+            file: "banlist",
+            found: 2,
+            expected: 1
+        })
+    ));
+}
+
+#[test]
 fn banlist_limit_at_default_is_dead_data() {
     let b = bundle();
     let banlist: Banlist =
-        serde_json::from_str(r#"{"limits":[{"id":89631139,"limit":3}]}"#).unwrap();
+        serde_json::from_str(r#"{"schema_version":1,"limits":[{"id":89631139,"limit":3}]}"#)
+            .unwrap();
     assert!(matches!(
         banlist.validate(&b.cards, 3),
         Err(DataError::LimitNotBelowDefault { .. })
@@ -157,7 +193,7 @@ fn collection_loads_and_validates() {
 fn legal_deck_has_no_problems() {
     let b = bundle();
     let deck = Deck::load(&fixtures().join("decks/legal.json")).unwrap();
-    assert_eq!(deck.main.len(), 40);
+    assert_eq!(deck.main_size(), 40);
     assert!(check_deck(&deck, &b.cards, &b.banlist, &b.rules, None).is_empty());
 }
 

@@ -16,10 +16,10 @@ mod rules;
 
 pub use banlist::{Banlist, CardLimit};
 pub use bundle::Bundle;
-pub use card::{Card, CardDb, CardId, CardKind, CardType, Images, Printing};
+pub use card::{Card, CardDb, CardFile, CardId, CardKind, CardType, Images, Printing};
 pub use check::{DeckProblem, check_deck};
 pub use collection::{Collection, OwnedCard};
-pub use deck::Deck;
+pub use deck::{Deck, DeckEntry};
 pub use error::DataError;
 pub use rules::{
     CardRules, DeckRules, FieldRules, HandLimitCheck, HandRules, LifeRules, Rules, SummonRules,
@@ -27,6 +27,21 @@ pub use rules::{
 };
 
 use std::path::Path;
+
+/// The one JSON schema version this build understands.
+pub const SCHEMA_VERSION: u32 = 1;
+
+pub(crate) fn check_schema(file: &'static str, found: u32) -> Result<(), DataError> {
+    if found == SCHEMA_VERSION {
+        Ok(())
+    } else {
+        Err(DataError::UnsupportedSchema {
+            file,
+            found,
+            expected: SCHEMA_VERSION,
+        })
+    }
+}
 
 /// Reads and deserializes one JSON file, naming the file in any error.
 pub(crate) fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, DataError> {

@@ -1,0 +1,78 @@
+{
+ "schema_version": 1,
+ "name": "Exodia stall 40 (full pool, 3 copies)",
+ "notes": "Prototype strongest full-pool deck (64%). Illegal if the game limits cards it runs at 3.",
+ "main": [
+  {
+   "id": 33396948,
+   "name": "Exodia the Forbidden One",
+   "count": 3
+  },
+  {
+   "id": 70903634,
+   "name": "Right Arm of the Forbidden One",
+   "count": 3
+  },
+  {
+   "id": 7902349,
+   "name": "Left Arm of the Forbidden One",
+   "count": 3
+  },
+  {
+   "id": 8124921,
+   "name": "Right Leg of the Forbidden One",
+   "count": 3
+  },
+  {
+   "id": 44519536,
+   "name": "Left Leg of the Forbidden One",
+   "count": 3
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "count": 3
+  },
+  {
+   "id": 70368879,
+   "name": "Upstart Goblin",
+   "count": 3
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "count": 3
+  },
+  {
+   "id": 78010363,
+   "name": "Witch of the Black Forest",
+   "count": 3
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "count": 3
+  },
+  {
+   "id": 44656491,
+   "name": "Messenger of Peace",
+   "count": 3
+  },
+  {
+   "id": 31560081,
+   "name": "Magician of Faith",
+   "count": 3
+  },
+  {
+   "id": 42829885,
+   "name": "The Forceful Sentry",
+   "count": 3
+  },
+  {
+   "id": 17375316,
+   "name": "Confiscation",
+   "count": 1
+  }
+ ],
+ "extra": []
+}

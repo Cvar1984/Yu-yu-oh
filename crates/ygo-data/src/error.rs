@@ -42,6 +42,20 @@ pub enum DataError {
     },
     #[error("collection lists card {id} with zero copies")]
     ZeroCopies { id: CardId },
+    #[error("{file} has schema_version {found}; this build reads version {expected}")]
+    UnsupportedSchema {
+        file: &'static str,
+        found: u32,
+        expected: u32,
+    },
+    #[error("{file} declares {declared} entries but holds {actual}")]
+    CountMismatch {
+        file: &'static str,
+        declared: usize,
+        actual: usize,
+    },
+    #[error("banlist default_limit {banlist} disagrees with rules default_copy_limit {rules}")]
+    DefaultLimitMismatch { banlist: usize, rules: usize },
     #[error("invalid rules: {0}")]
     InvalidRules(String),
 }

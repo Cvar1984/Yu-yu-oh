@@ -144,6 +144,17 @@ impl Card {
     }
 }
 
+/// The `cards.json` file: metadata about the fetch plus the cards.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CardFile {
+    pub schema_version: u32,
+    pub source: String,
+    pub sets: Vec<String>,
+    pub count: usize,
+    pub cards: Vec<Card>,
+}
+
 /// Every card in the pool, indexed by id.
 #[derive(Debug, Clone, Default)]
 pub struct CardDb {
@@ -151,10 +162,18 @@ pub struct CardDb {
 }
 
 impl CardDb {
-    /// Loads `cards.json`: a JSON array of [`Card`].
+    /// Loads `cards.json` (a [`CardFile`]) and checks its declared count.
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        let cards: Vec<Card> = crate::read_json(path)?;
-        Self::from_cards(cards)
+        let file: CardFile = crate::read_json(path)?;
+        crate::check_schema("cards", file.schema_version)?;
+        if file.count != file.cards.len() {
+            return Err(DataError::CountMismatch {
+                file: "cards",
+                declared: file.count,
+                actual: file.cards.len(),
+            });
+        }
+        Self::from_cards(file.cards)
     }
 
     /// Builds the database, rejecting duplicate ids or names and monsters

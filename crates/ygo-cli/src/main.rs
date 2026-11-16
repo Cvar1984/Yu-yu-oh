@@ -94,8 +94,8 @@ fn run(cli: Cli) -> Result<bool, DataError> {
             println!(
                 "{}: {} main, {} extra",
                 deck.name,
-                deck.main.len(),
-                deck.extra.len()
+                deck.main_size(),
+                deck.extra_size()
             );
             if problems.is_empty() {
                 println!("legal");
