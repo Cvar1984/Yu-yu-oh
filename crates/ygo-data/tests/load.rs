@@ -49,6 +49,7 @@ fn rules_match_the_committed_defaults() {
     assert_eq!(r.deck.main_max, 60);
     assert_eq!(r.deck.extra_max, 15);
     assert_eq!(r.deck.default_copy_limit, 3);
+    assert_eq!(r.hand.opening_size, 5);
     assert_eq!(r.hand.max_size, 6);
     assert_eq!(r.hand.hand_limit_check, HandLimitCheck::AfterDraw);
     assert!(r.turn.first_player_skips_draw && !r.turn.first_player_can_attack);

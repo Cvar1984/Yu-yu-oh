@@ -150,12 +150,16 @@ is green.
 A long fuzz run (millions of games, release build) is run by hand before
 the gate is declared passed, not on every CI run.
 
-## Assumptions to confirm with the owner
+## Owner's confirmations (2026-11-16)
 
-- Flip Summons and position changes are allowed in Main Phase 2; the
-  "no summons in Main Phase 2" rule covers Normal and Tribute Summons and
-  Sets only.
-- Opening hands are 5 cards and who goes first is random unless the
-  caller chooses.
-- A game with `deck_out_loses = false` that reaches the turn cap is a
-  draw (engine setting, default 200 turns, not a rule).
+- "No summons in Main Phase 2" covers Normal and Tribute Summons and Sets
+  only; Flip Summons and position changes stay allowed there.
+- Opening hands are 5 cards (`hand.opening_size`); who goes first is
+  random from the seed unless the caller chooses.
+- A game that reaches the turn cap is a draw (engine setting, default
+  200 turns, not a rule).
+
+## Progress
+
+- Step 1 done: `CardPool`, `CardInstance`, `GameSetup`, `Game::new`
+  with deck checks, seeded shuffle and opening hands.

@@ -49,6 +49,7 @@ pub enum HandLimitCheck {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct HandRules {
+    pub opening_size: usize,
     pub max_size: usize,
     pub hand_limit_check: HandLimitCheck,
 }
@@ -137,6 +138,12 @@ impl Rules {
         }
         if self.field.monster_zones == 0 || self.field.spell_trap_zones == 0 {
             return invalid("field zones must be at least 1".into());
+        }
+        if self.hand.opening_size > self.deck.main_min {
+            return invalid(format!(
+                "hand.opening_size ({}) must not exceed deck.main_min ({})",
+                self.hand.opening_size, self.deck.main_min
+            ));
         }
         if self.life.starting_lp == 0 {
             return invalid("life.starting_lp must be above 0".into());
