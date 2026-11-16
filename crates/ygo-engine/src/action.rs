@@ -31,6 +31,8 @@ pub enum Action {
     },
     /// Answer a `Choose` decision during an effect's resolution.
     Choose { card: InstanceId },
+    /// Answer an `Ask` question during an effect's resolution.
+    Answer { option: u8 },
     /// Decline to respond in a window.
     Pass,
     /// Main Phase 1 to the Battle Phase.
@@ -191,6 +193,14 @@ pub enum Event {
     },
     DeckShuffled {
         player: PlayerId,
+    },
+    Equipped {
+        card: InstanceId,
+        to: InstanceId,
+    },
+    PlacedOnTopOfDeck {
+        player: PlayerId,
+        card: InstanceId,
     },
     GameOver {
         result: GameResult,

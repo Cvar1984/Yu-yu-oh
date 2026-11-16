@@ -44,8 +44,18 @@ pub enum Location {
     Hand,
     MonsterZone(u8),
     SpellTrapZone(u8),
+    FieldZone,
     Graveyard,
     Extra,
+}
+
+impl Location {
+    pub fn on_field(self) -> bool {
+        matches!(
+            self,
+            Location::MonsterZone(_) | Location::SpellTrapZone(_) | Location::FieldZone
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -98,6 +108,10 @@ pub struct CardInstance {
     pub turn_entered_field: Option<u32>,
     pub position_changed_this_turn: bool,
     pub attacked_this_turn: bool,
+    /// For an Equip Spell on the field: the monster it is equipped to.
+    pub equipped_to: Option<InstanceId>,
+    /// A script-owned counter (Swords of Revealing Light counts End Phases).
+    pub counter: u8,
 }
 
 impl CardInstance {
@@ -112,6 +126,8 @@ impl CardInstance {
             turn_entered_field: None,
             position_changed_this_turn: false,
             attacked_this_turn: false,
+            equipped_to: None,
+            counter: 0,
         }
     }
 }
@@ -164,6 +180,7 @@ pub struct PlayerState {
     pub extra: Vec<InstanceId>,
     pub monster_zones: Vec<Option<InstanceId>>,
     pub spell_trap_zones: Vec<Option<InstanceId>>,
+    pub field_zone: Option<InstanceId>,
     /// Normal Summons, Tribute Summons and Sets used this turn.
     pub summons_used: u8,
     /// Monsters that entered the field this turn, for `max_monsters_entering_per_turn`.
@@ -180,6 +197,7 @@ impl PlayerState {
             extra: Vec::new(),
             monster_zones: vec![None; monster_zones],
             spell_trap_zones: vec![None; spell_trap_zones],
+            field_zone: None,
             summons_used: 0,
             monsters_entered: 0,
         }

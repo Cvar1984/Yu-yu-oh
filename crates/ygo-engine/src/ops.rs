@@ -4,8 +4,8 @@
 use rand_core::Rng;
 
 use crate::{
-    Event, Game, GameResult, InstanceId, Lingering, LingeringKind, Location, PlayerId, Position,
-    Tag, WinReason,
+    Effect, EffectKind, Event, Game, GameResult, InstanceId, Lingering, LingeringKind, Location,
+    PlayerId, Position, Source, StatMod, Tag, WinReason,
 };
 
 impl Game {
@@ -61,6 +61,9 @@ impl Game {
             return;
         }
         self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
         let owner = self.instances[card.index()].owner;
         let inst = &mut self.instances[card.index()];
         inst.location = Location::Hand;
@@ -245,13 +248,200 @@ impl Game {
         &self.lingering
     }
 
+    // ----- continuous effects -----
+
+    /// Face-up cards on the field whose scripts have continuous effects,
+    /// with their sources.
+    fn continuous_sources(&self) -> Vec<(Source, Effect)> {
+        let mut out = Vec::new();
+        for p in PlayerId::BOTH {
+            let state = &self.players[p.index()];
+            let cards = state
+                .monster_zones
+                .iter()
+                .chain(state.spell_trap_zones.iter())
+                .flatten()
+                .copied()
+                .chain(state.field_zone);
+            for card in cards {
+                let inst = &self.instances[card.index()];
+                if !inst.position.is_face_up() {
+                    continue;
+                }
+                let Some(script) = self.script(card) else {
+                    continue;
+                };
+                for effect in &script.effects {
+                    if effect.kind == EffectKind::Continuous {
+                        out.push((
+                            Source {
+                                card,
+                                controller: inst.controller,
+                            },
+                            *effect,
+                        ));
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    fn stat_mod(&self, card: InstanceId) -> StatMod {
+        let mut total = StatMod::default();
+        for (source, effect) in self.continuous_sources() {
+            if let Some(modify) = effect.modify {
+                let m = modify(self, source, card);
+                total.atk += m.atk;
+                total.def += m.def;
+            }
+        }
+        total
+    }
+
+    /// Current ATK: base plus every continuous modifier, never below 0.
+    pub fn atk(&self, card: InstanceId) -> i32 {
+        (self.stats(card).atk + self.stat_mod(card).atk).max(0)
+    }
+
+    /// Current DEF: base plus every continuous modifier, never below 0.
+    pub fn def(&self, card: InstanceId) -> i32 {
+        (self.stats(card).def + self.stat_mod(card).def).max(0)
+    }
+
+    /// Whether some continuous effect forbids `card` from attacking.
+    pub fn attack_restricted(&self, card: InstanceId) -> bool {
+        self.continuous_sources()
+            .into_iter()
+            .any(|(source, effect)| effect.restrict.is_some_and(|r| r(self, source, card)))
+    }
+
+    /// Attaches an Equip Spell on the field to a face-up monster.
+    pub fn equip(&mut self, equip: InstanceId, to: InstanceId) -> bool {
+        if !matches!(
+            self.instances[equip.index()].location,
+            Location::SpellTrapZone(_)
+        ) || !matches!(
+            self.instances[to.index()].location,
+            Location::MonsterZone(_)
+        ) || !self.instances[to.index()].position.is_face_up()
+        {
+            return false;
+        }
+        self.instances[equip.index()].equipped_to = Some(to);
+        self.emit(Event::Equipped { card: equip, to });
+        true
+    }
+
+    /// Turns a face-down Defense Position monster face-up by an effect.
+    /// Its FLIP effect fires in the next window.
+    pub fn flip_face_up(&mut self, card: InstanceId) -> bool {
+        let inst = &mut self.instances[card.index()];
+        if inst.position != Position::FaceDownDefense {
+            return false;
+        }
+        inst.position = Position::FaceUpDefense;
+        self.emit(Event::Flipped { card });
+        true
+    }
+
+    pub fn equip_target(&self, equip: InstanceId) -> Option<InstanceId> {
+        self.instances[equip.index()].equipped_to
+    }
+
+    /// Spells and Traps `player` controls on the field, Field Zone included.
+    pub fn spells_traps_controlled(&self, player: PlayerId) -> Vec<InstanceId> {
+        let state = &self.players[player.index()];
+        state
+            .spell_trap_zones
+            .iter()
+            .flatten()
+            .copied()
+            .chain(state.field_zone)
+            .collect()
+    }
+
+    pub fn field_spell(&self, player: PlayerId) -> Option<InstanceId> {
+        self.players[player.index()].field_zone
+    }
+
+    pub fn counter(&self, card: InstanceId) -> u8 {
+        self.instances[card.index()].counter
+    }
+
+    pub fn set_counter(&mut self, card: InstanceId, value: u8) {
+        self.instances[card.index()].counter = value;
+    }
+
+    /// Places a card from anywhere on top of its owner's Deck.
+    pub fn place_on_top_of_deck(&mut self, card: InstanceId) {
+        self.remove_from_current_place(card);
+        let owner = self.instances[card.index()].owner;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Deck;
+        inst.position = Position::FaceDown;
+        inst.controller = owner;
+        inst.turn_set = None;
+        inst.turn_entered_field = None;
+        inst.equipped_to = None;
+        inst.counter = 0;
+        self.players[owner.index()].deck.push(card);
+        self.emit(Event::PlacedOnTopOfDeck {
+            player: owner,
+            card,
+        });
+    }
+
+    /// Activates a Field Spell from the hand: it takes `player`'s Field
+    /// Zone, and `field.field_spells_on_field` says how many may stay on
+    /// the whole field, oldest and the opponent's going first.
+    pub(crate) fn place_field_spell(&mut self, player: PlayerId, card: InstanceId) {
+        let limit = self.shared.rules.field.field_spells_on_field.max(1);
+        if let Some(old) = self.players[player.index()].field_zone {
+            self.send_to_graveyard(old);
+        }
+        let mut on_field: Vec<InstanceId> = PlayerId::BOTH
+            .into_iter()
+            .filter_map(|p| self.players[p.index()].field_zone)
+            .collect();
+        while on_field.len() + 1 > limit {
+            let victim = on_field.remove(0);
+            self.send_to_graveyard(victim);
+        }
+        self.remove_from_current_place(card);
+        self.players[player.index()].field_zone = Some(card);
+        let turn = self.turn;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::FieldZone;
+        inst.position = Position::FaceUp;
+        inst.controller = player;
+        inst.turn_set = None;
+        inst.turn_entered_field = Some(turn);
+    }
+
+    /// Housekeeping when a card leaves the field: its equips go to the
+    /// Graveyard and its counters reset. Lingering effects it created
+    /// stay, since a resolved Spell's effect outlives the card.
+    fn on_leave_field(&mut self, card: InstanceId) {
+        let equips: Vec<InstanceId> = self
+            .instances
+            .iter()
+            .enumerate()
+            .filter(|(_, i)| i.equipped_to == Some(card) && i.location.on_field())
+            .map(|(i, _)| InstanceId(i as u8))
+            .collect();
+        for e in equips {
+            self.send_to_graveyard(e);
+        }
+        let inst = &mut self.instances[card.index()];
+        inst.equipped_to = None;
+        inst.counter = 0;
+    }
+
     // ----- queries scripts use -----
 
     pub fn on_field(&self, card: InstanceId) -> bool {
-        matches!(
-            self.instances[card.index()].location,
-            Location::MonsterZone(_) | Location::SpellTrapZone(_)
-        )
+        self.instances[card.index()].location.on_field()
     }
 
     pub fn monsters_controlled(&self, player: PlayerId) -> Vec<InstanceId> {
@@ -323,6 +513,7 @@ impl Game {
             Location::Hand => holder.hand.retain(|&c| c != card),
             Location::MonsterZone(z) => holder.monster_zones[z as usize] = None,
             Location::SpellTrapZone(z) => holder.spell_trap_zones[z as usize] = None,
+            Location::FieldZone => holder.field_zone = None,
             Location::Deck => holder.deck.retain(|&c| c != card),
             Location::Extra => holder.extra.retain(|&c| c != card),
             Location::Graveyard => {
@@ -339,6 +530,9 @@ impl Game {
             return;
         }
         self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
         let inst = &mut self.instances[card.index()];
         let owner = inst.owner;
         inst.location = Location::Graveyard;

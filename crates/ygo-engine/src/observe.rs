@@ -15,6 +15,8 @@ pub enum VisibleCard {
         instance: InstanceId,
         card: CardId,
         position: Position,
+        /// Current ATK and DEF for a monster on the field.
+        stats: Option<(i32, i32)>,
     },
     /// Face-down, or in the other player's hand: the instance can still be
     /// targeted, its identity cannot be read.
@@ -50,6 +52,7 @@ pub struct Side {
     pub graveyard: Vec<VisibleCard>,
     pub monster_zones: Vec<Option<VisibleCard>>,
     pub spell_trap_zones: Vec<Option<VisibleCard>>,
+    pub field_zone: Option<VisibleCard>,
 }
 
 /// A chain link as everyone sees it: activations are public.
@@ -82,6 +85,8 @@ pub struct Observation {
     /// The options of a pending `Choose` decision when the viewer is the
     /// one choosing, with their identities revealed; empty otherwise.
     pub revealed: Vec<VisibleCard>,
+    /// The labelled options of a pending `Ask` decision for the viewer.
+    pub question: Vec<String>,
     pub lingering: Vec<Lingering>,
 }
 
@@ -119,6 +124,8 @@ impl Game {
                         instance: id,
                         card: self.shared.pool.get(inst.card).id,
                         position,
+                        stats: matches!(inst.location, Location::MonsterZone(_))
+                            .then(|| (self.atk(id), self.def(id))),
                     }
                 } else {
                     VisibleCard::Hidden {
@@ -143,6 +150,7 @@ impl Game {
                     .iter()
                     .map(|z| z.map(|id| see(id, false)))
                     .collect(),
+                field_zone: state.field_zone.map(|id| see(id, false)),
             }
         };
         let chain = self
@@ -157,17 +165,20 @@ impl Game {
                 negated: l.negated,
             })
             .collect();
-        let revealed = match &self.pending_choice {
-            Some(pc) if pc.ctx.controller == viewer => pc
-                .options
-                .iter()
-                .map(|&id| VisibleCard::Known {
-                    instance: id,
-                    card: self.shared.pool.get(self.instances[id.index()].card).id,
-                    position: self.instances[id.index()].position,
-                })
-                .collect(),
-            _ => Vec::new(),
+        let (revealed, question) = match &self.pending_choice {
+            Some(pc) if pc.ctx.controller == viewer => (
+                pc.card_options()
+                    .iter()
+                    .map(|&id| VisibleCard::Known {
+                        instance: id,
+                        card: self.shared.pool.get(self.instances[id.index()].card).id,
+                        position: self.instances[id.index()].position,
+                        stats: None,
+                    })
+                    .collect(),
+                pc.question().iter().map(|q| q.to_string()).collect(),
+            ),
+            _ => (Vec::new(), Vec::new()),
         };
         Observation {
             viewer,
@@ -186,6 +197,7 @@ impl Game {
             }),
             pending_summon: self.pending_summon(),
             revealed,
+            question,
             lingering: self.lingering.clone(),
         }
     }

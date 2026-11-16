@@ -132,6 +132,7 @@ impl Game {
                 cost,
             } => self.activate(player, *card, *effect, targets.clone(), cost.clone()),
             Action::Choose { card } => self.choose(*card),
+            Action::Answer { option } => self.answer(usize::from(*option)),
             Action::Pass => {
                 if decision.kind == DecisionKind::Triggers {
                     self.drop_trigger_group();

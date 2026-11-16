@@ -128,7 +128,8 @@ fn activation_enumerates_costs_times_targets_and_runs_the_whole_flow() {
         vec![VisibleCard::Known {
             instance: discard,
             card: MYSTICAL_ELF,
-            position: Position::FaceUp
+            position: Position::FaceUp,
+            stats: None,
         }]
     );
     assert!(

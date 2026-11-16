@@ -22,6 +22,8 @@ pub enum Tag {
     ExodiaPiece,
     /// Exodia the Forbidden One itself.
     ExodiaHead,
+    /// A Normal Spell that stays on the field after resolving (Swords).
+    StaysOnField,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -81,6 +83,16 @@ impl Effect {
             resolve,
             modify: None,
             damage_step: false,
+            restrict: None,
+        }
+    }
+
+    /// A continuous effect that never chains: only `modify` and `restrict`
+    /// matter.
+    pub const fn continuous() -> Self {
+        Self {
+            kind: EffectKind::Continuous,
+            ..Self::activate(1, nothing)
         }
     }
 
@@ -111,6 +123,12 @@ pub fn flipped_this_window(_: &Game, s: Source, w: &Window) -> bool {
     })
 }
 
+/// A resolution that does nothing: for cards whose whole effect is
+/// continuous.
+pub fn nothing(_: &mut Game, _: &mut EffectCtx) -> Flow {
+    Flow::Done
+}
+
 /// A timing that is always met: the card's own activation conditions
 /// are enough.
 pub fn always(_: &Game, _: Source, _: &Window) -> bool {
@@ -138,6 +156,12 @@ pub enum Flow {
     Choose {
         options: Vec<InstanceId>,
         then: fn(&mut Game, &mut EffectCtx, InstanceId) -> Flow,
+    },
+    /// The controller answers a question with one of the labelled
+    /// options; the engine then calls `then` with the index.
+    Ask {
+        options: Vec<&'static str>,
+        then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
     },
 }
 
@@ -172,6 +196,9 @@ pub struct Effect {
     pub modify: Option<fn(&Game, Source, InstanceId) -> StatMod>,
     /// May start inside the Damage Step (counter traps, Kuriboh, ATK/DEF changes).
     pub damage_step: bool,
+    /// Continuous restriction: while the source is active, `target`
+    /// cannot declare an attack.
+    pub restrict: Option<fn(&Game, Source, InstanceId) -> bool>,
 }
 
 impl std::fmt::Debug for Effect {
