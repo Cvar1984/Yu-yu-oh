@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{GameResult, InstanceId, Phase, PlayerId};
+use crate::{GameResult, InstanceId, Location, Phase, PlayerId, Position};
 
 /// Everything a player can do. `Game::legal_actions` lists the ones
 /// allowed right now; `Game::apply` refuses any other.
@@ -8,6 +8,13 @@ use crate::{GameResult, InstanceId, Phase, PlayerId};
 pub enum Action {
     /// Send a card from the hand to the Graveyard for the hand limit.
     Discard { card: InstanceId },
+    /// Normal Summon (face-up Attack) or Set (face-down Defense) a monster
+    /// from the hand, tributing the listed monsters first.
+    Summon {
+        card: InstanceId,
+        tributes: Vec<InstanceId>,
+        face_down: bool,
+    },
     /// Leave the current Main Phase and go to the End Phase.
     EndTurn,
 }
@@ -49,6 +56,19 @@ pub enum Event {
     Discarded {
         player: PlayerId,
         card: InstanceId,
+    },
+    Tributed {
+        player: PlayerId,
+        card: InstanceId,
+    },
+    Summoned {
+        player: PlayerId,
+        card: InstanceId,
+        position: Position,
+    },
+    SentToGraveyard {
+        card: InstanceId,
+        from: Location,
     },
     GameOver {
         result: GameResult,

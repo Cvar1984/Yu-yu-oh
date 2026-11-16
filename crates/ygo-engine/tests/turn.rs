@@ -25,7 +25,7 @@ fn turn_one_starts_in_main_phase_one_with_end_turn_as_the_only_action() {
     let d = g.pending_decision().unwrap();
     assert_eq!(d.player, PlayerId(0));
     assert_eq!(d.kind, DecisionKind::MainPhase);
-    assert_eq!(g.legal_actions(), vec![Action::EndTurn]);
+    assert_eq!(g.legal_actions().last(), Some(&Action::EndTurn));
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn hand_limit_after_draw_is_the_owners_rule() {
     };
     let events = play(&mut g, actions[0].clone());
     assert_eq!(
-        events[0],
+        events[1],
         Event::Discarded {
             player: PlayerId(0),
             card

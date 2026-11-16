@@ -104,7 +104,11 @@ impl Game {
                     instances.push(card);
                 }
             }
-            shuffle(&mut rng, &mut state.deck);
+            if setup.shuffle {
+                shuffle(&mut rng, &mut state.deck);
+            } else {
+                state.deck.reverse();
+            }
         }
 
         let turn_player = setup

@@ -4,8 +4,8 @@
 use ygo_data::HandLimitCheck;
 
 use crate::{
-    Action, Decision, DecisionKind, DrawReason, Event, Game, GameResult, InstanceId, Location,
-    Phase, PlayerId, Position, RuleError, WinReason,
+    Action, Decision, DecisionKind, DrawReason, Event, Game, GameResult, InstanceId, Phase,
+    PlayerId, RuleError, WinReason,
 };
 
 impl Game {
@@ -41,6 +41,7 @@ impl Game {
                 }
             }
             DecisionKind::MainPhase => {
+                self.summon_actions(decision.player, &mut actions);
                 actions.push(Action::EndTurn);
             }
         }
@@ -62,6 +63,11 @@ impl Game {
         let mut events = Vec::new();
         match action {
             Action::Discard { card } => self.discard(decision.player, *card, &mut events),
+            Action::Summon {
+                card,
+                tributes,
+                face_down,
+            } => self.summon(decision.player, *card, tributes, *face_down, &mut events),
             Action::EndTurn => self.enter_phase(Phase::End, &mut events),
         }
         self.advance(&mut events);
@@ -138,12 +144,7 @@ impl Game {
     }
 
     fn discard(&mut self, player: PlayerId, card: InstanceId, events: &mut Vec<Event>) {
-        let state = &mut self.players[player.index()];
-        state.hand.retain(|&c| c != card);
-        state.graveyard.push(card);
-        let inst = &mut self.instances[card.index()];
-        inst.location = Location::Graveyard;
-        inst.position = Position::FaceUpAttack;
+        self.send_to_graveyard(card, events);
         events.push(Event::Discarded { player, card });
     }
 
