@@ -183,7 +183,7 @@ All three gate conditions pass on this cloud container (4 cores, one used).
 | Condition | Evidence |
 | --- | --- |
 | Random games finish | 1,000,000 random-vs-random games over four deck pairs, every one ended by life points or deck-out, no draws, no panics, no refused action |
-| Invariant tests and fuzzing pass | `tests/invariants.rs` with 2,000 proptest cases in release mode plus the million-game run above; 86 tests in the workspace |
+| Invariant tests and fuzzing pass | `tests/invariants.rs` with 2,000 proptest cases in release mode plus the million-game run above; 80 tests in the workspace |
 | Speed measured | 6,100 to 12,800 games/s depending on the decks, 1.36 to 1.55 million actions/s, single core, release build |
 
 Random-play results, 250,000 games per pair, half with each player first:
