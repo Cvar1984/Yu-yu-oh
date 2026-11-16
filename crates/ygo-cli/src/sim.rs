@@ -40,7 +40,11 @@ impl Tally {
 }
 
 pub fn run(bundle: &Bundle, opts: &SimOptions) -> Result<(), DataError> {
-    let shared = Arc::new(Shared::new(bundle.rules.clone(), &bundle.cards));
+    let shared = Arc::new(Shared::new(
+        bundle.rules.clone(),
+        &bundle.cards,
+        ygo_cards::registry(),
+    ));
     let deck_a = Deck::load(opts.deck_a)?;
     let deck_b = Deck::load(opts.deck_b)?;
     let decks = [DeckList::from(&deck_a), DeckList::from(&deck_b)];

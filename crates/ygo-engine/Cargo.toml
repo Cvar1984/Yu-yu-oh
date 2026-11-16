@@ -13,6 +13,11 @@ thiserror.workspace = true
 rand_core = "0.10"
 rand_chacha = "0.10"
 
+[features]
+# Scenario-test helpers (`ygo_engine::testing`), for this crate's tests and ygo-cards.
+test-support = []
+
 [dev-dependencies]
 serde_json.workspace = true
 proptest = "1"
+ygo-engine = { path = ".", features = ["test-support"] }

@@ -13,5 +13,6 @@ description = "Command line for playing, simulating, training and checking decks
 [dependencies]
 ygo-data.workspace = true
 ygo-engine.workspace = true
+ygo-cards.workspace = true
 ygo-ai.workspace = true
 clap.workspace = true

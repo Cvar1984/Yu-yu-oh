@@ -5,8 +5,8 @@ use rand_core::{Rng, SeedableRng};
 use ygo_data::CardId;
 
 use crate::{
-    CardInstance, CardStats, GameResult, GameSetup, InstanceId, Location, Phase, PlayerId,
-    PlayerState, SetupError, Shared,
+    CardInstance, CardScript, CardStats, GameResult, GameSetup, InstanceId, Location, Phase,
+    PlayerId, PlayerState, SetupError, Shared,
 };
 
 /// A whole game. Cheap to clone: flat vectors plus one `Arc` to the shared
@@ -174,6 +174,10 @@ impl Game {
 
     pub fn stats(&self, id: InstanceId) -> &CardStats {
         self.shared.pool.get(self.instances[id.index()].card)
+    }
+
+    pub fn script(&self, id: InstanceId) -> Option<&CardScript> {
+        self.shared.script(self.instances[id.index()].card)
     }
 
     pub fn player(&self, player: PlayerId) -> &PlayerState {

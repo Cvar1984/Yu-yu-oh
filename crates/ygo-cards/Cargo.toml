@@ -4,5 +4,11 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Effect scripts for the LOB, MRD and SRL cards, keyed by card id"
 
 [dependencies]
+ygo-engine.workspace = true
+ygo-data.workspace = true
+
+[dev-dependencies]
+ygo-engine = { workspace = true, features = ["test-support"] }
