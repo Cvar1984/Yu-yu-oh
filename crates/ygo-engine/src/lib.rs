@@ -10,6 +10,7 @@ mod action;
 mod error;
 mod game;
 mod pool;
+mod position;
 mod setup;
 mod state;
 mod summon;

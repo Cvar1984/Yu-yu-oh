@@ -15,6 +15,10 @@ pub enum Action {
         tributes: Vec<InstanceId>,
         face_down: bool,
     },
+    /// Turn a face-down Defense Position monster to face-up Attack.
+    FlipSummon { card: InstanceId },
+    /// Switch a face-up monster between Attack and Defense Position.
+    ChangePosition { card: InstanceId },
     /// Leave the current Main Phase and go to the End Phase.
     EndTurn,
 }
@@ -69,6 +73,14 @@ pub enum Event {
     SentToGraveyard {
         card: InstanceId,
         from: Location,
+    },
+    FlipSummoned {
+        player: PlayerId,
+        card: InstanceId,
+    },
+    PositionChanged {
+        card: InstanceId,
+        position: Position,
     },
     GameOver {
         result: GameResult,
