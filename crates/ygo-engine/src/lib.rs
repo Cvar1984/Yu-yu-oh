@@ -5,6 +5,10 @@
 //! Milestone M1: phases, summons, positions and battle for Normal
 //! Monsters. Cards that need an effect are drawn and held but offer no
 //! actions until M2 adds chains and effect scripts.
+//!
+//! Typical use: build one [`Shared`] from the rules and card pool, then
+//! `Game::new(shared, &setup)`, and loop over `pending_decision`,
+//! `legal_actions`, `observe` and `apply` until `result` is `Some`.
 
 mod action;
 mod battle;

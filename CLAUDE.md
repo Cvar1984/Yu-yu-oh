@@ -27,7 +27,7 @@ Full spec: `docs/handoff.md`. This file holds what every session must know.
 | `config/rules.toml` | House rules, also names the card and ban list files | |
 | `data/` | JSON data; see `data/README.md` | |
 
-Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 gate passed (all data loads, `check-deck` flags illegal decks; pinned in `crates/ygo-data/tests/real_data.rs`). Next: M1, the core engine without chains.
+Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 and M1 gates passed. M1 (`docs/m1-plan.md`) plays Normal Monsters through every phase with summons, positions and battle; random games finish, invariants and fuzzing pass, speed is measured. Next: M2, the chain system and about 30 key cards.
 
 ## Conventions
 
@@ -42,10 +42,20 @@ Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a mil
 ## Commands
 
 ```sh
-cargo test --workspace
+scripts/check.sh                       # fmt, clippy -D warnings, tests
 cargo run -p ygo-cli -- check-data [--collection data/collection.json]
 cargo run -p ygo-cli -- check-deck data/decks/<deck>.json [--collection data/collection.json]
+cargo run --release -p ygo-cli -- sim data/decks/<a>.json data/decks/<b>.json -n 2000 [--seed S]
 ```
+
+## Engine notes (ygo-engine)
+
+- `Game` is a struct, not a trait; `Shared` (rules + `CardPool`) is built once and held by `Arc`, so a game clone is flat vectors plus a pointer bump. No `Rc`, no `RefCell`, no lifetimes in state.
+- Every choice is an `Action`; `legal_actions` enumerates all of them (tribute combinations included) and `apply` refuses anything else. Phases without a decision advance automatically.
+- Cards that need an effect are drawn, held and discarded but offer no actions until M2 scripts them. Only `CardKind::Normal` can be summoned today.
+- `GameSetup.shuffle = false` keeps decks in listed order for scenario tests; `tests/common/mod.rs` has `stacked`, `shared_with` (rules with one change) and known card ids.
+- Instance ids are assigned in a seeded random order so an id never reveals a face-down card's identity. `observe(player)` is the only view bots get.
+- Speed baseline (M1, release, one core of this cloud container): about 7,300 random games/s, 1.5 million actions/s. Re-measure with `ygo sim` after engine changes and keep the number here current.
 
 ## Data formats (from the data bundle, `schema_version` 1)
 

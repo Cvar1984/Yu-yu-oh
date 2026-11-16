@@ -20,6 +20,6 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets
       - run: cargo test --workspace
-      - run: cargo run -p ygo-cli -- check-data
-        # Passes once data/cards.json from the data bundle is committed.
-        continue-on-error: true
+      - run: cargo run -p ygo-cli -- check-data --collection data/collection.json
+      - name: Random-play speed (compare with the baseline in CLAUDE.md)
+        run: cargo run --release -p ygo-cli -- sim data/decks/owner_main_45.json data/decks/umiiruka_water_40.json -n 2000
