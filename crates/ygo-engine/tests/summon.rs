@@ -298,10 +298,14 @@ fn flip_tribute_counts() {
 }
 
 #[test]
-fn effect_monsters_offer_no_actions_in_m1() {
+fn unscripted_effect_monsters_summon_as_vanilla() {
     let g = Game::new(shared(), &stacked([&[], &[]], SANGAN)).unwrap();
     assert_eq!(g.phase(), Phase::Main1);
-    assert_eq!(g.legal_actions(), vec![Action::EndTurn]);
+    assert_eq!(
+        summons_offered(&g).len(),
+        10,
+        "five Sangan, face-up or face-down"
+    );
 }
 
 // `summon_in_main_phase_2` is flipped in the battle tests (step 5), since

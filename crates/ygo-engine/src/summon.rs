@@ -1,7 +1,5 @@
 //! Normal Summon, Set, Tribute Summon and Tribute Set.
 
-use ygo_data::CardKind;
-
 use crate::{Action, Event, Game, InstanceId, Location, Phase, PlayerId, Position};
 
 impl Game {
@@ -40,8 +38,7 @@ impl Game {
         let on_field: Vec<InstanceId> = state.monsters().collect();
         for &card in &state.hand {
             let stats = self.stats(card);
-            // M1: only Normal Monsters have no effect to script.
-            if stats.kind != CardKind::Normal {
+            if !stats.can_normal_summon(self.script(card)) {
                 continue;
             }
             let needed = self.tributes_needed(stats.level);

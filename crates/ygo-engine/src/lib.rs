@@ -12,6 +12,7 @@
 
 mod action;
 mod battle;
+mod effect;
 mod error;
 mod game;
 mod observe;
@@ -20,9 +21,15 @@ mod position;
 mod setup;
 mod state;
 mod summon;
+#[cfg(feature = "test-support")]
+pub mod testing;
 mod turn;
 
 pub use action::{Action, Decision, DecisionKind, Event, RuleError};
+pub use effect::{
+    CardScript, Effect, EffectCtx, EffectKind, Flow, Registry, Source, Speed, StatMod, Tag,
+    TargetSets, Window,
+};
 pub use error::SetupError;
 pub use game::Game;
 pub use observe::{Observation, Side, VisibleCard};

@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use ygo_data::{CardDb, CardId, CardKind, Rules};
 
+use crate::{CardScript, Registry, Tag};
+
 /// Dense index of a card in the [`CardPool`]: what game state refers to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -28,6 +30,12 @@ impl CardStats {
     /// Lives in the Extra Deck rather than the Main Deck.
     pub fn is_extra_deck(&self) -> bool {
         self.kind == CardKind::Fusion
+    }
+
+    /// May be Normal Summoned or Set from the hand, given its script.
+    pub fn can_normal_summon(&self, script: Option<&CardScript>) -> bool {
+        matches!(self.kind, CardKind::Normal | CardKind::Effect)
+            && !script.is_some_and(|s| s.has(Tag::CannotNormalSummon))
     }
 }
 
@@ -79,17 +87,38 @@ impl CardPool {
 
 /// Immutable data every game shares: built once, held by `Arc`, so a
 /// game copy never clones it.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Shared {
     pub rules: Rules,
     pub pool: CardPool,
+    /// One slot per pool index; `None` for cards without a script.
+    pub scripts: Vec<Option<CardScript>>,
+}
+
+impl PartialEq for Shared {
+    /// Scripts are function pointers chosen by the registry, which is
+    /// the same for every game of a process; rules and pool decide.
+    fn eq(&self, other: &Self) -> bool {
+        self.rules == other.rules && self.pool == other.pool
+    }
 }
 
 impl Shared {
-    pub fn new(rules: Rules, db: &CardDb) -> Self {
+    pub fn new(rules: Rules, db: &CardDb, registry: Registry) -> Self {
+        let pool = CardPool::from_db(db);
+        let scripts = pool
+            .cards
+            .iter()
+            .map(|c| registry.get(c.id).cloned())
+            .collect();
         Self {
             rules,
-            pool: CardPool::from_db(db),
+            pool,
+            scripts,
         }
+    }
+
+    pub fn script(&self, index: CardIndex) -> Option<&CardScript> {
+        self.scripts[index.0 as usize].as_ref()
     }
 }

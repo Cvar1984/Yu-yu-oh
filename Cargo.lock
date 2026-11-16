@@ -686,6 +686,10 @@ dependencies = [
 [[package]]
 name = "ygo-cards"
 version = "0.1.0"
+dependencies = [
+ "ygo-data",
+ "ygo-engine",
+]
 
 [[package]]
 name = "ygo-cli"
@@ -693,6 +697,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "ygo-ai",
+ "ygo-cards",
  "ygo-data",
  "ygo-engine",
 ]
@@ -722,6 +727,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "ygo-data",
+ "ygo-engine",
 ]
 
 [[package]]
