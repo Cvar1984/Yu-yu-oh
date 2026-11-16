@@ -80,13 +80,10 @@ fn a_set_monster_flip_summons_from_the_next_own_turn() {
     );
 
     let events = play(&mut g, Action::FlipSummon { card: elf });
-    assert_eq!(
-        events[0],
-        Event::FlipSummoned {
-            player: P0,
-            card: elf
-        }
-    );
+    assert!(events.contains(&Event::FlipSummoned {
+        player: P0,
+        card: elf
+    }));
     assert_eq!(g.instance(elf).position, Position::FaceUpAttack);
     assert!(
         position_actions(&g).is_empty(),

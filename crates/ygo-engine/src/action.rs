@@ -31,6 +31,8 @@ pub enum Action {
     },
     /// Answer a `Choose` decision during an effect's resolution.
     Choose { card: InstanceId },
+    /// Decline to respond in a window.
+    Pass,
     /// Main Phase 1 to the Battle Phase.
     EnterBattlePhase,
     /// Declare an attack; `None` attacks the opponent directly.
@@ -55,6 +57,8 @@ pub enum DecisionKind {
     BattlePhase,
     /// Pick one card for a resolving effect.
     Choose,
+    /// Activate a fast effect in a response window, or pass.
+    Respond,
 }
 
 /// Who must choose, and what kind of choice.
@@ -163,6 +167,22 @@ pub enum Event {
         player: PlayerId,
         card: InstanceId,
         from: Location,
+    },
+    SummonDeclared {
+        player: PlayerId,
+        card: InstanceId,
+        face_down: bool,
+    },
+    SummonNegated {
+        card: InstanceId,
+        by: InstanceId,
+    },
+    ActivationNegated {
+        card: InstanceId,
+        by: InstanceId,
+    },
+    AttackCancelled {
+        attacker: InstanceId,
     },
     GameOver {
         result: GameResult,

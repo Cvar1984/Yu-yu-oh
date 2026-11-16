@@ -114,15 +114,33 @@ pub fn play(game: &mut Game, action: Action) -> Vec<Event> {
         .unwrap_or_else(|e| panic!("{action:?} on turn {} {:?}: {e}", game.turn(), game.phase()))
 }
 
-/// Ends the turn, then plays discards for any hand-limit decision until
-/// the next player's Main Phase.
-pub fn next_turn(game: &mut Game) {
-    play(game, Action::EndTurn);
-    while let Some(d) = game.pending_decision()
-        && d.kind == DecisionKind::HandLimit
+/// Declines every pending response until the next decision is not a
+/// response window.
+pub fn pass_all(game: &mut Game) {
+    while game
+        .pending_decision()
+        .is_some_and(|d| d.kind == DecisionKind::Respond)
     {
-        let a = game.legal_actions()[0].clone();
-        play(game, a);
+        play(game, Action::Pass);
+    }
+}
+
+/// Ends the turn, declining responses and playing discards for any
+/// hand-limit decision, until the next player's Main Phase.
+pub fn next_turn(game: &mut Game) {
+    pass_all(game);
+    play(game, Action::EndTurn);
+    loop {
+        match game.pending_decision().map(|d| d.kind) {
+            Some(DecisionKind::Respond) => {
+                play(game, Action::Pass);
+            }
+            Some(DecisionKind::HandLimit) => {
+                let a = game.legal_actions()[0].clone();
+                play(game, a);
+            }
+            _ => break,
+        };
     }
 }
 

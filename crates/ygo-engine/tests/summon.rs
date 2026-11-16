@@ -62,14 +62,11 @@ fn normal_summon_a_level_four_monster() {
     )));
 
     let events = play(&mut g, summon(elf));
-    assert_eq!(
-        events[0],
-        Event::Summoned {
-            player: P0,
-            card: elf,
-            position: Position::FaceUpAttack
-        }
-    );
+    assert!(events.contains(&Event::Summoned {
+        player: P0,
+        card: elf,
+        position: Position::FaceUpAttack
+    }));
     let inst = g.instance(elf);
     assert_eq!(inst.location, Location::MonsterZone(0));
     assert_eq!(inst.position, Position::FaceUpAttack);

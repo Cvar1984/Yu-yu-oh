@@ -4,7 +4,7 @@ use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
 use ygo_data::CardId;
 
-use crate::chain::PendingChoice;
+use crate::chain::{Pending, PendingChoice};
 use crate::{
     CardInstance, CardScript, CardStats, ChainLink, Event, GameResult, GameSetup, InstanceId,
     Lingering, Location, Phase, PlayerId, PlayerState, SetupError, Shared,
@@ -27,7 +27,10 @@ pub struct Game {
     pub(crate) result: Option<GameResult>,
     /// Events of the action being applied; drained by `apply`.
     pub(crate) events: Vec<Event>,
+    /// Events since the last window opened or closed: the next window's contents.
+    pub(crate) recent: Vec<Event>,
     pub(crate) chain: Vec<ChainLink>,
+    pub(crate) pending: Vec<Pending>,
     pub(crate) pending_choice: Option<PendingChoice>,
     pub(crate) lingering: Vec<Lingering>,
 }
@@ -145,7 +148,9 @@ impl Game {
             max_turns: setup.max_turns,
             result: None,
             events: Vec::new(),
+            recent: Vec::new(),
             chain: Vec::new(),
+            pending: Vec::new(),
             pending_choice: None,
             lingering: Vec::new(),
         };

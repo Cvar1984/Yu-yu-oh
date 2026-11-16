@@ -1,9 +1,11 @@
-//! The Battle Phase: attack declaration and damage calculation. In M1 the
-//! Damage Step resolves atomically; M2 opens response windows inside it.
+//! The Battle Phase: attack declaration, its response window, then the
+//! Damage Step. The Damage Step is still one atomic step; step 4 opens
+//! windows inside it.
 
+use crate::chain::Pending;
 use crate::{
-    Action, BattleStep, DrawReason, Event, Game, GameResult, InstanceId, Phase, PlayerId, Position,
-    WinReason,
+    Action, BattleStep, DrawReason, Event, Game, GameResult, InstanceId, Location, Phase, PlayerId,
+    Position, WinReason, WindowKind,
 };
 
 impl Game {
@@ -37,14 +39,29 @@ impl Game {
         actions.push(Action::EndBattlePhase);
     }
 
-    pub(crate) fn attack(
-        &mut self,
-        player: PlayerId,
-        attacker: InstanceId,
-        target: Option<InstanceId>,
-    ) {
+    /// Marks the attack and opens the window Mirror Force lives in.
+    pub(crate) fn declare_attack(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
         self.instances[attacker.index()].attacked_this_turn = true;
         self.emit(Event::AttackDeclared { attacker, target });
+        self.pending.push(Pending::DamageStep { attacker, target });
+        self.open_window(WindowKind::AttackDeclared, self.turn_player);
+    }
+
+    /// After the attack-declaration window. The attack goes ahead only if
+    /// the attacker is still a face-up Attack Position monster and the
+    /// target, if any, is still on the field (no replays yet).
+    pub(crate) fn damage_step(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
+        let attacker_ok = matches!(
+            self.instances[attacker.index()].location,
+            Location::MonsterZone(_)
+        ) && self.instances[attacker.index()].position == Position::FaceUpAttack;
+        let target_ok = target
+            .is_none_or(|t| matches!(self.instances[t.index()].location, Location::MonsterZone(_)));
+        if !attacker_ok || !target_ok {
+            self.emit(Event::AttackCancelled { attacker });
+            return;
+        }
+        let player = self.instances[attacker.index()].controller;
         self.enter_phase(Phase::Battle(BattleStep::Damage));
 
         let atk = self.stats(attacker).atk;
@@ -85,7 +102,11 @@ impl Game {
         }
         self.check_life_points();
         if self.result.is_none() {
-            self.enter_phase(Phase::Battle(BattleStep::Battle));
+            self.phase = Phase::Battle(BattleStep::Battle);
+            self.emit(Event::PhaseEntered {
+                phase: Phase::Battle(BattleStep::Battle),
+            });
+            self.open_window(WindowKind::AfterBattle, self.turn_player);
         }
     }
 

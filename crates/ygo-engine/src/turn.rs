@@ -3,13 +3,15 @@
 
 use ygo_data::HandLimitCheck;
 
+use crate::chain::Pending;
 use crate::{
     Action, BattleStep, Decision, DecisionKind, DrawReason, Event, Game, GameResult, InstanceId,
-    Phase, PlayerId, RuleError, WinReason,
+    Phase, PlayerId, RuleError, WinReason, WindowKind,
 };
 
 impl Game {
-    /// Who must choose now, or `None` when the game is over.
+    /// Who must choose now, or `None` when the game is over or the
+    /// engine has automatic work to do first.
     pub fn pending_decision(&self) -> Option<Decision> {
         if self.result.is_some() {
             return None;
@@ -20,9 +22,15 @@ impl Game {
                 kind: DecisionKind::Choose,
             });
         }
-        if !self.chain.is_empty() {
-            // Step 3 adds response windows; until then a chain resolves at once.
-            return None;
+        match self.pending.last() {
+            Some(Pending::Window { priority, .. }) => {
+                return (!self.response_actions(*priority).is_empty()).then_some(Decision {
+                    player: *priority,
+                    kind: DecisionKind::Respond,
+                });
+            }
+            Some(_) => return None,
+            None => {}
         }
         let player = self.turn_player;
         let kind = match self.phase {
@@ -63,6 +71,10 @@ impl Game {
             }
             DecisionKind::BattlePhase => self.battle_actions(decision.player, &mut actions),
             DecisionKind::Choose => self.choose_actions(&mut actions),
+            DecisionKind::Respond => {
+                actions = self.response_actions(decision.player);
+                actions.push(Action::Pass);
+            }
         }
         actions
     }
@@ -86,10 +98,16 @@ impl Game {
                 card,
                 tributes,
                 face_down,
-            } => self.summon(player, *card, tributes, *face_down),
-            Action::FlipSummon { card } => self.flip_summon(player, *card),
-            Action::ChangePosition { card } => self.change_position(*card),
-            Action::SetSpellTrap { card } => self.set_spell_trap(player, *card),
+            } => self.declare_summon(player, *card, tributes, *face_down),
+            Action::FlipSummon { card } => self.declare_flip_summon(player, *card),
+            Action::ChangePosition { card } => {
+                self.change_position(*card);
+                self.open_window(WindowKind::Open, self.turn_player);
+            }
+            Action::SetSpellTrap { card } => {
+                self.set_spell_trap(player, *card);
+                self.open_window(WindowKind::Open, self.turn_player);
+            }
             Action::Activate {
                 card,
                 effect,
@@ -97,8 +115,9 @@ impl Game {
                 cost,
             } => self.activate(player, *card, *effect, targets.clone(), cost.clone()),
             Action::Choose { card } => self.choose(*card),
+            Action::Pass => self.pass(),
             Action::EnterBattlePhase => self.enter_phase(Phase::Battle(BattleStep::Start)),
-            Action::Attack { attacker, target } => self.attack(player, *attacker, *target),
+            Action::Attack { attacker, target } => self.declare_attack(*attacker, *target),
             Action::EndBattlePhase => self.enter_phase(Phase::Battle(BattleStep::End)),
             Action::EndTurn => self.enter_phase(Phase::End),
         }
@@ -110,30 +129,58 @@ impl Game {
     /// Called at creation and after every action.
     pub(crate) fn advance(&mut self) {
         while self.result.is_none() && self.pending_decision().is_none() {
-            if !self.chain.is_empty() {
-                self.resolve_top_link();
-                continue;
-            }
-            match self.phase {
-                Phase::Draw => self.enter_phase(Phase::Standby),
-                Phase::Standby => self.enter_phase(Phase::Main1),
-                Phase::Battle(BattleStep::Start) => {
-                    self.enter_phase(Phase::Battle(BattleStep::Battle))
+            match self.pending.last() {
+                Some(Pending::Window { .. }) => self.pass(),
+                Some(Pending::ResolveChain) => {
+                    if self.chain.is_empty() {
+                        self.pending.pop();
+                        self.open_window(WindowKind::AfterChain, self.turn_player);
+                    } else {
+                        self.resolve_top_link();
+                    }
                 }
-                Phase::Battle(BattleStep::End) => self.enter_phase(Phase::Main2),
-                Phase::End => self.start_turn(self.turn + 1, self.turn_player.opponent()),
-                Phase::Main1 | Phase::Main2 | Phase::Battle(_) => {
-                    unreachable!("these phases always have a decision")
+                Some(Pending::CompleteSummon(ps)) => {
+                    let ps = *ps;
+                    self.pending.pop();
+                    self.complete_summon(ps);
                 }
+                Some(Pending::DamageStep { attacker, target }) => {
+                    let (attacker, target) = (*attacker, *target);
+                    self.pending.pop();
+                    self.damage_step(attacker, target);
+                }
+                None => match self.phase {
+                    Phase::Draw => self.enter_phase(Phase::Standby),
+                    Phase::Standby => self.enter_phase(Phase::Main1),
+                    Phase::Battle(BattleStep::Start) => {
+                        self.enter_phase(Phase::Battle(BattleStep::Battle))
+                    }
+                    Phase::Battle(BattleStep::End) => self.enter_phase(Phase::Main2),
+                    Phase::End => self.start_turn(self.turn + 1, self.turn_player.opponent()),
+                    Phase::Main1 | Phase::Main2 | Phase::Battle(_) => {
+                        unreachable!("these phases always have a decision")
+                    }
+                },
             }
         }
     }
 
+    /// Enters a phase. The Standby Phase, the start and end of the Battle
+    /// Phase and the End Phase open a response window.
     pub(crate) fn enter_phase(&mut self, phase: Phase) {
         self.phase = phase;
         self.emit(Event::PhaseEntered { phase });
         if phase == Phase::End {
             self.expire_lingering();
+        }
+        if matches!(
+            phase,
+            Phase::Standby
+                | Phase::Battle(BattleStep::Start)
+                | Phase::Battle(BattleStep::End)
+                | Phase::End
+        ) {
+            self.open_window(WindowKind::Open, self.turn_player);
         }
     }
 

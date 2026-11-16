@@ -1,5 +1,5 @@
-//! Flip Summon and manual position change: once per monster per turn,
-//! never in the turn the monster entered the field, never after it attacked.
+//! Manual position change and the Flip Summon offer. A Flip Summon itself
+//! runs through the summon declaration in `summon.rs`.
 
 use crate::{Action, Event, Game, InstanceId, Phase, PlayerId, Position};
 
@@ -44,16 +44,6 @@ impl Game {
                 Position::FaceDown | Position::FaceUp => {}
             }
         }
-    }
-
-    pub(crate) fn flip_summon(&mut self, player: PlayerId, card: InstanceId) {
-        if self.shared.rules.summon.flip_summon_counts_toward_limit {
-            self.players[player.index()].summons_used += 1;
-        }
-        let inst = &mut self.instances[card.index()];
-        inst.position = Position::FaceUpAttack;
-        inst.position_changed_this_turn = true;
-        self.emit(Event::FlipSummoned { player, card });
     }
 
     pub(crate) fn change_position(&mut self, card: InstanceId) {

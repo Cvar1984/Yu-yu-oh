@@ -5,6 +5,7 @@
 
 mod monsters;
 pub mod spells;
+pub mod traps;
 
 use ygo_engine::Registry;
 
@@ -13,5 +14,6 @@ pub fn registry() -> Registry {
     let mut r = Registry::default();
     monsters::register(&mut r);
     spells::register(&mut r);
+    traps::register(&mut r);
     r
 }

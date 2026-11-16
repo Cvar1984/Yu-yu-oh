@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use ygo_data::CardId;
 
 use crate::{
-    Decision, Game, InstanceId, Lingering, Location, Phase, PlayerId, PlayerState, Position,
+    Decision, Game, InstanceId, Lingering, Location, PendingSummon, Phase, PlayerId, PlayerState,
+    Position, WindowKind,
 };
 
 /// A card as seen from one side of the table.
@@ -75,6 +76,9 @@ pub struct Observation {
     pub sides: [Side; 2],
     /// First link first.
     pub chain: Vec<ChainView>,
+    /// The open response window and who holds priority, if any.
+    pub window: Option<(WindowKind, PlayerId)>,
+    pub pending_summon: Option<PendingSummon>,
     /// The options of a pending `Choose` decision when the viewer is the
     /// one choosing, with their identities revealed; empty otherwise.
     pub revealed: Vec<VisibleCard>,
@@ -173,6 +177,14 @@ impl Game {
             decision: self.pending_decision(),
             sides: [side(PlayerId(0)), side(PlayerId(1))],
             chain,
+            window: self.window().map(|(k, _)| {
+                let priority = match self.pending.last() {
+                    Some(crate::chain::Pending::Window { priority, .. }) => *priority,
+                    _ => unreachable!(),
+                };
+                (k, priority)
+            }),
+            pending_summon: self.pending_summon(),
             revealed,
             lingering: self.lingering.clone(),
         }

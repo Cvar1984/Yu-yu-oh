@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use ygo_data::CardId;
 
-use crate::{Event, Game, InstanceId, PlayerId};
+use crate::{Event, Game, InstanceId, PlayerId, WindowKind};
 
 /// Static facts about a card that are not effects.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -51,9 +51,20 @@ pub struct Source {
 }
 
 /// A point where fast effects may start, with what just happened.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Window {
+    pub kind: WindowKind,
     pub events: Vec<Event>,
+}
+
+impl Default for Window {
+    /// Open game state with nothing to respond to.
+    fn default() -> Self {
+        Self {
+            kind: WindowKind::Open,
+            events: Vec::new(),
+        }
+    }
 }
 
 impl Effect {
