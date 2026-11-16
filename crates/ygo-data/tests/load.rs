@@ -50,7 +50,9 @@ fn rules_match_the_committed_defaults() {
     assert_eq!(r.deck.extra_max, 15);
     assert_eq!(r.deck.default_copy_limit, 3);
     assert_eq!(r.hand.max_size, 6);
-    assert_eq!(r.hand.hand_limit_check, HandLimitCheck::EndPhase);
+    assert_eq!(r.hand.hand_limit_check, HandLimitCheck::AfterDraw);
+    assert!(r.turn.first_player_skips_draw && !r.turn.first_player_can_attack);
+    assert!(r.turn.trap_activation_turn_set);
     assert_eq!(r.life.starting_lp, 8000);
     assert_eq!(r.summon.normal_or_tribute_per_turn, 1);
     assert!(!r.summon.summon_in_main_phase_2);

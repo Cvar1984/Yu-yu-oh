@@ -16,15 +16,15 @@ field_spells_on_field = 1   # owner: 1 on the whole field; a new one destroys th
 
 [hand]
 max_size = 6                    # owner: no cap during the turn (Pot of Greed may exceed it)
-hand_limit_check = "end_phase"  # open: discard in own End Phase, or when the opponent's turn ends?
+hand_limit_check = "after_draw" # owner: after your Draw Phase, send down to max_size to the GY; "end_phase" = official
 
 [life]
 starting_lp = 8000
 
 [turn]
-first_player_skips_draw = true      # open
+first_player_skips_draw = true      # owner: no draw on turn 1
 first_player_can_attack = false     # owner: may summon, Set and activate on turn 1, but not attack
-spell_trap_plays_per_turn = 5       # open: per-turn activation count, or just the 5 zones? do Sets count?
+trap_activation_turn_set = true     # owner: a Trap may be activated in the turn it was Set; false = official
 
 [summon]
 normal_or_tribute_per_turn = 1      # Normal Summon, Tribute Summon or Set
