@@ -25,6 +25,7 @@ starting_lp = 8000
 first_player_skips_draw = true      # owner: no draw on turn 1
 first_player_can_attack = false     # owner: may summon, Set and activate on turn 1, but not attack
 trap_activation_turn_set = true     # owner: a Trap may be activated in the turn it was Set; false = official
+spell_target_monster_set_this_turn = false  # owner: a monster Set this turn can't be targeted by a Spell until next turn; true = official
 
 [summon]
 normal_or_tribute_per_turn = 1      # Normal Summon, Tribute Summon or Set

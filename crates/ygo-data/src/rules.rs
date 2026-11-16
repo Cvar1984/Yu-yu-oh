@@ -66,6 +66,8 @@ pub struct TurnRules {
     pub first_player_can_attack: bool,
     /// Whether a Trap may be activated in the same turn it was Set.
     pub trap_activation_turn_set: bool,
+    /// Whether a Spell may target a monster that was Set this turn.
+    pub spell_target_monster_set_this_turn: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

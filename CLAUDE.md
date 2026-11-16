@@ -63,6 +63,7 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 - Hand: no cap during a turn (Pot of Greed may push it past 6). After your Draw Phase, cards above 6 go to the Graveyard (`hand_limit_check = "after_draw"`; `"end_phase"` is the official timing).
 - Spells and Traps per turn: no count. The only limit is the 5 zones (`spell_trap_zones`); the earlier `spell_trap_plays_per_turn` key was removed.
 - Traps may be activated in the turn they were Set (`trap_activation_turn_set = true`; `false` is official).
+- A monster Set face-down this turn cannot be the target of a Spell, such as an Equip, until the next turn (`spell_target_monster_set_this_turn = false`; `true` is official).
 - Field Spells: one on the whole field; a new one destroys the old whoever owns it (`field_spells_on_field = 1`).
 - Flip and Special Summons do not count toward a per-turn limit, but this may change, so both stay config keys.
 - Fusion and Ritual Summons are allowed (`fusion_summons`, `ritual_summons`).
@@ -75,4 +76,4 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 
 ## Still open
 
-- The owner added: "a face-down card that was just placed can't use a Spell card until next turn." Unclear whether this means a Set Spell waits a turn (the reverse of official), a Set monster cannot be the target of a Spell such as an Equip in the turn it was Set, or something else. Ask before M1 touches activation timing.
+Nothing. Every question from the handoff is answered above; new ones go here.
