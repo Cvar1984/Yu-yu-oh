@@ -1,7 +1,12 @@
 //! Operations card scripts call. Every one emits the events it causes
 //! and keeps the instance table and zones consistent.
 
-use crate::{Event, Game, InstanceId, Lingering, LingeringKind, Location, PlayerId, Position};
+use rand_core::Rng;
+
+use crate::{
+    Event, Game, GameResult, InstanceId, Lingering, LingeringKind, Location, PlayerId, Position,
+    Tag, WinReason,
+};
 
 impl Game {
     pub(crate) fn emit(&mut self, event: Event) {
@@ -18,6 +23,7 @@ impl Game {
                 Some(card) => {
                     self.emit(Event::Drew { player, card });
                     drawn += 1;
+                    self.check_exodia(player);
                 }
                 None => {
                     self.emit(Event::DeckEmpty { player });
@@ -68,6 +74,52 @@ impl Game {
             card,
             from,
         });
+        self.check_exodia(owner);
+    }
+
+    /// Wins the game for `player` if their hand holds all five Exodia
+    /// cards and the rules allow it.
+    pub(crate) fn check_exodia(&mut self, player: PlayerId) {
+        if !self.shared.rules.win.exodia || self.result.is_some() {
+            return;
+        }
+        let mut head = false;
+        let mut pieces = std::collections::BTreeSet::new();
+        for &card in &self.players[player.index()].hand {
+            if let Some(script) = self.script(card) {
+                if script.has(Tag::ExodiaHead) {
+                    head = true;
+                }
+                if script.has(Tag::ExodiaPiece) {
+                    pieces.insert(self.instances[card.index()].card);
+                }
+            }
+        }
+        if head && pieces.len() >= 4 {
+            self.finish(GameResult::Win {
+                winner: player,
+                reason: WinReason::Exodia,
+            });
+        }
+    }
+
+    /// Shuffles `player`'s Deck with the game's seeded RNG.
+    pub fn shuffle_deck(&mut self, player: PlayerId) {
+        let deck = &mut self.players[player.index()].deck;
+        for i in (1..deck.len()).rev() {
+            let j = (self.rng.next_u64() % (i as u64 + 1)) as usize;
+            deck.swap(i, j);
+        }
+        self.emit(Event::DeckShuffled { player });
+    }
+
+    /// Cards in `player`'s Deck, top card last.
+    pub fn deck(&self, player: PlayerId) -> &[InstanceId] {
+        &self.players[player.index()].deck
+    }
+
+    pub fn text_version(&self) -> ygo_data::TextVersion {
+        self.shared.rules.cards.text_version
     }
 
     /// Whether `player` may have one more monster Special Summoned now.

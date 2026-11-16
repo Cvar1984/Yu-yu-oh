@@ -49,7 +49,8 @@ impl Game {
 
     /// After the attack-declaration window. The attack goes ahead only if
     /// the attacker is still a face-up Attack Position monster and the
-    /// target, if any, is still on the field (no replays yet).
+    /// target, if any, is still on the field (no replays yet). A face-down
+    /// target is flipped, then the damage-calculation window opens.
     pub(crate) fn damage_step(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
         let attacker_ok = matches!(
             self.instances[attacker.index()].location,
@@ -61,17 +62,30 @@ impl Game {
             self.emit(Event::AttackCancelled { attacker });
             return;
         }
-        let player = self.instances[attacker.index()].controller;
         self.enter_phase(Phase::Battle(BattleStep::Damage));
+        if let Some(target) = target
+            && self.instances[target.index()].position == Position::FaceDownDefense
+        {
+            self.instances[target.index()].position = Position::FaceUpDefense;
+            self.emit(Event::Flipped { card: target });
+        }
+        self.pending.push(Pending::DamageCalc { attacker, target });
+        self.open_window(WindowKind::DamageCalculation, self.turn_player);
+    }
 
+    /// Prevents all battle damage to `player` for the current battle.
+    pub fn prevent_battle_damage(&mut self, player: PlayerId) {
+        self.damage_prevented[player.index()] = true;
+        self.emit(Event::BattleDamagePrevented { player });
+    }
+
+    /// After the damage-calculation window: compare, destroy, inflict.
+    pub(crate) fn damage_calculation(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
+        let player = self.instances[attacker.index()].controller;
         let atk = self.stats(attacker).atk;
         match target {
             None => self.battle_damage(player.opponent(), atk),
             Some(target) => {
-                if self.instances[target.index()].position == Position::FaceDownDefense {
-                    self.instances[target.index()].position = Position::FaceUpDefense;
-                    self.emit(Event::Flipped { card: target });
-                }
                 let defender = self.instances[target.index()].controller;
                 let stats = self.stats(target);
                 if self.instances[target.index()].position == Position::FaceUpAttack {
@@ -100,6 +114,7 @@ impl Game {
                 }
             }
         }
+        self.damage_prevented = [false, false];
         self.check_life_points();
         if self.result.is_none() {
             self.phase = Phase::Battle(BattleStep::Battle);
@@ -116,6 +131,9 @@ impl Game {
     }
 
     fn battle_damage(&mut self, player: PlayerId, amount: i32) {
+        if self.damage_prevented[player.index()] {
+            return;
+        }
         let amount = u32::try_from(amount).unwrap_or(0);
         let state = &mut self.players[player.index()];
         state.lp = state.lp.saturating_sub(amount);

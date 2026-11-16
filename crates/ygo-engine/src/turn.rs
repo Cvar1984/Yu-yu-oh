@@ -24,6 +24,17 @@ impl Game {
         }
         match self.pending.last() {
             Some(Pending::Window { priority, .. }) => {
+                let group = self.trigger_group();
+                if let Some(first) = group.first() {
+                    let actions = self.trigger_actions();
+                    // One mandatory trigger with one way to activate needs
+                    // no decision; nothing legal to do drops the group.
+                    let automatic = actions.is_empty() || (first.mandatory && actions.len() == 1);
+                    return (!automatic).then_some(Decision {
+                        player: first.controller,
+                        kind: DecisionKind::Triggers,
+                    });
+                }
                 return (!self.response_actions(*priority).is_empty()).then_some(Decision {
                     player: *priority,
                     kind: DecisionKind::Respond,
@@ -75,6 +86,12 @@ impl Game {
                 actions = self.response_actions(decision.player);
                 actions.push(Action::Pass);
             }
+            DecisionKind::Triggers => {
+                actions = self.trigger_actions();
+                if !self.trigger_group()[0].mandatory {
+                    actions.push(Action::Pass);
+                }
+            }
         }
         actions
     }
@@ -115,7 +132,13 @@ impl Game {
                 cost,
             } => self.activate(player, *card, *effect, targets.clone(), cost.clone()),
             Action::Choose { card } => self.choose(*card),
-            Action::Pass => self.pass(),
+            Action::Pass => {
+                if decision.kind == DecisionKind::Triggers {
+                    self.drop_trigger_group();
+                } else {
+                    self.pass();
+                }
+            }
             Action::EnterBattlePhase => self.enter_phase(Phase::Battle(BattleStep::Start)),
             Action::Attack { attacker, target } => self.declare_attack(*attacker, *target),
             Action::EndBattlePhase => self.enter_phase(Phase::Battle(BattleStep::End)),
@@ -130,7 +153,27 @@ impl Game {
     pub(crate) fn advance(&mut self) {
         while self.result.is_none() && self.pending_decision().is_none() {
             match self.pending.last() {
-                Some(Pending::Window { .. }) => self.pass(),
+                Some(Pending::Window { .. }) => {
+                    let group = self.trigger_group();
+                    if group.is_empty() {
+                        self.pass();
+                    } else {
+                        let actions = self.trigger_actions();
+                        match actions.first() {
+                            Some(Action::Activate {
+                                card,
+                                effect,
+                                targets,
+                                cost,
+                            }) if group[0].mandatory && actions.len() == 1 => {
+                                let (card, effect, targets, cost) =
+                                    (*card, *effect, targets.clone(), cost.clone());
+                                self.activate(group[0].controller, card, effect, targets, cost);
+                            }
+                            _ => self.drop_trigger_group(),
+                        }
+                    }
+                }
                 Some(Pending::ResolveChain) => {
                     if self.chain.is_empty() {
                         self.pending.pop();
@@ -148,6 +191,11 @@ impl Game {
                     let (attacker, target) = (*attacker, *target);
                     self.pending.pop();
                     self.damage_step(attacker, target);
+                }
+                Some(Pending::DamageCalc { attacker, target }) => {
+                    let (attacker, target) = (*attacker, *target);
+                    self.pending.pop();
+                    self.damage_calculation(attacker, target);
                 }
                 None => match self.phase {
                     Phase::Draw => self.enter_phase(Phase::Standby),
@@ -212,6 +260,7 @@ impl Game {
         }
         if let Some(card) = self.draw_card(player) {
             self.emit(Event::Drew { player, card });
+            self.check_exodia(player);
         } else {
             self.emit(Event::DeckEmpty { player });
             if self.shared.rules.win.deck_out_loses {

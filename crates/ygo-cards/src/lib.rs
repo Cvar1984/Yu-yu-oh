@@ -3,7 +3,7 @@
 //!
 //! Module per card type; each module has a `register` function.
 
-mod monsters;
+pub mod monsters;
 pub mod spells;
 pub mod traps;
 

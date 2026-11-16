@@ -59,6 +59,8 @@ pub enum DecisionKind {
     Choose,
     /// Activate a fast effect in a response window, or pass.
     Respond,
+    /// Order (and for optional ones, choose) the triggers that fired.
+    Triggers,
 }
 
 /// Who must choose, and what kind of choice.
@@ -183,6 +185,12 @@ pub enum Event {
     },
     AttackCancelled {
         attacker: InstanceId,
+    },
+    BattleDamagePrevented {
+        player: PlayerId,
+    },
+    DeckShuffled {
+        player: PlayerId,
     },
     GameOver {
         result: GameResult,

@@ -15,8 +15,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Game {
     pub(crate) shared: Arc<Shared>,
-    /// Kept in the state so effects that shuffle (M2) stay deterministic.
-    #[allow(dead_code)]
+    /// Shuffles by effects stay deterministic.
     pub(crate) rng: ChaCha8Rng,
     pub(crate) instances: Vec<CardInstance>,
     pub(crate) players: [PlayerState; 2],
@@ -33,6 +32,8 @@ pub struct Game {
     pub(crate) pending: Vec<Pending>,
     pub(crate) pending_choice: Option<PendingChoice>,
     pub(crate) lingering: Vec<Lingering>,
+    /// Per player: battle damage prevented for the current battle.
+    pub(crate) damage_prevented: [bool; 2],
 }
 
 impl Game {
@@ -153,11 +154,15 @@ impl Game {
             pending: Vec::new(),
             pending_choice: None,
             lingering: Vec::new(),
+            damage_prevented: [false, false],
         };
         for player in PlayerId::BOTH {
             for _ in 0..game.shared.rules.hand.opening_size {
                 game.draw_card(player);
             }
+        }
+        for player in PlayerId::BOTH {
+            game.check_exodia(player);
         }
         game.start_turn(1, turn_player);
         game.advance();
