@@ -77,6 +77,8 @@ pub struct SummonRules {
     pub special_summon_counts_toward_limit: bool,
     /// 0 means no cap.
     pub max_monsters_entering_per_turn: usize,
+    pub fusion_summons: bool,
+    pub ritual_summons: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

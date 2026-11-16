@@ -32,7 +32,7 @@ fn all_374_cards_load_with_the_handoff_counts() {
             (CardKind::Trap, 15),
         ]
     );
-    assert_eq!(b.banlist.limits.len(), 4);
+    assert!(b.banlist.limits.is_empty(), "owner: no limits for now");
 }
 
 #[test]
@@ -62,25 +62,23 @@ fn owned_card_decks_are_legal_under_the_collection() {
 }
 
 #[test]
-fn full_pool_exodia_deck_breaks_the_ban_list_only() {
+fn full_pool_exodia_deck_is_legal_only_without_the_collection() {
     let b = bundle();
     let d = deck("exodia_stall_full_pool_40.json");
-    let problems = check_deck(&d, &b.cards, &b.banlist, &b.rules, None);
-    assert_eq!(
-        problems,
-        vec![
-            DeckProblem::OverLimit {
-                id: CardId(55144522),
-                name: "Pot of Greed".into(),
-                copies: 3,
-                limit: 1,
-            },
-            DeckProblem::OverLimit {
-                id: CardId(72302403),
-                name: "Swords of Revealing Light".into(),
-                copies: 3,
-                limit: 1,
-            },
-        ]
+    assert!(check_deck(&d, &b.cards, &b.banlist, &b.rules, None).is_empty());
+
+    let c = Collection::load(&root().join("data/collection.json")).unwrap();
+    let problems = check_deck(&d, &b.cards, &b.banlist, &b.rules, Some(&c));
+    assert!(!problems.is_empty());
+    assert!(
+        problems
+            .iter()
+            .all(|p| matches!(p, DeckProblem::NotOwned { .. }))
     );
+    assert!(problems.contains(&DeckProblem::NotOwned {
+        id: CardId(33396948),
+        name: "Exodia the Forbidden One".into(),
+        copies: 3,
+        owned: 0,
+    }));
 }

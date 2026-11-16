@@ -55,6 +55,7 @@ fn rules_match_the_committed_defaults() {
     assert_eq!(r.summon.normal_or_tribute_per_turn, 1);
     assert!(!r.summon.summon_in_main_phase_2);
     assert_eq!(r.summon.max_monsters_entering_per_turn, 0);
+    assert!(r.summon.fusion_summons && r.summon.ritual_summons);
     assert_eq!(r.cards.text_version, TextVersion::Modern);
     assert!(r.win.deck_out_loses && r.win.exodia);
 }
@@ -70,7 +71,9 @@ fn committed_rules_file_parses() {
 fn committed_banlist_parses() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/banlist.json");
     let banlist = Banlist::load(&path).expect("data/banlist.json is valid");
-    assert_eq!(banlist.limit_for(POT_OF_GREED, 3), 1);
+    // Owner's decision: no limits yet, so every card falls back to the default.
+    assert!(banlist.limits.is_empty());
+    assert_eq!(banlist.limit_for(POT_OF_GREED, 3), 3);
 }
 
 #[test]
