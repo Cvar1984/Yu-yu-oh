@@ -36,6 +36,8 @@ pub enum WindowKind {
     /// A summon succeeded; the monster is on the field.
     SummonSuccess,
     AttackDeclared,
+    /// Inside the Damage Step, right before damage is calculated.
+    DamageCalculation,
     /// The Damage Step is over; its events are in the window.
     AfterBattle,
     /// A link was just added; responses chain to it.
@@ -61,6 +63,15 @@ pub struct PendingSummon {
     pub negated: bool,
 }
 
+/// A trigger effect that fired and waits to be put on the chain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TriggerRef {
+    pub card: InstanceId,
+    pub effect: u8,
+    pub controller: PlayerId,
+    pub mandatory: bool,
+}
+
 /// Work waiting on the players, worked from the top of the stack.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum Pending {
@@ -69,10 +80,18 @@ pub(crate) enum Pending {
         events: Vec<Event>,
         priority: PlayerId,
         passes: u8,
+        /// Triggers that fired for this window, not yet on the chain.
+        triggers: Vec<TriggerRef>,
     },
     ResolveChain,
     CompleteSummon(PendingSummon),
+    /// After the attack-declaration window: start the Damage Step.
     DamageStep {
+        attacker: InstanceId,
+        target: Option<InstanceId>,
+    },
+    /// After the damage-calculation window: calculate and apply damage.
+    DamageCalc {
         attacker: InstanceId,
         target: Option<InstanceId>,
     },
@@ -133,15 +152,128 @@ impl Game {
         self.chain.last()
     }
 
-    /// Opens a window holding everything emitted since the last one.
+    /// Opens a window holding everything emitted since the last one and
+    /// collects the triggers it fires. A summon-declaration or
+    /// damage-calculation window leaves the events for the window that
+    /// follows it (summon success, after battle), where triggers belong.
     pub(crate) fn open_window(&mut self, kind: WindowKind, priority: PlayerId) {
-        let events = std::mem::take(&mut self.recent);
+        let keeps = matches!(
+            kind,
+            WindowKind::SummonDeclared | WindowKind::DamageCalculation
+        );
+        let events = if keeps {
+            self.recent.clone()
+        } else {
+            std::mem::take(&mut self.recent)
+        };
+        let triggers = if keeps || kind == WindowKind::Chain {
+            Vec::new()
+        } else {
+            self.collect_triggers(kind, &events)
+        };
         self.pending.push(Pending::Window {
             kind,
             events,
             priority,
             passes: 0,
+            triggers,
         });
+    }
+
+    /// Trigger and Flip effects on the field or in a Graveyard whose timing
+    /// accepts this window, in SEGOC order: turn player's mandatory, the
+    /// opponent's mandatory, turn player's optional, the opponent's optional.
+    fn collect_triggers(&self, kind: WindowKind, events: &[Event]) -> Vec<TriggerRef> {
+        let window = Window {
+            kind,
+            events: events.to_vec(),
+        };
+        let mut found = Vec::new();
+        for player in [self.turn_player, self.turn_player.opponent()] {
+            let state = &self.players[player.index()];
+            let cards: Vec<InstanceId> = state
+                .monster_zones
+                .iter()
+                .chain(state.spell_trap_zones.iter())
+                .flatten()
+                .chain(state.graveyard.iter())
+                .copied()
+                .collect();
+            for card in cards {
+                let Some(script) = self.script(card) else {
+                    continue;
+                };
+                let controller = self.instances[card.index()].controller;
+                if controller != player {
+                    continue;
+                }
+                for (i, effect) in script.effects.iter().enumerate() {
+                    let mandatory = match effect.kind {
+                        EffectKind::Trigger { mandatory } => mandatory,
+                        EffectKind::Flip => true,
+                        _ => continue,
+                    };
+                    let source = Source { card, controller };
+                    if (effect.timing)(self, source, &window) {
+                        found.push(TriggerRef {
+                            card,
+                            effect: i as u8,
+                            controller,
+                            mandatory,
+                        });
+                    }
+                }
+            }
+        }
+        found.sort_by_key(|t| (!t.mandatory, t.controller != self.turn_player));
+        found
+    }
+
+    /// The triggers of the window's first SEGOC group still waiting.
+    pub(crate) fn trigger_group(&self) -> Vec<TriggerRef> {
+        let Some(Pending::Window { triggers, .. }) = self.pending.last() else {
+            return Vec::new();
+        };
+        let Some(first) = triggers.first() else {
+            return Vec::new();
+        };
+        triggers
+            .iter()
+            .filter(|t| t.mandatory == first.mandatory && t.controller == first.controller)
+            .copied()
+            .collect()
+    }
+
+    /// Activations of the current trigger group (one per target choice).
+    pub(crate) fn trigger_actions(&self) -> Vec<Action> {
+        let mut actions = Vec::new();
+        let Some((kind, events)) = self.window() else {
+            return actions;
+        };
+        let window = Window {
+            kind,
+            events: events.to_vec(),
+        };
+        for t in self.trigger_group() {
+            self.push_activations(t.controller, t.card, &window, |_| true, &mut actions);
+        }
+        actions
+    }
+
+    /// Removes the trigger of `card` from the open window.
+    fn take_trigger(&mut self, card: InstanceId, effect: u8) {
+        if let Some(Pending::Window { triggers, .. }) = self.pending.last_mut() {
+            triggers.retain(|t| !(t.card == card && t.effect == effect));
+        }
+    }
+
+    /// Drops the whole current trigger group (declined optional triggers,
+    /// or mandatory ones with nothing legal to do).
+    pub(crate) fn drop_trigger_group(&mut self) {
+        let group = self.trigger_group();
+        if let Some(Pending::Window { triggers, .. }) = self.pending.last_mut() {
+            triggers.retain(|t| !group.contains(t));
+        }
     }
 
     fn window_mut(&mut self) -> (&mut PlayerId, &mut u8) {
@@ -153,6 +285,14 @@ impl Game {
         }
     }
 
+    /// The attack whose Damage Step is running, if any.
+    pub fn current_attack(&self) -> Option<(InstanceId, Option<InstanceId>)> {
+        self.pending.iter().rev().find_map(|p| match p {
+            Pending::DamageCalc { attacker, target } => Some((*attacker, *target)),
+            _ => None,
+        })
+    }
+
     /// The player with priority passes. Two passes in a row close the
     /// window; a chain built in it then resolves.
     pub(crate) fn pass(&mut self) {
@@ -161,7 +301,6 @@ impl Game {
         *priority = priority.opponent();
         if *passes >= 2 {
             self.pending.pop();
-            self.recent.clear();
             if !self.chain.is_empty() {
                 self.pending.push(Pending::ResolveChain);
             }
@@ -188,6 +327,7 @@ impl Game {
             (Location::MonsterZone(_), _, _) => {
                 effect.kind == EffectKind::Quick && inst.position.is_face_up()
             }
+            (Location::Hand, _, SpellTrapType::None) => effect.kind == EffectKind::Quick,
             _ => false,
         }
     }
@@ -209,7 +349,7 @@ impl Game {
             controller: player,
         };
         for (i, effect) in script.effects.iter().enumerate() {
-            if effect.kind != EffectKind::Activate && effect.kind != EffectKind::Quick {
+            if effect.kind == EffectKind::Continuous {
                 continue;
             }
             if !filter(effect) || !(effect.timing)(self, source, window) {
@@ -287,6 +427,7 @@ impl Game {
             events: events.to_vec(),
         };
         let min_speed = self.chain.last().map_or(2, |l| l.speed);
+        let in_damage_step = kind == WindowKind::DamageCalculation;
         let state = &self.players[player.index()];
         let candidates: Vec<InstanceId> = state
             .hand
@@ -300,7 +441,12 @@ impl Game {
                 player,
                 card,
                 &window,
-                |e| e.speed >= min_speed && self.fast_effect_allowed(card, e, player),
+                |e| {
+                    matches!(e.kind, EffectKind::Activate | EffectKind::Quick)
+                        && e.speed >= min_speed
+                        && (!in_damage_step || e.damage_step)
+                        && self.fast_effect_allowed(card, e, player)
+                },
                 &mut actions,
             );
         }
@@ -356,11 +502,21 @@ impl Game {
             controller: player,
             effect,
         });
+        let is_trigger = matches!(eff.kind, EffectKind::Trigger { .. } | EffectKind::Flip);
+        if is_trigger {
+            self.take_trigger(card, effect);
+        }
         match self.pending.last_mut() {
             Some(Pending::Window {
                 priority, passes, ..
             }) => {
-                *priority = player.opponent();
+                // Triggers go on the chain before anyone responds; the turn
+                // player then gets priority as usual.
+                *priority = if is_trigger {
+                    self.turn_player
+                } else {
+                    player.opponent()
+                };
                 *passes = 0;
             }
             _ => self.open_window(WindowKind::Chain, player.opponent()),

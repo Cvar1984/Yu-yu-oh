@@ -144,6 +144,7 @@ pub enum GameResult {
 pub enum WinReason {
     LifePoints,
     DeckOut,
+    Exodia,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

@@ -80,8 +80,35 @@ impl Effect {
             cost: None,
             resolve,
             modify: None,
+            damage_step: false,
         }
     }
+
+    /// A trigger effect: starts by itself when `timing` accepts a window.
+    pub const fn trigger(mandatory: bool, resolve: fn(&mut Game, &mut EffectCtx) -> Flow) -> Self {
+        Self {
+            kind: EffectKind::Trigger { mandatory },
+            ..Self::activate(1, resolve)
+        }
+    }
+
+    /// A FLIP effect: a mandatory trigger when the monster is turned face-up.
+    pub const fn flip(resolve: fn(&mut Game, &mut EffectCtx) -> Flow) -> Self {
+        Self {
+            kind: EffectKind::Flip,
+            timing: flipped_this_window,
+            ..Self::activate(1, resolve)
+        }
+    }
+}
+
+/// The source was turned face-up in this window, by a Flip Summon, an
+/// attack or an effect.
+pub fn flipped_this_window(_: &Game, s: Source, w: &Window) -> bool {
+    w.events.iter().any(|e| {
+        matches!(e,
+        Event::FlipSummoned { card, .. } | Event::Flipped { card } if *card == s.card)
+    })
 }
 
 /// A timing that is always met: the card's own activation conditions
@@ -143,6 +170,8 @@ pub struct Effect {
     pub resolve: fn(&mut Game, &mut EffectCtx) -> Flow,
     /// Continuous modifier applied to `target` while the source is active.
     pub modify: Option<fn(&Game, Source, InstanceId) -> StatMod>,
+    /// May start inside the Damage Step (counter traps, Kuriboh, ATK/DEF changes).
+    pub damage_step: bool,
 }
 
 impl std::fmt::Debug for Effect {
