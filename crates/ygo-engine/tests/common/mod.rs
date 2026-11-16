@@ -145,3 +145,7 @@ pub fn next_turn(game: &mut ygo_engine::Game) {
         play(game, a);
     }
 }
+
+pub const SEVEN_COLORED_FISH: CardId = CardId(23771716); // level 4, 1800/800
+pub const CELTIC_GUARDIAN: CardId = CardId(91152256); // level 4, 1400/1200
+pub const MAMMOTH_GRAVEYARD: CardId = CardId(40374923); // level 3, 1200/800

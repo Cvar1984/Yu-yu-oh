@@ -185,7 +185,7 @@ fn tribute_summon_needs_one_tribute_for_level_six_and_two_for_level_eight() {
     }
     assert_eq!(g.player(P0).graveyard, vec![elf1, elf2]);
     assert_eq!(g.player(P0).monsters().count(), 1);
-    assert_eq!(g.legal_actions(), vec![Action::EndTurn]);
+    assert!(summons_offered(&g).is_empty(), "the summon is used");
 }
 
 #[test]

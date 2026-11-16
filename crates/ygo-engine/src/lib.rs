@@ -7,6 +7,7 @@
 //! actions until M2 adds chains and effect scripts.
 
 mod action;
+mod battle;
 mod error;
 mod game;
 mod pool;
