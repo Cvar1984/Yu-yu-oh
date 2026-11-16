@@ -1,0 +1,27 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/cvar1984/yu-yu-oh"
+
+[workspace.dependencies]
+ygo-data = { path = "crates/ygo-data" }
+ygo-engine = { path = "crates/ygo-engine" }
+ygo-cards = { path = "crates/ygo-cards" }
+ygo-ai = { path = "crates/ygo-ai" }
+ygo-train = { path = "crates/ygo-train" }
+ygo-deckbuilder = { path = "crates/ygo-deckbuilder" }
+ygo-server = { path = "crates/ygo-server" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.9"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+
+[profile.release]
+debug = 1

@@ -1,0 +1,15 @@
+[[bin]]
+name = "ygo"
+path = "src/main.rs"
+
+[package]
+name = "ygo-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command line for playing, simulating, training and checking decks"
+
+[dependencies]
+ygo-data.workspace = true
+clap.workspace = true
