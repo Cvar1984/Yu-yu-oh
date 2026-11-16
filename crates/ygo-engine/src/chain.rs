@@ -11,7 +11,7 @@ use ygo_data::CardKind;
 
 use crate::{
     Action, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Location, Phase,
-    PlayerId, Position, Source, SpellTrapType, TargetSets, Window,
+    PlayerId, Position, Source, SpellTrapType, Tag, TargetSets, Window,
 };
 
 /// One activated effect waiting to resolve.
@@ -97,18 +97,49 @@ pub(crate) enum Pending {
     },
 }
 
-/// A resolution paused on a `Choose` decision.
+/// What a paused resolution waits for.
+#[derive(Clone)]
+pub(crate) enum Prompt {
+    Choose {
+        options: Vec<InstanceId>,
+        then: fn(&mut Game, &mut EffectCtx, InstanceId) -> Flow,
+    },
+    Ask {
+        options: Vec<&'static str>,
+        then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
+    },
+}
+
+/// A resolution paused on a `Choose` or `Ask` decision.
 #[derive(Clone)]
 pub(crate) struct PendingChoice {
     pub link: ChainLink,
     pub ctx: EffectCtx,
-    pub options: Vec<InstanceId>,
-    pub then: fn(&mut Game, &mut EffectCtx, InstanceId) -> Flow,
+    pub prompt: Prompt,
+}
+
+impl PendingChoice {
+    pub fn card_options(&self) -> &[InstanceId] {
+        match &self.prompt {
+            Prompt::Choose { options, .. } => options,
+            Prompt::Ask { .. } => &[],
+        }
+    }
+
+    pub fn question(&self) -> &[&'static str] {
+        match &self.prompt {
+            Prompt::Ask { options, .. } => options,
+            Prompt::Choose { .. } => &[],
+        }
+    }
 }
 
 impl PartialEq for PendingChoice {
     fn eq(&self, other: &Self) -> bool {
-        self.link == other.link && self.ctx == other.ctx && self.options == other.options
+        self.link == other.link
+            && self.ctx == other.ctx
+            && self.card_options() == other.card_options()
+            && self.question() == other.question()
     }
 }
 
@@ -116,7 +147,8 @@ impl std::fmt::Debug for PendingChoice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PendingChoice")
             .field("link", &self.link)
-            .field("options", &self.options)
+            .field("options", &self.card_options())
+            .field("question", &self.question())
             .finish_non_exhaustive()
     }
 }
@@ -255,7 +287,13 @@ impl Game {
             events: events.to_vec(),
         };
         for t in self.trigger_group() {
-            self.push_activations(t.controller, t.card, &window, |_| true, &mut actions);
+            self.push_activations(
+                t.controller,
+                t.card,
+                &window,
+                |i, _| i == usize::from(t.effect),
+                &mut actions,
+            );
         }
         actions
     }
@@ -338,7 +376,7 @@ impl Game {
         player: PlayerId,
         card: InstanceId,
         window: &Window,
-        filter: impl Fn(&Effect) -> bool,
+        filter: impl Fn(usize, &Effect) -> bool,
         actions: &mut Vec<Action>,
     ) {
         let Some(script) = self.script(card) else {
@@ -352,7 +390,7 @@ impl Game {
             if effect.kind == EffectKind::Continuous {
                 continue;
             }
-            if !filter(effect) || !(effect.timing)(self, source, window) {
+            if !filter(i, effect) || !(effect.timing)(self, source, window) {
                 continue;
             }
             let costs: TargetSets = effect
@@ -385,15 +423,20 @@ impl Game {
         let window = Window::default();
         for &card in &state.hand {
             let stats = self.stats(card);
-            if stats.kind != CardKind::Spell || !has_free_zone {
+            if stats.kind != CardKind::Spell {
                 continue;
             }
             match stats.subtype {
-                SpellTrapType::Normal => {
-                    self.push_activations(player, card, &window, |e| e.speed == 1, actions)
+                SpellTrapType::Normal | SpellTrapType::Equip | SpellTrapType::Continuous
+                    if has_free_zone =>
+                {
+                    self.push_activations(player, card, &window, |_, e| e.speed == 1, actions)
                 }
-                SpellTrapType::QuickPlay => {
-                    self.push_activations(player, card, &window, |e| e.speed == 2, actions)
+                SpellTrapType::QuickPlay if has_free_zone => {
+                    self.push_activations(player, card, &window, |_, e| e.speed == 2, actions)
+                }
+                SpellTrapType::Field => {
+                    self.push_activations(player, card, &window, |_, e| e.speed == 1, actions)
                 }
                 _ => {}
             }
@@ -405,11 +448,11 @@ impl Game {
                 continue;
             }
             match stats.subtype {
-                SpellTrapType::Normal => {
-                    self.push_activations(player, card, &window, |e| e.speed == 1, actions)
+                SpellTrapType::Normal | SpellTrapType::Equip | SpellTrapType::Continuous => {
+                    self.push_activations(player, card, &window, |_, e| e.speed == 1, actions)
                 }
                 SpellTrapType::QuickPlay if inst.turn_set != Some(self.turn) => {
-                    self.push_activations(player, card, &window, |e| e.speed == 2, actions)
+                    self.push_activations(player, card, &window, |_, e| e.speed == 2, actions)
                 }
                 _ => {}
             }
@@ -441,7 +484,7 @@ impl Game {
                 player,
                 card,
                 &window,
-                |e| {
+                |_, e| {
                     matches!(e.kind, EffectKind::Activate | EffectKind::Quick)
                         && e.speed >= min_speed
                         && (!in_damage_step || e.damage_step)
@@ -467,6 +510,9 @@ impl Game {
     ) {
         let eff = self.effect(card, effect);
         match self.instances[card.index()].location {
+            Location::Hand if self.stats(card).subtype == SpellTrapType::Field => {
+                self.place_field_spell(player, card);
+            }
             Location::Hand if !self.stats(card).is_monster() => {
                 let zone = self
                     .free_spell_trap_zone(player)
@@ -586,8 +632,15 @@ impl Game {
                 self.pending_choice = Some(PendingChoice {
                     link,
                     ctx,
-                    options,
-                    then,
+                    prompt: Prompt::Choose { options, then },
+                });
+            }
+            Flow::Ask { options, then } => {
+                assert!(!options.is_empty(), "a question needs options");
+                self.pending_choice = Some(PendingChoice {
+                    link,
+                    ctx,
+                    prompt: Prompt::Ask { options, then },
                 });
             }
         }
@@ -599,8 +652,25 @@ impl Game {
             .pending_choice
             .take()
             .expect("a Choose action needs a pending choice");
+        let Prompt::Choose { then, .. } = pc.prompt else {
+            unreachable!("Choose answers a card prompt")
+        };
         let mut ctx = pc.ctx;
-        let flow = (pc.then)(self, &mut ctx, picked);
+        let flow = then(self, &mut ctx, picked);
+        self.continue_flow(pc.link, ctx, flow);
+    }
+
+    /// Answers the pending `Ask` decision and continues the resolution.
+    pub(crate) fn answer(&mut self, option: usize) {
+        let pc = self
+            .pending_choice
+            .take()
+            .expect("an Answer action needs a pending question");
+        let Prompt::Ask { then, .. } = pc.prompt else {
+            unreachable!("Answer answers a question prompt")
+        };
+        let mut ctx = pc.ctx;
+        let flow = then(self, &mut ctx, option);
         self.continue_flow(pc.link, ctx, flow);
     }
 
@@ -609,18 +679,27 @@ impl Game {
     /// the Graveyard.
     fn finish_link(&mut self, link: &ChainLink) {
         let inst = &self.instances[link.card.index()];
-        if !matches!(inst.location, Location::SpellTrapZone(_)) {
+        if !matches!(
+            inst.location,
+            Location::SpellTrapZone(_) | Location::FieldZone
+        ) {
             return;
         }
-        if link.negated || self.stats(link.card).subtype.leaves_after_resolving() {
+        let stays = self
+            .script(link.card)
+            .is_some_and(|s| s.has(Tag::StaysOnField));
+        if link.negated || (self.stats(link.card).subtype.leaves_after_resolving() && !stays) {
             self.send_to_graveyard(link.card);
         }
     }
 
     pub(crate) fn choose_actions(&self, actions: &mut Vec<Action>) {
         if let Some(pc) = &self.pending_choice {
-            for &card in &pc.options {
+            for &card in pc.card_options() {
                 actions.push(Action::Choose { card });
+            }
+            for i in 0..pc.question().len() {
+                actions.push(Action::Answer { option: i as u8 });
             }
         }
     }

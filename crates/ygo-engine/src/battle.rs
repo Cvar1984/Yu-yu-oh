@@ -19,7 +19,10 @@ impl Game {
         let targets: Vec<InstanceId> = self.players[opponent.index()].monsters().collect();
         for attacker in self.players[player.index()].monsters() {
             let inst = &self.instances[attacker.index()];
-            if inst.position != Position::FaceUpAttack || inst.attacked_this_turn {
+            if inst.position != Position::FaceUpAttack
+                || inst.attacked_this_turn
+                || self.attack_restricted(attacker)
+            {
                 continue;
             }
             if targets.is_empty() {
@@ -82,14 +85,14 @@ impl Game {
     /// After the damage-calculation window: compare, destroy, inflict.
     pub(crate) fn damage_calculation(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
         let player = self.instances[attacker.index()].controller;
-        let atk = self.stats(attacker).atk;
+        let atk = self.atk(attacker);
         match target {
             None => self.battle_damage(player.opponent(), atk),
             Some(target) => {
                 let defender = self.instances[target.index()].controller;
-                let stats = self.stats(target);
+                let (target_atk, target_def) = (self.atk(target), self.def(target));
                 if self.instances[target.index()].position == Position::FaceUpAttack {
-                    let diff = atk - stats.atk;
+                    let diff = atk - target_atk;
                     match diff.signum() {
                         1 => {
                             self.destroy_by_battle(target);
@@ -105,7 +108,7 @@ impl Game {
                         }
                     }
                 } else {
-                    let diff = atk - stats.def;
+                    let diff = atk - target_def;
                     match diff.signum() {
                         1 => self.destroy_by_battle(target),
                         -1 => self.battle_damage(player, -diff),

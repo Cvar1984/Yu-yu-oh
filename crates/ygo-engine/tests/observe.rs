@@ -43,7 +43,8 @@ fn a_player_sees_their_own_hand_and_set_cards_but_not_the_opponents() {
         Some(VisibleCard::Known {
             instance: elf,
             card: MYSTICAL_ELF,
-            position: Position::FaceDownDefense
+            position: Position::FaceDownDefense,
+            stats: Some((800, 2000)),
         }),
         "my own Set monster is known to me"
     );
@@ -52,7 +53,8 @@ fn a_player_sees_their_own_hand_and_set_cards_but_not_the_opponents() {
         Some(VisibleCard::Known {
             instance: celtic,
             card: CELTIC_GUARDIAN,
-            position: Position::FaceUpAttack
+            position: Position::FaceUpAttack,
+            stats: Some((1400, 1200)),
         })
     );
 

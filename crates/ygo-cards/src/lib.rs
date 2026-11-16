@@ -3,6 +3,7 @@
 //!
 //! Module per card type; each module has a `register` function.
 
+pub mod continuous;
 pub mod monsters;
 pub mod spells;
 pub mod traps;
@@ -15,5 +16,6 @@ pub fn registry() -> Registry {
     monsters::register(&mut r);
     spells::register(&mut r);
     traps::register(&mut r);
+    continuous::register(&mut r);
     r
 }

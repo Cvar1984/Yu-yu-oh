@@ -31,7 +31,7 @@ pub use action::{Action, Decision, DecisionKind, Event, RuleError};
 pub use chain::{ChainLink, PendingSummon, SummonKind, TriggerRef, WindowKind};
 pub use effect::{
     CardScript, Effect, EffectCtx, EffectKind, Flow, Registry, Source, Speed, StatMod, Tag,
-    TargetSets, Window, always, flipped_this_window,
+    TargetSets, Window, always, flipped_this_window, nothing,
 };
 pub use error::SetupError;
 pub use game::Game;
