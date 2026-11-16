@@ -687,6 +687,7 @@ dependencies = [
 name = "ygo-cards"
 version = "0.1.0"
 dependencies = [
+ "proptest",
  "ygo-data",
  "ygo-engine",
 ]

@@ -43,9 +43,8 @@ pub fn play_out(game: &mut Game, players: &mut [&mut dyn Player; 2]) -> (GameRes
         let decision = game
             .pending_decision()
             .expect("a running game always has a decision");
-        let actions = game.legal_actions();
         let observation = game.observe(decision.player);
-        let action = players[decision.player.index()].choose(&observation, &actions);
+        let action = players[decision.player.index()].choose(&observation, game.actions());
         game.apply(&action)
             .expect("players choose only among legal actions");
         record.push(action);

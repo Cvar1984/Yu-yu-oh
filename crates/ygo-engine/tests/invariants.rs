@@ -3,14 +3,9 @@
 
 mod common;
 
-use std::collections::BTreeSet;
-
 use common::{normal_deck, sample_deck, shared};
 use proptest::prelude::*;
-use ygo_data::HandLimitCheck;
-use ygo_engine::{
-    DeckList, Game, GameSetup, InstanceId, Location, Phase, PlayerId, Position, VisibleCard,
-};
+use ygo_engine::{DeckList, Game, GameSetup, InstanceId};
 
 fn decks() -> Vec<DeckList> {
     vec![
@@ -22,117 +17,7 @@ fn decks() -> Vec<DeckList> {
     ]
 }
 
-/// Every rule that must hold in any reachable state.
-fn check_invariants(g: &Game) {
-    let rules = &g.shared().rules;
-    let mut seen = BTreeSet::new();
-    for p in PlayerId::BOTH {
-        let s = g.player(p);
-        let zones = [
-            (Location::Deck, s.deck.clone()),
-            (Location::Hand, s.hand.clone()),
-            (Location::Graveyard, s.graveyard.clone()),
-            (Location::Extra, s.extra.clone()),
-        ];
-        for (zone, ids) in zones {
-            for id in ids {
-                assert!(seen.insert(id), "{id:?} is in two places");
-                let inst = g.instance(id);
-                assert_eq!(inst.location, zone, "{id:?}");
-                assert_eq!(
-                    inst.controller, p,
-                    "{id:?} off-field cards are with their owner"
-                );
-                assert_eq!(inst.owner, p);
-            }
-        }
-        assert_eq!(s.monster_zones.len(), rules.field.monster_zones);
-        assert_eq!(s.spell_trap_zones.len(), rules.field.spell_trap_zones);
-        for (i, zone) in s.monster_zones.iter().enumerate() {
-            if let Some(id) = zone {
-                assert!(seen.insert(*id), "{id:?} is in two places");
-                let inst = g.instance(*id);
-                assert_eq!(inst.location, Location::MonsterZone(i as u8));
-                assert_eq!(inst.controller, p);
-                assert!(g.stats(*id).is_monster());
-                assert_ne!(
-                    inst.position,
-                    Position::FaceDown,
-                    "monsters use the Defense positions"
-                );
-                assert!(inst.turn_entered_field.is_some());
-            }
-        }
-        for (i, zone) in s.spell_trap_zones.iter().enumerate() {
-            if let Some(id) = zone {
-                assert!(seen.insert(*id), "{id:?} is in two places");
-                let inst = g.instance(*id);
-                assert_eq!(inst.location, Location::SpellTrapZone(i as u8));
-                assert_eq!(inst.controller, p);
-                assert!(!g.stats(*id).is_monster());
-                assert!(matches!(
-                    inst.position,
-                    Position::FaceDown | Position::FaceUp
-                ));
-            }
-        }
-        assert!(s.lp <= rules.life.starting_lp);
-        assert!(usize::from(s.summons_used) <= rules.summon.normal_or_tribute_per_turn);
-        if rules.hand.hand_limit_check == HandLimitCheck::AfterDraw
-            && matches!(g.phase(), Phase::Main1 | Phase::Battle(_) | Phase::Main2)
-        {
-            assert!(
-                s.hand.len() <= rules.hand.max_size,
-                "hand limit after the draw"
-            );
-        }
-    }
-    assert_eq!(seen.len(), g.instances().len(), "every card is somewhere");
-    assert!(g.turn() <= g.max_turns());
-    let any_dead = PlayerId::BOTH.iter().any(|p| g.player(*p).lp == 0);
-    assert_eq!(
-        any_dead,
-        matches!(
-            g.result(),
-            Some(ygo_engine::GameResult::Win {
-                reason: ygo_engine::WinReason::LifePoints,
-                ..
-            }) | Some(ygo_engine::GameResult::Draw {
-                reason: ygo_engine::DrawReason::BothLifePointsZero
-            })
-        )
-    );
-    assert_eq!(g.result().is_none(), g.pending_decision().is_some());
-    if g.pending_decision()
-        .is_some_and(|d| d.kind != ygo_engine::DecisionKind::Choose)
-    {
-        assert!(
-            g.chain().is_empty(),
-            "a chain resolves before the next decision"
-        );
-    }
-    assert_eq!(g.result().is_none(), !g.legal_actions().is_empty());
-
-    for viewer in PlayerId::BOTH {
-        let obs = g.observe(viewer);
-        let opp = obs.opponent();
-        assert!(
-            opp.hand
-                .iter()
-                .all(|c| matches!(c, VisibleCard::Hidden { .. }))
-        );
-        for zone in opp.monster_zones.iter().flatten() {
-            let face_up = g.instance(zone.instance()).position.is_face_up();
-            assert_eq!(matches!(zone, VisibleCard::Known { .. }), face_up);
-        }
-        assert!(
-            obs.me()
-                .hand
-                .iter()
-                .all(|c| matches!(c, VisibleCard::Known { .. }))
-        );
-    }
-}
+use common::check_invariants;
 
 fn run(deck_a: usize, deck_b: usize, seed: u64, choices: &[u32]) -> Game {
     let decks = decks();

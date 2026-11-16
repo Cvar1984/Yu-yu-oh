@@ -89,10 +89,7 @@ pub fn register(r: &mut Registry) {
         single(Effect {
             timing: |g, s, w| trap_hole_target(g, s, w).is_some(),
             targets: Some(|g, s| {
-                let w = g.window().map(|(kind, events)| Window {
-                    kind,
-                    events: events.to_vec(),
-                });
+                let w = g.window().map(|(kind, events)| Window { kind, events });
                 one(w.and_then(|w| trap_hole_target(g, s, &w)))
             }),
             ..Effect::activate(2, |g, ctx| {
@@ -106,10 +103,7 @@ pub fn register(r: &mut Registry) {
         single(Effect {
             timing: |g, s, w| g.player(s.controller).lp >= 2 && solemn_target(g, s, w).is_some(),
             targets: Some(|g, s| {
-                let w = g.window().map(|(kind, events)| Window {
-                    kind,
-                    events: events.to_vec(),
-                });
+                let w = g.window().map(|(kind, events)| Window { kind, events });
                 one(w.and_then(|w| solemn_target(g, s, &w)))
             }),
             cost: Some(|g, ctx| {
