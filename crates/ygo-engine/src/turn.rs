@@ -4,8 +4,8 @@
 use ygo_data::HandLimitCheck;
 
 use crate::{
-    Action, Decision, DecisionKind, DrawReason, Event, Game, GameResult, InstanceId, Phase,
-    PlayerId, RuleError, WinReason,
+    Action, BattleStep, Decision, DecisionKind, DrawReason, Event, Game, GameResult, InstanceId,
+    Phase, PlayerId, RuleError, WinReason,
 };
 
 impl Game {
@@ -23,6 +23,7 @@ impl Game {
                 DecisionKind::HandLimit
             }
             Phase::Main1 | Phase::Main2 => DecisionKind::MainPhase,
+            Phase::Battle(BattleStep::Battle) => DecisionKind::BattlePhase,
             _ => return None,
         };
         Some(Decision { player, kind })
@@ -43,8 +44,12 @@ impl Game {
             DecisionKind::MainPhase => {
                 self.summon_actions(decision.player, &mut actions);
                 self.position_actions(decision.player, &mut actions);
+                if self.phase == Phase::Main1 && self.attacks_allowed() {
+                    actions.push(Action::EnterBattlePhase);
+                }
                 actions.push(Action::EndTurn);
             }
+            DecisionKind::BattlePhase => self.battle_actions(decision.player, &mut actions),
         }
         actions
     }
@@ -71,6 +76,13 @@ impl Game {
             } => self.summon(decision.player, *card, tributes, *face_down, &mut events),
             Action::FlipSummon { card } => self.flip_summon(decision.player, *card, &mut events),
             Action::ChangePosition { card } => self.change_position(*card, &mut events),
+            Action::EnterBattlePhase => {
+                self.enter_phase(Phase::Battle(BattleStep::Start), &mut events)
+            }
+            Action::Attack { attacker, target } => {
+                self.attack(decision.player, *attacker, *target, &mut events)
+            }
+            Action::EndBattlePhase => self.enter_phase(Phase::Battle(BattleStep::End), &mut events),
             Action::EndTurn => self.enter_phase(Phase::End, &mut events),
         }
         self.advance(&mut events);
@@ -85,8 +97,13 @@ impl Game {
                 Phase::Draw => self.enter_phase(Phase::Standby, events),
                 Phase::Standby => self.enter_phase(Phase::Main1, events),
                 Phase::End => self.start_turn(self.turn + 1, self.turn_player.opponent(), events),
-                Phase::Main1 | Phase::Main2 => unreachable!("main phases always have a decision"),
-                Phase::Battle(_) => unreachable!("battle arrives in M1 step 5"),
+                Phase::Battle(BattleStep::Start) => {
+                    self.enter_phase(Phase::Battle(BattleStep::Battle), events)
+                }
+                Phase::Battle(BattleStep::End) => self.enter_phase(Phase::Main2, events),
+                Phase::Main1 | Phase::Main2 | Phase::Battle(_) => {
+                    unreachable!("these phases always have a decision")
+                }
             }
         }
     }

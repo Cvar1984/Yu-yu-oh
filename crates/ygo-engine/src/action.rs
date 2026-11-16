@@ -19,6 +19,15 @@ pub enum Action {
     FlipSummon { card: InstanceId },
     /// Switch a face-up monster between Attack and Defense Position.
     ChangePosition { card: InstanceId },
+    /// Main Phase 1 to the Battle Phase.
+    EnterBattlePhase,
+    /// Declare an attack; `None` attacks the opponent directly.
+    Attack {
+        attacker: InstanceId,
+        target: Option<InstanceId>,
+    },
+    /// Battle Phase to Main Phase 2.
+    EndBattlePhase,
     /// Leave the current Main Phase and go to the End Phase.
     EndTurn,
 }
@@ -30,6 +39,8 @@ pub enum DecisionKind {
     HandLimit,
     /// Any Main Phase action.
     MainPhase,
+    /// Attack or leave the Battle Phase.
+    BattlePhase,
 }
 
 /// Who must choose, and what kind of choice.
@@ -81,6 +92,22 @@ pub enum Event {
     PositionChanged {
         card: InstanceId,
         position: Position,
+    },
+    AttackDeclared {
+        attacker: InstanceId,
+        target: Option<InstanceId>,
+    },
+    /// A face-down defender was turned face up by the attack.
+    Flipped {
+        card: InstanceId,
+    },
+    DestroyedByBattle {
+        card: InstanceId,
+    },
+    DamageTaken {
+        player: PlayerId,
+        amount: u32,
+        lp: u32,
     },
     GameOver {
         result: GameResult,
