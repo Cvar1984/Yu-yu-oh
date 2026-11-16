@@ -1,22 +1,81 @@
-//! Activations, the chain and its resolution. In step 2 a chain holds one
-//! link and resolves at once; step 3 adds response windows and more links.
+//! Activations, response windows, the chain and its resolution.
+//!
+//! Work that must wait for the players (a response window, a summon
+//! whose negation window is open, a declared attack, a chain to resolve)
+//! sits on a stack of [`Pending`] items. `advance` works the top item;
+//! a window becomes a decision only when the player with priority has
+//! something to activate, otherwise the engine passes for them.
 
-use crate::{
-    Action, Effect, EffectCtx, EffectKind, Flow, Game, InstanceId, Location, Phase, PlayerId,
-    Position, Source, SpellTrapType, TargetSets, Window,
-};
 use serde::{Deserialize, Serialize};
 use ygo_data::CardKind;
+
+use crate::{
+    Action, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Location, Phase,
+    PlayerId, Position, Source, SpellTrapType, TargetSets, Window,
+};
 
 /// One activated effect waiting to resolve.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChainLink {
     pub card: InstanceId,
     pub effect: u8,
+    pub speed: u8,
     pub controller: PlayerId,
     pub targets: Vec<InstanceId>,
     pub cost: Vec<InstanceId>,
     pub negated: bool,
+}
+
+/// Why a response window is open.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum WindowKind {
+    /// After an action in open game state, or at a phase step.
+    Open,
+    /// A monster is about to be Normal, Tribute or Flip Summoned (or Set).
+    SummonDeclared,
+    /// A summon succeeded; the monster is on the field.
+    SummonSuccess,
+    AttackDeclared,
+    /// The Damage Step is over; its events are in the window.
+    AfterBattle,
+    /// A link was just added; responses chain to it.
+    Chain,
+    /// A chain just finished resolving.
+    AfterChain,
+}
+
+/// How a summon was declared, for the cards that care.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum SummonKind {
+    Normal,
+    Flip,
+}
+
+/// A summon between its declaration and its completion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PendingSummon {
+    pub player: PlayerId,
+    pub card: InstanceId,
+    pub kind: SummonKind,
+    pub face_down: bool,
+    pub negated: bool,
+}
+
+/// Work waiting on the players, worked from the top of the stack.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) enum Pending {
+    Window {
+        kind: WindowKind,
+        events: Vec<Event>,
+        priority: PlayerId,
+        passes: u8,
+    },
+    ResolveChain,
+    CompleteSummon(PendingSummon),
+    DamageStep {
+        attacker: InstanceId,
+        target: Option<InstanceId>,
+    },
 }
 
 /// A resolution paused on a `Choose` decision.
@@ -51,67 +110,207 @@ impl Game {
             .expect("an activated effect exists on its card")
     }
 
-    /// Spell Cards the turn player may activate now: speed 1 Normal
-    /// Spells from the hand (needs a free zone) or Set face-down.
-    pub(crate) fn activation_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
-        if !matches!(self.phase, Phase::Main1 | Phase::Main2) || !self.chain.is_empty() {
+    // ----- windows -----
+
+    /// The open response window, if the top pending item is one.
+    pub fn window(&self) -> Option<(WindowKind, &[Event])> {
+        match self.pending.last() {
+            Some(Pending::Window { kind, events, .. }) => Some((*kind, events)),
+            _ => None,
+        }
+    }
+
+    /// The summon between declaration and completion, if any.
+    pub fn pending_summon(&self) -> Option<PendingSummon> {
+        self.pending.iter().rev().find_map(|p| match p {
+            Pending::CompleteSummon(ps) => Some(*ps),
+            _ => None,
+        })
+    }
+
+    /// The link responses would chain to.
+    pub fn last_link(&self) -> Option<&ChainLink> {
+        self.chain.last()
+    }
+
+    /// Opens a window holding everything emitted since the last one.
+    pub(crate) fn open_window(&mut self, kind: WindowKind, priority: PlayerId) {
+        let events = std::mem::take(&mut self.recent);
+        self.pending.push(Pending::Window {
+            kind,
+            events,
+            priority,
+            passes: 0,
+        });
+    }
+
+    fn window_mut(&mut self) -> (&mut PlayerId, &mut u8) {
+        match self.pending.last_mut() {
+            Some(Pending::Window {
+                priority, passes, ..
+            }) => (priority, passes),
+            _ => unreachable!("called with an open window"),
+        }
+    }
+
+    /// The player with priority passes. Two passes in a row close the
+    /// window; a chain built in it then resolves.
+    pub(crate) fn pass(&mut self) {
+        let (priority, passes) = self.window_mut();
+        *passes += 1;
+        *priority = priority.opponent();
+        if *passes >= 2 {
+            self.pending.pop();
+            self.recent.clear();
+            if !self.chain.is_empty() {
+                self.pending.push(Pending::ResolveChain);
+            }
+        }
+    }
+
+    // ----- what may be activated -----
+
+    fn fast_effect_allowed(&self, card: InstanceId, effect: &Effect, player: PlayerId) -> bool {
+        let inst = &self.instances[card.index()];
+        let stats = self.stats(card);
+        match (inst.location, stats.kind, stats.subtype) {
+            (Location::SpellTrapZone(_), CardKind::Trap, _) => {
+                inst.position == Position::FaceDown
+                    && (self.shared.rules.turn.trap_activation_turn_set
+                        || inst.turn_set != Some(self.turn))
+            }
+            (Location::SpellTrapZone(_), CardKind::Spell, SpellTrapType::QuickPlay) => {
+                inst.position == Position::FaceDown && inst.turn_set != Some(self.turn)
+            }
+            (Location::Hand, CardKind::Spell, SpellTrapType::QuickPlay) => {
+                player == self.turn_player && self.free_spell_trap_zone(player).is_some()
+            }
+            (Location::MonsterZone(_), _, _) => {
+                effect.kind == EffectKind::Quick && inst.position.is_face_up()
+            }
+            _ => false,
+        }
+    }
+
+    /// Pushes every activation of `card`'s effects that fit `filter`.
+    fn push_activations(
+        &self,
+        player: PlayerId,
+        card: InstanceId,
+        window: &Window,
+        filter: impl Fn(&Effect) -> bool,
+        actions: &mut Vec<Action>,
+    ) {
+        let Some(script) = self.script(card) else {
             return;
-        }
-        let state = &self.players[player.index()];
-        let has_free_zone = self.free_spell_trap_zone(player).is_some();
-        let mut candidates: Vec<InstanceId> = Vec::new();
-        if has_free_zone {
-            candidates.extend(state.hand.iter().copied());
-        }
-        candidates.extend(
-            state
-                .spell_trap_zones
-                .iter()
-                .flatten()
-                .copied()
-                .filter(|&c| self.instances[c.index()].position == Position::FaceDown),
-        );
-        for card in candidates {
-            let stats = self.stats(card);
-            if stats.kind != CardKind::Spell || stats.subtype != SpellTrapType::Normal {
+        };
+        let source = Source {
+            card,
+            controller: player,
+        };
+        for (i, effect) in script.effects.iter().enumerate() {
+            if effect.kind != EffectKind::Activate && effect.kind != EffectKind::Quick {
                 continue;
             }
-            let Some(script) = self.script(card) else {
+            if !filter(effect) || !(effect.timing)(self, source, window) {
                 continue;
-            };
-            let source = Source {
-                card,
-                controller: player,
-            };
-            for (i, effect) in script.effects.iter().enumerate() {
-                if effect.kind != EffectKind::Activate || effect.speed != 1 {
-                    continue;
-                }
-                if !(effect.timing)(self, source, &Window::default()) {
-                    continue;
-                }
-                let costs: TargetSets = effect
-                    .cost_choices
-                    .map_or_else(|| vec![Vec::new()], |f| f(self, source));
-                let targets: TargetSets = effect
-                    .targets
-                    .map_or_else(|| vec![Vec::new()], |f| f(self, source));
-                for cost in &costs {
-                    for t in &targets {
-                        actions.push(Action::Activate {
-                            card,
-                            effect: i as u8,
-                            targets: t.clone(),
-                            cost: cost.clone(),
-                        });
-                    }
+            }
+            let costs: TargetSets = effect
+                .cost_choices
+                .map_or_else(|| vec![Vec::new()], |f| f(self, source));
+            let targets: TargetSets = effect
+                .targets
+                .map_or_else(|| vec![Vec::new()], |f| f(self, source));
+            for cost in &costs {
+                for t in &targets {
+                    actions.push(Action::Activate {
+                        card,
+                        effect: i as u8,
+                        targets: t.clone(),
+                        cost: cost.clone(),
+                    });
                 }
             }
         }
     }
 
-    /// Puts the card face-up on the field if needed, pays the cost and
-    /// adds the link to the chain.
+    /// Activations the turn player may start in open game state: Normal
+    /// Spells (speed 1) and Quick-Play Spells from the hand or Set.
+    pub(crate) fn activation_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
+        if !matches!(self.phase, Phase::Main1 | Phase::Main2) || !self.pending.is_empty() {
+            return;
+        }
+        let state = &self.players[player.index()];
+        let has_free_zone = self.free_spell_trap_zone(player).is_some();
+        let window = Window::default();
+        for &card in &state.hand {
+            let stats = self.stats(card);
+            if stats.kind != CardKind::Spell || !has_free_zone {
+                continue;
+            }
+            match stats.subtype {
+                SpellTrapType::Normal => {
+                    self.push_activations(player, card, &window, |e| e.speed == 1, actions)
+                }
+                SpellTrapType::QuickPlay => {
+                    self.push_activations(player, card, &window, |e| e.speed == 2, actions)
+                }
+                _ => {}
+            }
+        }
+        for card in state.spell_trap_zones.iter().flatten().copied() {
+            let inst = &self.instances[card.index()];
+            let stats = self.stats(card);
+            if inst.position != Position::FaceDown || stats.kind != CardKind::Spell {
+                continue;
+            }
+            match stats.subtype {
+                SpellTrapType::Normal => {
+                    self.push_activations(player, card, &window, |e| e.speed == 1, actions)
+                }
+                SpellTrapType::QuickPlay if inst.turn_set != Some(self.turn) => {
+                    self.push_activations(player, card, &window, |e| e.speed == 2, actions)
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Fast effects `player` may activate in the open window, without `Pass`.
+    pub(crate) fn response_actions(&self, player: PlayerId) -> Vec<Action> {
+        let mut actions = Vec::new();
+        let Some((kind, events)) = self.window() else {
+            return actions;
+        };
+        let window = Window {
+            kind,
+            events: events.to_vec(),
+        };
+        let min_speed = self.chain.last().map_or(2, |l| l.speed);
+        let state = &self.players[player.index()];
+        let candidates: Vec<InstanceId> = state
+            .hand
+            .iter()
+            .chain(state.spell_trap_zones.iter().flatten())
+            .chain(state.monster_zones.iter().flatten())
+            .copied()
+            .collect();
+        for card in candidates {
+            self.push_activations(
+                player,
+                card,
+                &window,
+                |e| e.speed >= min_speed && self.fast_effect_allowed(card, e, player),
+                &mut actions,
+            );
+        }
+        actions
+    }
+
+    // ----- activation and resolution -----
+
+    /// Puts the card face-up on the field if needed, pays the cost, adds
+    /// the link and gives the opponent priority to respond.
     pub(crate) fn activate(
         &mut self,
         player: PlayerId,
@@ -120,8 +319,9 @@ impl Game {
         targets: Vec<InstanceId>,
         cost: Vec<InstanceId>,
     ) {
+        let eff = self.effect(card, effect);
         match self.instances[card.index()].location {
-            Location::Hand => {
+            Location::Hand if !self.stats(card).is_monster() => {
                 let zone = self
                     .free_spell_trap_zone(player)
                     .expect("checked when the action was offered");
@@ -139,22 +339,63 @@ impl Game {
             cost,
             event: None,
         };
-        if let Some(pay) = self.effect(card, effect).cost {
+        if let Some(pay) = eff.cost {
             pay(self, &mut ctx);
         }
         self.chain.push(ChainLink {
             card,
             effect,
+            speed: eff.speed,
             controller: player,
             targets: ctx.targets,
             cost: ctx.cost,
             negated: false,
         });
-        self.emit(crate::Event::Activated {
+        self.emit(Event::Activated {
             card,
             controller: player,
             effect,
         });
+        match self.pending.last_mut() {
+            Some(Pending::Window {
+                priority, passes, ..
+            }) => {
+                *priority = player.opponent();
+                *passes = 0;
+            }
+            _ => self.open_window(WindowKind::Chain, player.opponent()),
+        }
+    }
+
+    /// Marks the link activated by `card` as negated; its card is
+    /// destroyed when the link is finished. Returns `false` if no such link.
+    pub fn negate_activation(&mut self, card: InstanceId, by: InstanceId) -> bool {
+        match self.chain.iter_mut().find(|l| l.card == card) {
+            Some(link) => {
+                link.negated = true;
+                self.emit(Event::ActivationNegated { card, by });
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Negates the pending summon; the monster goes to the Graveyard
+    /// instead of the field. Returns `false` if no summon is pending.
+    pub fn negate_summon(&mut self, by: InstanceId) -> bool {
+        let found = self.pending.iter_mut().rev().find_map(|p| match p {
+            Pending::CompleteSummon(ps) => Some(ps),
+            _ => None,
+        });
+        match found {
+            Some(ps) => {
+                ps.negated = true;
+                let card = ps.card;
+                self.emit(Event::SummonNegated { card, by });
+                true
+            }
+            None => false,
+        }
     }
 
     /// Resolves the top link of the chain, or pauses on a choice.
@@ -178,7 +419,7 @@ impl Game {
     fn continue_flow(&mut self, link: ChainLink, ctx: EffectCtx, flow: Flow) {
         match flow {
             Flow::Done => {
-                self.emit(crate::Event::Resolved {
+                self.emit(Event::Resolved {
                     card: link.card,
                     effect: link.effect,
                 });
@@ -207,13 +448,15 @@ impl Game {
         self.continue_flow(pc.link, ctx, flow);
     }
 
-    /// After a link resolves (or was negated): a Normal or Quick-Play
-    /// Spell, or a Trap, still in its zone goes to the Graveyard.
+    /// After a link resolves or is skipped: a negated card is destroyed; a
+    /// Normal, Quick-Play, Ritual or Counter card still in its zone goes to
+    /// the Graveyard.
     fn finish_link(&mut self, link: &ChainLink) {
         let inst = &self.instances[link.card.index()];
-        if matches!(inst.location, Location::SpellTrapZone(_))
-            && self.stats(link.card).subtype.leaves_after_resolving()
-        {
+        if !matches!(inst.location, Location::SpellTrapZone(_)) {
+            return;
+        }
+        if link.negated || self.stats(link.card).subtype.leaves_after_resolving() {
             self.send_to_graveyard(link.card);
         }
     }

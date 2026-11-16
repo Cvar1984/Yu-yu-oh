@@ -1,6 +1,8 @@
-//! Normal Summon, Set, Tribute Summon and Tribute Set.
+//! Normal Summon, Set, Tribute Summon and Tribute Set, in two halves: the
+//! declaration (tributes paid, negation window) and the completion.
 
-use crate::{Action, Event, Game, InstanceId, Location, Phase, PlayerId, Position};
+use crate::chain::{Pending, PendingSummon, SummonKind};
+use crate::{Action, Event, Game, InstanceId, Location, Phase, PlayerId, Position, WindowKind};
 
 impl Game {
     /// Number of tributes a monster of `level` needs, from the rules.
@@ -57,7 +59,9 @@ impl Game {
         }
     }
 
-    pub(crate) fn summon(
+    /// Pays the tributes, uses the summon, and opens the negation window.
+    /// The card stays in the hand until the summon completes.
+    pub(crate) fn declare_summon(
         &mut self,
         player: PlayerId,
         card: InstanceId,
@@ -71,35 +75,94 @@ impl Game {
                 card: tribute,
             });
         }
-        let position = if face_down {
-            Position::FaceDownDefense
-        } else {
-            Position::FaceUpAttack
-        };
-        self.remove_from_current_place(card);
-        let state = &mut self.players[player.index()];
-        let zone = state
-            .monster_zones
-            .iter()
-            .position(|z| z.is_none())
-            .expect("a free zone was checked when the action was offered");
-        state.monster_zones[zone] = Some(card);
-        state.summons_used += 1;
-        state.monsters_entered += 1;
-        let turn = self.turn;
-        let inst = &mut self.instances[card.index()];
-        inst.location = Location::MonsterZone(zone as u8);
-        inst.position = position;
-        inst.controller = player;
-        inst.turn_entered_field = Some(turn);
-        inst.turn_set = face_down.then_some(turn);
-        inst.position_changed_this_turn = false;
-        inst.attacked_this_turn = false;
-        self.emit(Event::Summoned {
+        self.players[player.index()].summons_used += 1;
+        self.emit(Event::SummonDeclared {
             player,
             card,
-            position,
+            face_down,
         });
+        self.pending.push(Pending::CompleteSummon(PendingSummon {
+            player,
+            card,
+            kind: SummonKind::Normal,
+            face_down,
+            negated: false,
+        }));
+        self.open_window(WindowKind::SummonDeclared, self.turn_player);
+    }
+
+    pub(crate) fn declare_flip_summon(&mut self, player: PlayerId, card: InstanceId) {
+        if self.shared.rules.summon.flip_summon_counts_toward_limit {
+            self.players[player.index()].summons_used += 1;
+        }
+        self.emit(Event::SummonDeclared {
+            player,
+            card,
+            face_down: false,
+        });
+        self.pending.push(Pending::CompleteSummon(PendingSummon {
+            player,
+            card,
+            kind: SummonKind::Flip,
+            face_down: false,
+            negated: false,
+        }));
+        self.open_window(WindowKind::SummonDeclared, self.turn_player);
+    }
+
+    /// After the negation window: the monster enters the field (or is
+    /// flipped), then the summon-success window opens.
+    pub(crate) fn complete_summon(&mut self, ps: PendingSummon) {
+        let PendingSummon {
+            player,
+            card,
+            kind,
+            face_down,
+            negated,
+        } = ps;
+        if negated {
+            self.send_to_graveyard(card);
+            return;
+        }
+        match kind {
+            SummonKind::Normal => {
+                let position = if face_down {
+                    Position::FaceDownDefense
+                } else {
+                    Position::FaceUpAttack
+                };
+                self.remove_from_current_place(card);
+                let state = &mut self.players[player.index()];
+                let zone = state
+                    .monster_zones
+                    .iter()
+                    .position(|z| z.is_none())
+                    .expect("a free zone was checked when the action was offered");
+                state.monster_zones[zone] = Some(card);
+                state.monsters_entered += 1;
+                let turn = self.turn;
+                let inst = &mut self.instances[card.index()];
+                inst.location = Location::MonsterZone(zone as u8);
+                inst.position = position;
+                inst.controller = player;
+                inst.turn_entered_field = Some(turn);
+                inst.turn_set = face_down.then_some(turn);
+                inst.position_changed_this_turn = false;
+                inst.attacked_this_turn = false;
+                self.emit(Event::Summoned {
+                    player,
+                    card,
+                    position,
+                });
+            }
+            SummonKind::Flip => {
+                let inst = &mut self.instances[card.index()];
+                inst.position = Position::FaceUpAttack;
+                inst.position_changed_this_turn = true;
+                self.emit(Event::FlipSummoned { player, card });
+            }
+        }
+        self.open_window(WindowKind::SummonSuccess, self.turn_player);
     }
 }
 

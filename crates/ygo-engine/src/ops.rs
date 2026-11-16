@@ -5,7 +5,8 @@ use crate::{Event, Game, InstanceId, Lingering, LingeringKind, Location, PlayerI
 
 impl Game {
     pub(crate) fn emit(&mut self, event: Event) {
-        self.events.push(event);
+        self.events.push(event.clone());
+        self.recent.push(event);
     }
 
     /// Draws up to `n` cards for `player`; returns how many were drawn.
