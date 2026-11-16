@@ -1,0 +1,44 @@
+# House rules read by the engine at game start. Official rules apply wherever
+# this file says nothing. Keys marked "open" are guesses until the owner answers
+# the open questions in CLAUDE.md. Changing a value must never need a recompile.
+
+[deck]
+main_min = 40
+main_max = 60
+extra_max = 15          # Fusion monsters
+default_copy_limit = 3  # per card; banlist.json overrides
+
+[field]
+monster_zones = 5
+spell_trap_zones = 5
+field_spells_on_field = 1   # 1 total on the whole field; a new one replaces it
+
+[hand]
+max_size = 6
+hand_limit_check = "end_phase"  # open: or "always"
+
+[life]
+starting_lp = 8000
+
+[turn]
+first_player_skips_draw = true      # open
+first_player_can_attack = false     # open
+spell_trap_plays_per_turn = 5       # owner rule; open: do Sets and quick responses count?
+
+[summon]
+normal_or_tribute_per_turn = 1      # Normal Summon, Tribute Summon or Set
+tributes_level_5_6 = 1
+tributes_level_7_plus = 2
+summon_in_main_phase_2 = false      # owner's game
+flip_summon_counts_toward_limit = false     # open
+special_summon_counts_toward_limit = false  # open; true = owner's earlier "1 monster per turn" rule
+max_monsters_entering_per_turn = 0  # 0 = no cap; 1 = owner's earlier strict rule
+
+[cards]
+text_version = "modern"   # open: "modern" official text or "original_2002"
+cards = "cards.json"
+banlist = "banlist.json"
+
+[win]
+deck_out_loses = true     # lose when you must draw from an empty Deck
+exodia = true

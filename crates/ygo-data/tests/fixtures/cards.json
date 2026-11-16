@@ -1,0 +1,490 @@
+[
+ {
+  "id": 89631139,
+  "name": "Blue-Eyes White Dragon",
+  "type": "Normal Monster",
+  "frame_type": "normal",
+  "text": "This legendary dragon is a powerful engine of destruction.",
+  "level": 8,
+  "atk": 3000,
+  "def": 2500,
+  "race": "Dragon",
+  "attribute": "LIGHT",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 1,
+    "code": "LOB-001",
+    "rarity": "Ultra Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/89631139.jpg",
+   "small": "images/small/89631139.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/89631139.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/89631139.jpg"
+  }
+ },
+ {
+  "id": 70781052,
+  "name": "Summoned Skull",
+  "type": "Normal Monster",
+  "frame_type": "normal",
+  "text": "A fiend with dark powers for confusing the enemy.",
+  "level": 6,
+  "atk": 2500,
+  "def": 1200,
+  "race": "Fiend",
+  "attribute": "DARK",
+  "printings": [
+   {
+    "set": "MRD",
+    "number": 3,
+    "code": "MRD-003",
+    "rarity": "Ultra Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/70781052.jpg",
+   "small": "images/small/70781052.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/70781052.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/70781052.jpg"
+  }
+ },
+ {
+  "id": 46986414,
+  "name": "Dark Magician",
+  "type": "Normal Monster",
+  "frame_type": "normal",
+  "text": "The ultimate wizard in terms of attack and defense.",
+  "level": 7,
+  "atk": 2500,
+  "def": 2100,
+  "race": "Spellcaster",
+  "attribute": "DARK",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 5,
+    "code": "LOB-005",
+    "rarity": "Ultra Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/46986414.jpg",
+   "small": "images/small/46986414.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/46986414.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/46986414.jpg"
+  }
+ },
+ {
+  "id": 39111158,
+  "name": "Tri-Horned Dragon",
+  "type": "Normal Monster",
+  "frame_type": "normal",
+  "text": "An unworthy dragon with three sharp horns.",
+  "level": 8,
+  "atk": 2850,
+  "def": 2350,
+  "race": "Dragon",
+  "attribute": "DARK",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 0,
+    "code": "LOB-000",
+    "rarity": "Secret Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/39111158.jpg",
+   "small": "images/small/39111158.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/39111158.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/39111158.jpg"
+  }
+ },
+ {
+  "id": 15025844,
+  "name": "Mystical Elf",
+  "type": "Normal Monster",
+  "frame_type": "normal",
+  "text": "A delicate elf that lacks offense, but has a terrific defense.",
+  "level": 4,
+  "atk": 800,
+  "def": 2000,
+  "race": "Spellcaster",
+  "attribute": "LIGHT",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 62,
+    "code": "LOB-062",
+    "rarity": "Super Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/15025844.jpg",
+   "small": "images/small/15025844.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/15025844.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/15025844.jpg"
+  }
+ },
+ {
+  "id": 6368038,
+  "name": "Gaia The Fierce Knight",
+  "type": "Normal Monster",
+  "frame_type": "normal",
+  "text": "A knight whose horse travels faster than the wind.",
+  "level": 7,
+  "atk": 2300,
+  "def": 2100,
+  "race": "Warrior",
+  "attribute": "EARTH",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 6,
+    "code": "LOB-006",
+    "rarity": "Ultra Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/6368038.jpg",
+   "small": "images/small/6368038.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/6368038.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/6368038.jpg"
+  }
+ },
+ {
+  "id": 26202165,
+  "name": "Sangan",
+  "type": "Effect Monster",
+  "frame_type": "effect",
+  "text": "If this card is sent from the field to the GY: Add 1 monster with 1500 or less ATK from your Deck to your hand.",
+  "level": 3,
+  "atk": 1000,
+  "def": 600,
+  "race": "Fiend",
+  "attribute": "DARK",
+  "printings": [
+   {
+    "set": "MRD",
+    "number": 69,
+    "code": "MRD-069",
+    "rarity": "Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/26202165.jpg",
+   "small": "images/small/26202165.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/26202165.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/26202165.jpg"
+  }
+ },
+ {
+  "id": 54652250,
+  "name": "Man-Eater Bug",
+  "type": "Flip Effect Monster",
+  "frame_type": "effect",
+  "text": "FLIP: Target 1 monster on the field; destroy that target.",
+  "level": 2,
+  "atk": 450,
+  "def": 600,
+  "race": "Insect",
+  "attribute": "EARTH",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 108,
+    "code": "LOB-108",
+    "rarity": "Super Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/54652250.jpg",
+   "small": "images/small/54652250.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/54652250.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/54652250.jpg"
+  }
+ },
+ {
+  "id": 40640057,
+  "name": "Kuriboh",
+  "type": "Effect Monster",
+  "frame_type": "effect",
+  "text": "During damage calculation, if your opponent's monster attacks (Quick Effect): You can discard this card; you take no battle damage from that battle.",
+  "level": 1,
+  "atk": 300,
+  "def": 200,
+  "race": "Fiend",
+  "attribute": "DARK",
+  "printings": [
+   {
+    "set": "MRD",
+    "number": 71,
+    "code": "MRD-071",
+    "rarity": "Super Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/40640057.jpg",
+   "small": "images/small/40640057.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/40640057.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/40640057.jpg"
+  }
+ },
+ {
+  "id": 33396948,
+  "name": "Exodia the Forbidden One",
+  "type": "Effect Monster",
+  "frame_type": "effect",
+  "text": "If you have all five Exodia pieces in your hand, you win the Duel.",
+  "level": 3,
+  "atk": 1000,
+  "def": 1000,
+  "race": "Spellcaster",
+  "attribute": "DARK",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 124,
+    "code": "LOB-124",
+    "rarity": "Ultra Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/33396948.jpg",
+   "small": "images/small/33396948.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/33396948.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/33396948.jpg"
+  }
+ },
+ {
+  "id": 5405694,
+  "name": "Black Luster Soldier",
+  "type": "Ritual Monster",
+  "frame_type": "ritual",
+  "text": "You can Ritual Summon this card with \"Black Luster Ritual\".",
+  "level": 8,
+  "atk": 3000,
+  "def": 2500,
+  "race": "Warrior",
+  "attribute": "EARTH",
+  "printings": [
+   {
+    "set": "SRL",
+    "number": 0,
+    "code": "SRL-000",
+    "rarity": "Secret Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/5405694.jpg",
+   "small": "images/small/5405694.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/5405694.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/5405694.jpg"
+  }
+ },
+ {
+  "id": 23995346,
+  "name": "Blue-Eyes Ultimate Dragon",
+  "type": "Fusion Monster",
+  "frame_type": "fusion",
+  "text": "\"Blue-Eyes White Dragon\" + \"Blue-Eyes White Dragon\" + \"Blue-Eyes White Dragon\"",
+  "level": 12,
+  "atk": 4500,
+  "def": 3800,
+  "race": "Dragon",
+  "attribute": "LIGHT",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 0,
+    "code": "LOB-000",
+    "rarity": "Secret Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/23995346.jpg",
+   "small": "images/small/23995346.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/23995346.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/23995346.jpg"
+  }
+ },
+ {
+  "id": 55144522,
+  "name": "Pot of Greed",
+  "type": "Spell Card",
+  "frame_type": "spell",
+  "text": "Draw 2 cards.",
+  "race": "Normal",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 119,
+    "code": "LOB-119",
+    "rarity": "Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/55144522.jpg",
+   "small": "images/small/55144522.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/55144522.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/55144522.jpg"
+  }
+ },
+ {
+  "id": 12580477,
+  "name": "Raigeki",
+  "type": "Spell Card",
+  "frame_type": "spell",
+  "text": "Destroy all monsters your opponent controls.",
+  "race": "Normal",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 53,
+    "code": "LOB-053",
+    "rarity": "Super Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/12580477.jpg",
+   "small": "images/small/12580477.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/12580477.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/12580477.jpg"
+  }
+ },
+ {
+  "id": 72302403,
+  "name": "Swords of Revealing Light",
+  "type": "Spell Card",
+  "frame_type": "spell",
+  "text": "Flip all monsters your opponent controls face-up. Your opponent cannot declare an attack for 3 turns.",
+  "race": "Normal",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 101,
+    "code": "LOB-101",
+    "rarity": "Super Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/72302403.jpg",
+   "small": "images/small/72302403.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/72302403.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/72302403.jpg"
+  }
+ },
+ {
+  "id": 4031928,
+  "name": "Change of Heart",
+  "type": "Spell Card",
+  "frame_type": "spell",
+  "text": "Target 1 monster your opponent controls; take control of it until the End Phase.",
+  "race": "Normal",
+  "printings": [
+   {
+    "set": "MRD",
+    "number": 60,
+    "code": "MRD-060",
+    "rarity": "Ultra Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/4031928.jpg",
+   "small": "images/small/4031928.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/4031928.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/4031928.jpg"
+  }
+ },
+ {
+  "id": 83764718,
+  "name": "Monster Reborn",
+  "type": "Spell Card",
+  "frame_type": "spell",
+  "text": "Target 1 monster in either GY; Special Summon it.",
+  "race": "Normal",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 118,
+    "code": "LOB-118",
+    "rarity": "Ultra Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/83764718.jpg",
+   "small": "images/small/83764718.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/83764718.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/83764718.jpg"
+  }
+ },
+ {
+  "id": 24094653,
+  "name": "Polymerization",
+  "type": "Spell Card",
+  "frame_type": "spell",
+  "text": "Fusion Summon 1 Fusion Monster from your Extra Deck.",
+  "race": "Normal",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 59,
+    "code": "LOB-059",
+    "rarity": "Super Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/24094653.jpg",
+   "small": "images/small/24094653.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/24094653.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/24094653.jpg"
+  }
+ },
+ {
+  "id": 44095762,
+  "name": "Mirror Force",
+  "type": "Trap Card",
+  "frame_type": "trap",
+  "text": "When an opponent's monster declares an attack: Destroy all your opponent's Attack Position monsters.",
+  "race": "Normal",
+  "printings": [
+   {
+    "set": "MRD",
+    "number": 138,
+    "code": "MRD-138",
+    "rarity": "Ultra Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/44095762.jpg",
+   "small": "images/small/44095762.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/44095762.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/44095762.jpg"
+  }
+ },
+ {
+  "id": 4206964,
+  "name": "Trap Hole",
+  "type": "Trap Card",
+  "frame_type": "trap",
+  "text": "When your opponent Normal or Flip Summons 1 monster with 1000 or more ATK: Target that monster; destroy that target.",
+  "race": "Normal",
+  "printings": [
+   {
+    "set": "LOB",
+    "number": 56,
+    "code": "LOB-056",
+    "rarity": "Super Rare"
+   }
+  ],
+  "images": {
+   "full": "images/full/4206964.jpg",
+   "small": "images/small/4206964.jpg",
+   "url_full": "https://images.ygoprodeck.com/images/cards/4206964.jpg",
+   "url_small": "https://images.ygoprodeck.com/images/cards_small/4206964.jpg"
+  }
+ }
+]
