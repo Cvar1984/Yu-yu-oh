@@ -79,3 +79,69 @@ pub fn end_turns_until_over(game: &mut ygo_engine::Game) -> usize {
     }
     played
 }
+
+/// Known Normal Monsters for scenario tests. Levels are asserted in
+/// `cards_used_by_tests_are_what_we_think`.
+pub const MYSTICAL_ELF: CardId = CardId(15025844); // level 4, 800/2000
+pub const SUMMONED_SKULL: CardId = CardId(70781052); // level 6, 2500/1200
+pub const BLUE_EYES: CardId = CardId(89631139); // level 8, 3000/2500
+pub const SANGAN: CardId = CardId(26202165); // Effect Monster
+
+/// An unshuffled game: each player's deck starts with `top` in draw
+/// order and is padded to 40 with `pad`. Player 0 goes first.
+pub fn stacked(top: [&[CardId]; 2], pad: CardId) -> ygo_engine::GameSetup {
+    let deck = |ids: &[CardId]| DeckList {
+        main: ids
+            .iter()
+            .copied()
+            .chain(std::iter::repeat(pad))
+            .take(40)
+            .collect(),
+        extra: Vec::new(),
+    };
+    let mut setup = ygo_engine::GameSetup::new([deck(top[0]), deck(top[1])], 0);
+    setup.first_player = Some(ygo_engine::PlayerId(0));
+    setup.shuffle = false;
+    setup
+}
+
+/// The hand card of `player` with this id, first copy.
+pub fn in_hand(
+    game: &ygo_engine::Game,
+    player: ygo_engine::PlayerId,
+    id: CardId,
+) -> ygo_engine::InstanceId {
+    game.player(player)
+        .hand
+        .iter()
+        .copied()
+        .find(|&c| game.stats(c).id == id)
+        .unwrap_or_else(|| panic!("{id} not in player {player}'s hand"))
+}
+
+pub fn summon(card: ygo_engine::InstanceId) -> ygo_engine::Action {
+    ygo_engine::Action::Summon {
+        card,
+        tributes: Vec::new(),
+        face_down: false,
+    }
+}
+
+pub fn summons_offered(game: &ygo_engine::Game) -> Vec<ygo_engine::Action> {
+    game.legal_actions()
+        .into_iter()
+        .filter(|a| matches!(a, ygo_engine::Action::Summon { .. }))
+        .collect()
+}
+
+/// Ends the turn, then plays discards for any hand-limit decision until
+/// the next player's Main Phase.
+pub fn next_turn(game: &mut ygo_engine::Game) {
+    play(game, ygo_engine::Action::EndTurn);
+    while let Some(d) = game.pending_decision()
+        && d.kind == ygo_engine::DecisionKind::HandLimit
+    {
+        let a = game.legal_actions()[0].clone();
+        play(game, a);
+    }
+}

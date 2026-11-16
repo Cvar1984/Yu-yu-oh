@@ -1,0 +1,155 @@
+//! Normal Summon, Set, Tribute Summon and Tribute Set.
+
+use ygo_data::CardKind;
+
+use crate::{Action, Event, Game, InstanceId, Location, Phase, PlayerId, Position};
+
+impl Game {
+    /// Number of tributes a monster of `level` needs, from the rules.
+    pub fn tributes_needed(&self, level: u8) -> usize {
+        let summon = &self.shared.rules.summon;
+        match level {
+            0..=4 => 0,
+            5..=6 => summon.tributes_level_5_6,
+            _ => summon.tributes_level_7_plus,
+        }
+    }
+
+    /// Whether `player` may still Normal Summon, Tribute Summon or Set in
+    /// the current phase.
+    fn may_summon(&self, player: PlayerId) -> bool {
+        let rules = &self.shared.rules;
+        let state = &self.players[player.index()];
+        let phase_ok = match self.phase {
+            Phase::Main1 => true,
+            Phase::Main2 => rules.summon.summon_in_main_phase_2,
+            _ => false,
+        };
+        let cap = rules.summon.max_monsters_entering_per_turn;
+        phase_ok
+            && usize::from(state.summons_used) < rules.summon.normal_or_tribute_per_turn
+            && (cap == 0 || usize::from(state.monsters_entered) < cap)
+    }
+
+    pub(crate) fn summon_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
+        if !self.may_summon(player) {
+            return;
+        }
+        let state = &self.players[player.index()];
+        let free_zones = state.monster_zones.iter().filter(|z| z.is_none()).count();
+        let on_field: Vec<InstanceId> = state.monsters().collect();
+        for &card in &state.hand {
+            let stats = self.stats(card);
+            // M1: only Normal Monsters have no effect to script.
+            if stats.kind != CardKind::Normal {
+                continue;
+            }
+            let needed = self.tributes_needed(stats.level);
+            if needed > on_field.len() || free_zones + needed == 0 {
+                continue;
+            }
+            for tributes in combinations(&on_field, needed) {
+                for face_down in [false, true] {
+                    actions.push(Action::Summon {
+                        card,
+                        tributes: tributes.clone(),
+                        face_down,
+                    });
+                }
+            }
+        }
+    }
+
+    pub(crate) fn summon(
+        &mut self,
+        player: PlayerId,
+        card: InstanceId,
+        tributes: &[InstanceId],
+        face_down: bool,
+        events: &mut Vec<Event>,
+    ) {
+        for &tribute in tributes {
+            self.send_to_graveyard(tribute, events);
+            events.push(Event::Tributed {
+                player,
+                card: tribute,
+            });
+        }
+        let position = if face_down {
+            Position::FaceDownDefense
+        } else {
+            Position::FaceUpAttack
+        };
+        let state = &mut self.players[player.index()];
+        state.hand.retain(|&c| c != card);
+        let zone = state
+            .monster_zones
+            .iter()
+            .position(|z| z.is_none())
+            .expect("a free zone was checked when the action was offered");
+        state.monster_zones[zone] = Some(card);
+        state.summons_used += 1;
+        state.monsters_entered += 1;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::MonsterZone(zone as u8);
+        inst.position = position;
+        inst.controller = player;
+        inst.turn_entered_field = Some(self.turn);
+        inst.turn_set = face_down.then_some(self.turn);
+        inst.position_changed_this_turn = false;
+        inst.attacked_this_turn = false;
+        events.push(Event::Summoned {
+            player,
+            card,
+            position,
+        });
+    }
+
+    /// Moves a card from wherever it is to its owner's Graveyard.
+    pub(crate) fn send_to_graveyard(&mut self, card: InstanceId, events: &mut Vec<Event>) {
+        let inst = &mut self.instances[card.index()];
+        let from = inst.location;
+        let owner = inst.owner;
+        let controller = inst.controller;
+        inst.location = Location::Graveyard;
+        inst.position = Position::FaceUpAttack;
+        inst.controller = owner;
+        inst.turn_set = None;
+        inst.turn_entered_field = None;
+        let holder = &mut self.players[controller.index()];
+        match from {
+            Location::Hand => holder.hand.retain(|&c| c != card),
+            Location::MonsterZone(z) => holder.monster_zones[z as usize] = None,
+            Location::SpellTrapZone(z) => holder.spell_trap_zones[z as usize] = None,
+            Location::Deck => holder.deck.retain(|&c| c != card),
+            Location::Extra => holder.extra.retain(|&c| c != card),
+            Location::Graveyard => return,
+        }
+        self.players[owner.index()].graveyard.push(card);
+        events.push(Event::SentToGraveyard { card, from });
+    }
+}
+
+/// All `k`-element subsets of `items`, in index order.
+fn combinations(items: &[InstanceId], k: usize) -> Vec<Vec<InstanceId>> {
+    fn go(
+        items: &[InstanceId],
+        k: usize,
+        start: usize,
+        cur: &mut Vec<InstanceId>,
+        out: &mut Vec<Vec<InstanceId>>,
+    ) {
+        if cur.len() == k {
+            out.push(cur.clone());
+            return;
+        }
+        for i in start..items.len() {
+            cur.push(items[i]);
+            go(items, k, i + 1, cur, out);
+            cur.pop();
+        }
+    }
+    let mut out = Vec::new();
+    go(items, k, 0, &mut Vec::new(), &mut out);
+    out
+}

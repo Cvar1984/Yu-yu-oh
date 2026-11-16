@@ -34,6 +34,14 @@ pub struct GameSetup {
     pub first_player: Option<PlayerId>,
     /// A game still running after this many turns is a draw.
     pub max_turns: u32,
+    /// `false` keeps each deck in listed order, first card drawn first.
+    /// For scenario tests and stacked-deck replays only.
+    #[serde(default = "default_true")]
+    pub shuffle: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl GameSetup {
@@ -45,6 +53,7 @@ impl GameSetup {
             seed,
             first_player: None,
             max_turns: Self::DEFAULT_MAX_TURNS,
+            shuffle: true,
         }
     }
 }
