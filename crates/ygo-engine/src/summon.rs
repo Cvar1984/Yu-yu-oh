@@ -63,11 +63,10 @@ impl Game {
         card: InstanceId,
         tributes: &[InstanceId],
         face_down: bool,
-        events: &mut Vec<Event>,
     ) {
         for &tribute in tributes {
-            self.send_to_graveyard(tribute, events);
-            events.push(Event::Tributed {
+            self.send_to_graveyard(tribute);
+            self.emit(Event::Tributed {
                 player,
                 card: tribute,
             });
@@ -77,8 +76,8 @@ impl Game {
         } else {
             Position::FaceUpAttack
         };
+        self.remove_from_current_place(card);
         let state = &mut self.players[player.index()];
-        state.hand.retain(|&c| c != card);
         let zone = state
             .monster_zones
             .iter()
@@ -87,43 +86,20 @@ impl Game {
         state.monster_zones[zone] = Some(card);
         state.summons_used += 1;
         state.monsters_entered += 1;
+        let turn = self.turn;
         let inst = &mut self.instances[card.index()];
         inst.location = Location::MonsterZone(zone as u8);
         inst.position = position;
         inst.controller = player;
-        inst.turn_entered_field = Some(self.turn);
-        inst.turn_set = face_down.then_some(self.turn);
+        inst.turn_entered_field = Some(turn);
+        inst.turn_set = face_down.then_some(turn);
         inst.position_changed_this_turn = false;
         inst.attacked_this_turn = false;
-        events.push(Event::Summoned {
+        self.emit(Event::Summoned {
             player,
             card,
             position,
         });
-    }
-
-    /// Moves a card from wherever it is to its owner's Graveyard.
-    pub(crate) fn send_to_graveyard(&mut self, card: InstanceId, events: &mut Vec<Event>) {
-        let inst = &mut self.instances[card.index()];
-        let from = inst.location;
-        let owner = inst.owner;
-        let controller = inst.controller;
-        inst.location = Location::Graveyard;
-        inst.position = Position::FaceUpAttack;
-        inst.controller = owner;
-        inst.turn_set = None;
-        inst.turn_entered_field = None;
-        let holder = &mut self.players[controller.index()];
-        match from {
-            Location::Hand => holder.hand.retain(|&c| c != card),
-            Location::MonsterZone(z) => holder.monster_zones[z as usize] = None,
-            Location::SpellTrapZone(z) => holder.spell_trap_zones[z as usize] = None,
-            Location::Deck => holder.deck.retain(|&c| c != card),
-            Location::Extra => holder.extra.retain(|&c| c != card),
-            Location::Graveyard => return,
-        }
-        self.players[owner.index()].graveyard.push(card);
-        events.push(Event::SentToGraveyard { card, from });
     }
 }
 

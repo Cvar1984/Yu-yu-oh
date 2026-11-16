@@ -42,19 +42,18 @@ impl Game {
         player: PlayerId,
         attacker: InstanceId,
         target: Option<InstanceId>,
-        events: &mut Vec<Event>,
     ) {
         self.instances[attacker.index()].attacked_this_turn = true;
-        events.push(Event::AttackDeclared { attacker, target });
-        self.enter_phase(Phase::Battle(BattleStep::Damage), events);
+        self.emit(Event::AttackDeclared { attacker, target });
+        self.enter_phase(Phase::Battle(BattleStep::Damage));
 
         let atk = self.stats(attacker).atk;
         match target {
-            None => self.damage(player.opponent(), atk, events),
+            None => self.battle_damage(player.opponent(), atk),
             Some(target) => {
                 if self.instances[target.index()].position == Position::FaceDownDefense {
                     self.instances[target.index()].position = Position::FaceUpDefense;
-                    events.push(Event::Flipped { card: target });
+                    self.emit(Event::Flipped { card: target });
                 }
                 let defender = self.instances[target.index()].controller;
                 let stats = self.stats(target);
@@ -62,70 +61,61 @@ impl Game {
                     let diff = atk - stats.atk;
                     match diff.signum() {
                         1 => {
-                            self.destroy(target, events);
-                            self.damage(defender, diff, events);
+                            self.destroy_by_battle(target);
+                            self.battle_damage(defender, diff);
                         }
                         -1 => {
-                            self.destroy(attacker, events);
-                            self.damage(player, -diff, events);
+                            self.destroy_by_battle(attacker);
+                            self.battle_damage(player, -diff);
                         }
                         _ => {
-                            self.destroy(target, events);
-                            self.destroy(attacker, events);
+                            self.destroy_by_battle(target);
+                            self.destroy_by_battle(attacker);
                         }
                     }
                 } else {
                     let diff = atk - stats.def;
                     match diff.signum() {
-                        1 => self.destroy(target, events),
-                        -1 => self.damage(player, -diff, events),
+                        1 => self.destroy_by_battle(target),
+                        -1 => self.battle_damage(player, -diff),
                         _ => {}
                     }
                 }
             }
         }
-        self.check_life_points(events);
+        self.check_life_points();
         if self.result.is_none() {
-            self.enter_phase(Phase::Battle(BattleStep::Battle), events);
+            self.enter_phase(Phase::Battle(BattleStep::Battle));
         }
     }
 
-    fn destroy(&mut self, card: InstanceId, events: &mut Vec<Event>) {
-        self.send_to_graveyard(card, events);
-        events.push(Event::DestroyedByBattle { card });
+    fn destroy_by_battle(&mut self, card: InstanceId) {
+        self.send_to_graveyard(card);
+        self.emit(Event::DestroyedByBattle { card });
     }
 
-    fn damage(&mut self, player: PlayerId, amount: i32, events: &mut Vec<Event>) {
+    fn battle_damage(&mut self, player: PlayerId, amount: i32) {
         let amount = u32::try_from(amount).unwrap_or(0);
         let state = &mut self.players[player.index()];
         state.lp = state.lp.saturating_sub(amount);
-        events.push(Event::DamageTaken {
-            player,
-            amount,
-            lp: state.lp,
-        });
+        let lp = state.lp;
+        self.emit(Event::DamageTaken { player, amount, lp });
     }
 
-    fn check_life_points(&mut self, events: &mut Vec<Event>) {
+    pub(crate) fn check_life_points(&mut self) {
         let dead: Vec<PlayerId> = PlayerId::BOTH
             .into_iter()
             .filter(|p| self.players[p.index()].lp == 0)
             .collect();
         match dead.as_slice() {
             [] => {}
-            [loser] => self.finish(
-                GameResult::Win {
-                    winner: loser.opponent(),
-                    reason: WinReason::LifePoints,
-                },
-                events,
-            ),
-            _ => self.finish(
-                GameResult::Draw {
-                    reason: DrawReason::BothLifePointsZero,
-                },
-                events,
-            ),
+            [loser] => self.finish(GameResult::Win {
+                winner: loser.opponent(),
+                reason: WinReason::LifePoints,
+            }),
+            _ => self.finish(GameResult::Draw {
+                reason: DrawReason::BothLifePointsZero,
+            }),
         }
     }
 }

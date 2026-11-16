@@ -63,10 +63,19 @@ fn check_invariants(g: &Game) {
                 assert!(inst.turn_entered_field.is_some());
             }
         }
-        assert!(
-            s.spell_trap_zones.iter().all(|z| z.is_none()),
-            "no Spell/Trap play in M1"
-        );
+        for (i, zone) in s.spell_trap_zones.iter().enumerate() {
+            if let Some(id) = zone {
+                assert!(seen.insert(*id), "{id:?} is in two places");
+                let inst = g.instance(*id);
+                assert_eq!(inst.location, Location::SpellTrapZone(i as u8));
+                assert_eq!(inst.controller, p);
+                assert!(!g.stats(*id).is_monster());
+                assert!(matches!(
+                    inst.position,
+                    Position::FaceDown | Position::FaceUp
+                ));
+            }
+        }
         assert!(s.lp <= rules.life.starting_lp);
         assert!(usize::from(s.summons_used) <= rules.summon.normal_or_tribute_per_turn);
         if rules.hand.hand_limit_check == HandLimitCheck::AfterDraw
@@ -94,6 +103,14 @@ fn check_invariants(g: &Game) {
         )
     );
     assert_eq!(g.result().is_none(), g.pending_decision().is_some());
+    if g.pending_decision()
+        .is_some_and(|d| d.kind != ygo_engine::DecisionKind::Choose)
+    {
+        assert!(
+            g.chain().is_empty(),
+            "a chain resolves before the next decision"
+        );
+    }
     assert_eq!(g.result().is_none(), !g.legal_actions().is_empty());
 
     for viewer in PlayerId::BOTH {

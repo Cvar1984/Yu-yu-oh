@@ -14,6 +14,16 @@ impl Game {
         if self.result.is_some() {
             return None;
         }
+        if let Some(pc) = &self.pending_choice {
+            return Some(Decision {
+                player: pc.ctx.controller,
+                kind: DecisionKind::Choose,
+            });
+        }
+        if !self.chain.is_empty() {
+            // Step 3 adds response windows; until then a chain resolves at once.
+            return None;
+        }
         let player = self.turn_player;
         let kind = match self.phase {
             Phase::Draw if self.hand_over_limit(player, HandLimitCheck::AfterDraw) => {
@@ -44,12 +54,15 @@ impl Game {
             DecisionKind::MainPhase => {
                 self.summon_actions(decision.player, &mut actions);
                 self.position_actions(decision.player, &mut actions);
+                self.set_spell_trap_actions(decision.player, &mut actions);
+                self.activation_actions(decision.player, &mut actions);
                 if self.phase == Phase::Main1 && self.attacks_allowed() {
                     actions.push(Action::EnterBattlePhase);
                 }
                 actions.push(Action::EndTurn);
             }
             DecisionKind::BattlePhase => self.battle_actions(decision.player, &mut actions),
+            DecisionKind::Choose => self.choose_actions(&mut actions),
         }
         actions
     }
@@ -66,41 +79,49 @@ impl Game {
         if !self.legal_actions().contains(action) {
             return Err(RuleError::IllegalAction(action.clone()));
         }
-        let mut events = Vec::new();
+        let player = decision.player;
         match action {
-            Action::Discard { card } => self.discard(decision.player, *card, &mut events),
+            Action::Discard { card } => self.discard(*card),
             Action::Summon {
                 card,
                 tributes,
                 face_down,
-            } => self.summon(decision.player, *card, tributes, *face_down, &mut events),
-            Action::FlipSummon { card } => self.flip_summon(decision.player, *card, &mut events),
-            Action::ChangePosition { card } => self.change_position(*card, &mut events),
-            Action::EnterBattlePhase => {
-                self.enter_phase(Phase::Battle(BattleStep::Start), &mut events)
-            }
-            Action::Attack { attacker, target } => {
-                self.attack(decision.player, *attacker, *target, &mut events)
-            }
-            Action::EndBattlePhase => self.enter_phase(Phase::Battle(BattleStep::End), &mut events),
-            Action::EndTurn => self.enter_phase(Phase::End, &mut events),
+            } => self.summon(player, *card, tributes, *face_down),
+            Action::FlipSummon { card } => self.flip_summon(player, *card),
+            Action::ChangePosition { card } => self.change_position(*card),
+            Action::SetSpellTrap { card } => self.set_spell_trap(player, *card),
+            Action::Activate {
+                card,
+                effect,
+                targets,
+                cost,
+            } => self.activate(player, *card, *effect, targets.clone(), cost.clone()),
+            Action::Choose { card } => self.choose(*card),
+            Action::EnterBattlePhase => self.enter_phase(Phase::Battle(BattleStep::Start)),
+            Action::Attack { attacker, target } => self.attack(player, *attacker, *target),
+            Action::EndBattlePhase => self.enter_phase(Phase::Battle(BattleStep::End)),
+            Action::EndTurn => self.enter_phase(Phase::End),
         }
-        self.advance(&mut events);
-        Ok(events)
+        self.advance();
+        Ok(std::mem::take(&mut self.events))
     }
 
-    /// Runs automatic phase steps until a decision is pending or the game
-    /// ends. Called at creation and after every action.
-    pub(crate) fn advance(&mut self, events: &mut Vec<Event>) {
+    /// Runs automatic steps until a decision is pending or the game ends.
+    /// Called at creation and after every action.
+    pub(crate) fn advance(&mut self) {
         while self.result.is_none() && self.pending_decision().is_none() {
+            if !self.chain.is_empty() {
+                self.resolve_top_link();
+                continue;
+            }
             match self.phase {
-                Phase::Draw => self.enter_phase(Phase::Standby, events),
-                Phase::Standby => self.enter_phase(Phase::Main1, events),
-                Phase::End => self.start_turn(self.turn + 1, self.turn_player.opponent(), events),
+                Phase::Draw => self.enter_phase(Phase::Standby),
+                Phase::Standby => self.enter_phase(Phase::Main1),
                 Phase::Battle(BattleStep::Start) => {
-                    self.enter_phase(Phase::Battle(BattleStep::Battle), events)
+                    self.enter_phase(Phase::Battle(BattleStep::Battle))
                 }
-                Phase::Battle(BattleStep::End) => self.enter_phase(Phase::Main2, events),
+                Phase::Battle(BattleStep::End) => self.enter_phase(Phase::Main2),
+                Phase::End => self.start_turn(self.turn + 1, self.turn_player.opponent()),
                 Phase::Main1 | Phase::Main2 | Phase::Battle(_) => {
                     unreachable!("these phases always have a decision")
                 }
@@ -108,21 +129,21 @@ impl Game {
         }
     }
 
-    pub(crate) fn enter_phase(&mut self, phase: Phase, events: &mut Vec<Event>) {
+    pub(crate) fn enter_phase(&mut self, phase: Phase) {
         self.phase = phase;
-        events.push(Event::PhaseEntered { phase });
+        self.emit(Event::PhaseEntered { phase });
+        if phase == Phase::End {
+            self.expire_lingering();
+        }
     }
 
     /// Starts `player`'s turn number `turn`: the turn cap, per-turn resets,
     /// then the Draw Phase with its draw.
-    pub(crate) fn start_turn(&mut self, turn: u32, player: PlayerId, events: &mut Vec<Event>) {
+    pub(crate) fn start_turn(&mut self, turn: u32, player: PlayerId) {
         if turn > self.max_turns {
-            self.finish(
-                GameResult::Draw {
-                    reason: DrawReason::TurnLimit,
-                },
-                events,
-            );
+            self.finish(GameResult::Draw {
+                reason: DrawReason::TurnLimit,
+            });
             return;
         }
         self.turn = turn;
@@ -135,25 +156,22 @@ impl Game {
             card.position_changed_this_turn = false;
             card.attacked_this_turn = false;
         }
-        events.push(Event::TurnStarted { turn, player });
-        self.enter_phase(Phase::Draw, events);
+        self.emit(Event::TurnStarted { turn, player });
+        self.enter_phase(Phase::Draw);
 
         let skip = turn == 1 && self.shared.rules.turn.first_player_skips_draw;
         if skip {
             return;
         }
         if let Some(card) = self.draw_card(player) {
-            events.push(Event::Drew { player, card });
+            self.emit(Event::Drew { player, card });
         } else {
-            events.push(Event::DeckEmpty { player });
+            self.emit(Event::DeckEmpty { player });
             if self.shared.rules.win.deck_out_loses {
-                self.finish(
-                    GameResult::Win {
-                        winner: player.opponent(),
-                        reason: WinReason::DeckOut,
-                    },
-                    events,
-                );
+                self.finish(GameResult::Win {
+                    winner: player.opponent(),
+                    reason: WinReason::DeckOut,
+                });
             }
         }
     }
@@ -163,13 +181,37 @@ impl Game {
         hand.hand_limit_check == mode && self.players[player.index()].hand.len() > hand.max_size
     }
 
-    fn discard(&mut self, player: PlayerId, card: InstanceId, events: &mut Vec<Event>) {
-        self.send_to_graveyard(card, events);
-        events.push(Event::Discarded { player, card });
+    /// Spells and Traps in the hand that may be Set now.
+    fn set_spell_trap_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
+        if !matches!(self.phase, Phase::Main1 | Phase::Main2)
+            || self.free_spell_trap_zone(player).is_none()
+        {
+            return;
+        }
+        for &card in &self.players[player.index()].hand {
+            let stats = self.stats(card);
+            if matches!(
+                stats.kind,
+                ygo_data::CardKind::Spell | ygo_data::CardKind::Trap
+            ) && stats.subtype != crate::SpellTrapType::Field
+            {
+                actions.push(Action::SetSpellTrap { card });
+            }
+        }
     }
 
-    pub(crate) fn finish(&mut self, result: GameResult, events: &mut Vec<Event>) {
-        self.result = Some(result);
-        events.push(Event::GameOver { result });
+    fn set_spell_trap(&mut self, player: PlayerId, card: InstanceId) {
+        let zone = self
+            .free_spell_trap_zone(player)
+            .expect("checked when the action was offered");
+        self.place_spell_trap(player, card, zone, crate::Position::FaceDown);
+        self.emit(Event::SetCard { player, card });
+    }
+
+    pub(crate) fn finish(&mut self, result: GameResult) {
+        if self.result.is_none() {
+            self.result = Some(result);
+            self.emit(Event::GameOver { result });
+        }
     }
 }

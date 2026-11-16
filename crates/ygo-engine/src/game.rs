@@ -4,9 +4,10 @@ use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
 use ygo_data::CardId;
 
+use crate::chain::PendingChoice;
 use crate::{
-    CardInstance, CardScript, CardStats, GameResult, GameSetup, InstanceId, Location, Phase,
-    PlayerId, PlayerState, SetupError, Shared,
+    CardInstance, CardScript, CardStats, ChainLink, Event, GameResult, GameSetup, InstanceId,
+    Lingering, Location, Phase, PlayerId, PlayerState, SetupError, Shared,
 };
 
 /// A whole game. Cheap to clone: flat vectors plus one `Arc` to the shared
@@ -24,6 +25,11 @@ pub struct Game {
     pub(crate) phase: Phase,
     pub(crate) max_turns: u32,
     pub(crate) result: Option<GameResult>,
+    /// Events of the action being applied; drained by `apply`.
+    pub(crate) events: Vec<Event>,
+    pub(crate) chain: Vec<ChainLink>,
+    pub(crate) pending_choice: Option<PendingChoice>,
+    pub(crate) lingering: Vec<Lingering>,
 }
 
 impl Game {
@@ -138,15 +144,19 @@ impl Game {
             phase: Phase::End,
             max_turns: setup.max_turns,
             result: None,
+            events: Vec::new(),
+            chain: Vec::new(),
+            pending_choice: None,
+            lingering: Vec::new(),
         };
         for player in PlayerId::BOTH {
             for _ in 0..game.shared.rules.hand.opening_size {
                 game.draw_card(player);
             }
         }
-        let mut events = Vec::new();
-        game.start_turn(1, turn_player, &mut events);
-        game.advance(&mut events);
+        game.start_turn(1, turn_player);
+        game.advance();
+        game.events.clear();
         Ok(game)
     }
 
@@ -202,6 +212,11 @@ impl Game {
 
     pub fn result(&self) -> Option<GameResult> {
         self.result
+    }
+
+    /// The chain being built or resolved, first link first.
+    pub fn chain(&self) -> &[ChainLink] {
+        &self.chain
     }
 }
 

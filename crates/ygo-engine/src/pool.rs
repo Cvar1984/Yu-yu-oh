@@ -10,6 +10,48 @@ use crate::{CardScript, Registry, Tag};
 #[serde(transparent)]
 pub struct CardIndex(pub u16);
 
+/// Spell and Trap subtypes, from the `race` field. `None` for monsters.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SpellTrapType {
+    None,
+    Normal,
+    QuickPlay,
+    Continuous,
+    Equip,
+    Field,
+    Ritual,
+    Counter,
+}
+
+impl SpellTrapType {
+    fn from_race(kind: CardKind, race: &str) -> Self {
+        if !matches!(kind, CardKind::Spell | CardKind::Trap) {
+            return SpellTrapType::None;
+        }
+        match race {
+            "Normal" => SpellTrapType::Normal,
+            "Quick-Play" => SpellTrapType::QuickPlay,
+            "Continuous" => SpellTrapType::Continuous,
+            "Equip" => SpellTrapType::Equip,
+            "Field" => SpellTrapType::Field,
+            "Ritual" => SpellTrapType::Ritual,
+            "Counter" => SpellTrapType::Counter,
+            other => panic!("unknown Spell/Trap subtype {other:?}"),
+        }
+    }
+
+    /// Goes to the Graveyard once its activation has resolved.
+    pub fn leaves_after_resolving(self) -> bool {
+        matches!(
+            self,
+            SpellTrapType::Normal
+                | SpellTrapType::QuickPlay
+                | SpellTrapType::Ritual
+                | SpellTrapType::Counter
+        )
+    }
+}
+
 /// The numbers the engine needs about a card. Spells and Traps have zero
 /// level, ATK and DEF.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,9 +59,13 @@ pub struct CardStats {
     pub id: CardId,
     pub name: String,
     pub kind: CardKind,
+    pub subtype: SpellTrapType,
     pub level: u8,
     pub atk: i32,
     pub def: i32,
+    /// Monster type (Dragon, Fiend...) or empty for Spells and Traps.
+    pub race: String,
+    pub attribute: Option<String>,
 }
 
 impl CardStats {
@@ -54,9 +100,16 @@ impl CardPool {
                 id: c.id,
                 name: c.name.clone(),
                 kind: c.kind(),
+                subtype: SpellTrapType::from_race(c.kind(), &c.race),
                 level: c.level.unwrap_or(0),
                 atk: c.atk.unwrap_or(0),
                 def: c.def.unwrap_or(0),
+                race: if c.card_type.is_monster() {
+                    c.race.clone()
+                } else {
+                    String::new()
+                },
+                attribute: c.attribute.clone(),
             })
             .collect();
         cards.sort_by_key(|c| c.id);

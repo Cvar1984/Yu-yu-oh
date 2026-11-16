@@ -53,14 +53,36 @@ pub enum Position {
     FaceUpAttack,
     FaceUpDefense,
     FaceDownDefense,
-    /// A Set Spell or Trap.
+    /// A Set Spell or Trap, or a card in the hand or Deck.
     FaceDown,
+    /// A face-up Spell or Trap, or a card in the Graveyard.
+    FaceUp,
 }
 
 impl Position {
     pub fn is_face_up(self) -> bool {
-        matches!(self, Position::FaceUpAttack | Position::FaceUpDefense)
+        matches!(
+            self,
+            Position::FaceUpAttack | Position::FaceUpDefense | Position::FaceUp
+        )
     }
+}
+
+/// What a lingering effect does while it lasts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum LingeringKind {
+    /// Give `card` back to `to` when the effect expires (Change of Heart).
+    ReturnControl { card: InstanceId, to: PlayerId },
+}
+
+/// An effect that outlives its chain link and ends at a named End Phase.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Lingering {
+    /// The card whose effect this is.
+    pub source: InstanceId,
+    pub kind: LingeringKind,
+    /// Expires in the End Phase of this turn number.
+    pub expires_turn: u32,
 }
 
 /// One physical card and everything the rules track about it.
