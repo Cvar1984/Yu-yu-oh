@@ -32,7 +32,7 @@ impl CardStats {
 }
 
 /// Every card the engine may see, in a flat table.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct CardPool {
     cards: Vec<CardStats>,
     by_id: HashMap<CardId, CardIndex>,
@@ -79,7 +79,7 @@ impl CardPool {
 
 /// Immutable data every game shares: built once, held by `Arc`, so a
 /// game copy never clones it.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Shared {
     pub rules: Rules,
     pub pool: CardPool,

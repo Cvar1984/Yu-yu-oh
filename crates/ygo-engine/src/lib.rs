@@ -10,6 +10,7 @@ mod action;
 mod battle;
 mod error;
 mod game;
+mod observe;
 mod pool;
 mod position;
 mod setup;
@@ -20,6 +21,7 @@ mod turn;
 pub use action::{Action, Decision, DecisionKind, Event, RuleError};
 pub use error::SetupError;
 pub use game::Game;
+pub use observe::{Observation, Side, VisibleCard};
 pub use pool::{CardIndex, CardPool, CardStats, Shared};
 pub use setup::{DeckList, GameSetup};
 pub use state::{

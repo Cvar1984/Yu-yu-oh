@@ -11,7 +11,7 @@ use crate::{
 
 /// A whole game. Cheap to clone: flat vectors plus one `Arc` to the shared
 /// rules and card pool.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Game {
     pub(crate) shared: Arc<Shared>,
     /// Kept in the state so effects that shuffle (M2) stay deterministic.
@@ -83,26 +83,39 @@ impl Game {
                     max: rules.deck.extra_max,
                 });
             }
-            for (ids, extra) in [(&deck.main, false), (&deck.extra, true)] {
-                for &id in ids {
-                    let (index, stats) = lookup(&shared, player, id)?;
-                    if stats.is_extra_deck() != extra {
-                        return Err(SetupError::WrongDeckList {
-                            player,
-                            id,
-                            name: stats.name.clone(),
-                        });
-                    }
-                    let instance = InstanceId(instances.len() as u8);
-                    let mut card = CardInstance::in_deck(index, player);
-                    if extra {
-                        card.location = Location::Extra;
-                        state.extra.push(instance);
-                    } else {
-                        state.deck.push(instance);
-                    }
-                    instances.push(card);
+            // Instance numbers must not reveal a card's identity to the
+            // opponent, who may know the deck list: number the Main Deck
+            // in a seeded random order, then shuffle the draw order too.
+            let mut main_order: Vec<usize> = (0..deck.main.len()).collect();
+            if setup.shuffle {
+                shuffle(&mut rng, &mut main_order);
+            }
+            for &slot in &main_order {
+                let id = deck.main[slot];
+                let (index, stats) = lookup(&shared, player, id)?;
+                if stats.is_extra_deck() {
+                    return Err(SetupError::WrongDeckList {
+                        player,
+                        id,
+                        name: stats.name.clone(),
+                    });
                 }
+                state.deck.push(InstanceId(instances.len() as u8));
+                instances.push(CardInstance::in_deck(index, player));
+            }
+            for &id in &deck.extra {
+                let (index, stats) = lookup(&shared, player, id)?;
+                if !stats.is_extra_deck() {
+                    return Err(SetupError::WrongDeckList {
+                        player,
+                        id,
+                        name: stats.name.clone(),
+                    });
+                }
+                let mut card = CardInstance::in_deck(index, player);
+                card.location = Location::Extra;
+                state.extra.push(InstanceId(instances.len() as u8));
+                instances.push(card);
             }
             if setup.shuffle {
                 shuffle(&mut rng, &mut state.deck);
@@ -202,7 +215,7 @@ fn lookup(
 
 /// Fisher-Yates with the game's own RNG, so no `rand` dependency and the
 /// same seed shuffles the same way on every platform.
-fn shuffle(rng: &mut ChaCha8Rng, cards: &mut [InstanceId]) {
+fn shuffle<T>(rng: &mut ChaCha8Rng, cards: &mut [T]) {
     for i in (1..cards.len()).rev() {
         let j = (rng.next_u64() % (i as u64 + 1)) as usize;
         cards.swap(i, j);

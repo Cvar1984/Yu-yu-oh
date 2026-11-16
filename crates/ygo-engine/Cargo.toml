@@ -12,3 +12,6 @@ serde.workspace = true
 thiserror.workspace = true
 rand_core = "0.10"
 rand_chacha = "0.10"
+
+[dev-dependencies]
+serde_json.workspace = true
