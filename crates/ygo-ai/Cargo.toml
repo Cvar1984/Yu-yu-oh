@@ -4,5 +4,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Players for the engine: random, heuristic, search and learned"
 
 [dependencies]
+ygo-engine.workspace = true
+rand_core = "0.10"
+rand_chacha = "0.10"

@@ -1,4 +1,6 @@
-//! `ygo`: quick access to everything. Only the milestone M0 commands exist yet.
+//! `ygo`: quick access to everything.
+
+mod sim;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -37,6 +39,19 @@ enum Command {
         /// Only allow cards and copies from this collection file.
         #[arg(long)]
         collection: Option<PathBuf>,
+    },
+    /// Play bot against bot and print win rates and speed.
+    Sim {
+        deck_a: PathBuf,
+        deck_b: PathBuf,
+        /// Number of games; each player goes first in half of them.
+        #[arg(short = 'n', long, default_value_t = 100)]
+        games: u32,
+        #[arg(long, default_value_t = 1)]
+        seed: u64,
+        /// A game still running after this many turns is a draw.
+        #[arg(long, default_value_t = ygo_engine::GameSetup::DEFAULT_MAX_TURNS)]
+        max_turns: u32,
     },
 }
 
@@ -106,6 +121,25 @@ fn run(cli: Cli) -> Result<bool, DataError> {
             }
             println!("{} problem(s)", problems.len());
             Ok(false)
+        }
+        Command::Sim {
+            deck_a,
+            deck_b,
+            games,
+            seed,
+            max_turns,
+        } => {
+            sim::run(
+                &bundle,
+                &sim::SimOptions {
+                    deck_a: &deck_a,
+                    deck_b: &deck_b,
+                    games,
+                    seed,
+                    max_turns,
+                },
+            )?;
+            Ok(true)
         }
     }
 }
