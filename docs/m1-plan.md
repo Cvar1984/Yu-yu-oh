@@ -161,5 +161,17 @@ the gate is declared passed, not on every CI run.
 
 ## Progress
 
-- Step 1 done: `CardPool`, `CardInstance`, `GameSetup`, `Game::new`
-  with deck checks, seeded shuffle and opening hands.
+All eight steps are done; the gate report is at the end of this file.
+
+What changed from the plan while building:
+
+- `hand.opening_size` became a rules key instead of a constant.
+- `GameSetup.shuffle` was added so scenario tests can stack decks.
+- Instance ids are assigned in a seeded random order, because ids in
+  deck-list order would let the opponent identify face-down cards.
+- `RandomPlayer` lives in `ygo-ai` (with a `Player` trait and
+  `play_out`), not in the engine's test support, because `ygo sim` needs
+  it too.
+- `EnterBattlePhase` is offered only when the turn player may attack, so
+  turn 1 of the first player goes straight from Main Phase 1 to the End
+  Phase.
