@@ -1,40 +1,79 @@
 {
+ "schema_version": 1,
  "name": "Fixture illegal",
+ "notes": null,
  "main": [
-  89631139,
-  89631139,
-  89631139,
-  46986414,
-  46986414,
-  46986414,
-  15025844,
-  15025844,
-  15025844,
-  26202165,
-  26202165,
-  26202165,
-  40640057,
-  40640057,
-  40640057,
-  55144522,
-  55144522,
-  33396948,
-  23995346,
-  1,
-  83764718,
-  83764718,
-  83764718,
-  24094653,
-  24094653,
-  24094653,
-  44095762,
-  44095762,
-  44095762,
-  4206964,
-  4206964,
-  4206964
+  {
+   "id": 89631139,
+   "name": "Blue-Eyes White Dragon",
+   "count": 3
+  },
+  {
+   "id": 46986414,
+   "name": "Dark Magician",
+   "count": 3
+  },
+  {
+   "id": 15025844,
+   "name": "Mystical Elf",
+   "count": 3
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "count": 3
+  },
+  {
+   "id": 40640057,
+   "name": "Kuriboh",
+   "count": 3
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "count": 2
+  },
+  {
+   "id": 33396948,
+   "name": "Exodia the Forbidden One",
+   "count": 1
+  },
+  {
+   "id": 23995346,
+   "name": "Blue-Eyes Ultimate Dragon",
+   "count": 1
+  },
+  {
+   "id": 1,
+   "name": "unknown",
+   "count": 1
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "count": 3
+  },
+  {
+   "id": 24094653,
+   "name": "Polymerization",
+   "count": 3
+  },
+  {
+   "id": 44095762,
+   "name": "Mirror Force",
+   "count": 3
+  },
+  {
+   "id": 4206964,
+   "name": "Trap Hole",
+   "count": 3
+  }
  ],
  "extra": [
-  89631139
+  {
+   "id": 89631139,
+   "name": "Blue-Eyes White Dragon",
+   "count": 1
+  }
  ]
 }

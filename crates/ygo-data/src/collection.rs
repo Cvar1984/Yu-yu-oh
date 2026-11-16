@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -16,15 +16,25 @@ pub struct OwnedCard {
 }
 
 /// The cards a player owns. Deck building is restricted to these.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Collection {
+    pub schema_version: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read_from: Option<String>,
+    /// Per-set completion as the game shows it, e.g. `"LOB": "92/126"`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub totals: Option<BTreeMap<String, String>>,
     pub cards: Vec<OwnedCard>,
 }
 
 impl Collection {
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        crate::read_json(path)
+        let collection: Self = crate::read_json(path)?;
+        crate::check_schema("collection", collection.schema_version)?;
+        Ok(collection)
     }
 
     pub fn validate(&self, cards: &CardDb) -> Result<(), DataError> {

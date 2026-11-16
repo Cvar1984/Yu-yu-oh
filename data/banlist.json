@@ -1,9 +1,29 @@
 {
-  "updated": "2026-11-16",
-  "limits": [
-    { "id": 55144522, "name": "Pot of Greed", "limit": 1 },
-    { "id": 12580477, "name": "Raigeki", "limit": 1 },
-    { "id": 72302403, "name": "Swords of Revealing Light", "limit": 1 },
-    { "id": 4031928, "name": "Change of Heart", "limit": 1 }
-  ]
+ "schema_version": 1,
+ "name": "Owner's game (observed)",
+ "updated": "2026-11-16",
+ "default_limit": 3,
+ "note": "Observed from the in-game deck screen on 2026-11-16 (red '1' badges). Incomplete: add Forbidden (0), Limited (1) and Semi-Limited (2) cards as the game shows them. Cards not listed use default_limit.",
+ "limits": [
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "limit": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "limit": 1
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "limit": 1
+  },
+  {
+   "id": 4031928,
+   "name": "Change of Heart",
+   "limit": 1
+  }
+ ]
 }

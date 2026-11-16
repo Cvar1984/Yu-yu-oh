@@ -40,7 +40,7 @@ pub fn check_deck(
 ) -> Vec<DeckProblem> {
     let mut problems = Vec::new();
 
-    let main = deck.main.len();
+    let main = deck.main_size();
     if main < rules.deck.main_min || main > rules.deck.main_max {
         problems.push(DeckProblem::MainSize {
             size: main,
@@ -48,9 +48,9 @@ pub fn check_deck(
             max: rules.deck.main_max,
         });
     }
-    if deck.extra.len() > rules.deck.extra_max {
+    if deck.extra_size() > rules.deck.extra_max {
         problems.push(DeckProblem::ExtraSize {
-            size: deck.extra.len(),
+            size: deck.extra_size(),
             max: rules.deck.extra_max,
         });
     }
@@ -60,8 +60,8 @@ pub fn check_deck(
             problems.push(DeckProblem::UnknownCard(id));
             continue;
         };
-        let in_main = deck.main.contains(&id);
-        let in_extra = deck.extra.contains(&id);
+        let in_main = deck.in_main(id);
+        let in_extra = deck.in_extra(id);
         if card.card_type.is_extra_deck() && in_main {
             problems.push(DeckProblem::ExtraCardInMain {
                 id,
