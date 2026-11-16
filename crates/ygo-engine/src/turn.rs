@@ -42,6 +42,7 @@ impl Game {
             }
             DecisionKind::MainPhase => {
                 self.summon_actions(decision.player, &mut actions);
+                self.position_actions(decision.player, &mut actions);
                 actions.push(Action::EndTurn);
             }
         }
@@ -68,6 +69,8 @@ impl Game {
                 tributes,
                 face_down,
             } => self.summon(decision.player, *card, tributes, *face_down, &mut events),
+            Action::FlipSummon { card } => self.flip_summon(decision.player, *card, &mut events),
+            Action::ChangePosition { card } => self.change_position(*card, &mut events),
             Action::EndTurn => self.enter_phase(Phase::End, &mut events),
         }
         self.advance(&mut events);
