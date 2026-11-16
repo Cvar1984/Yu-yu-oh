@@ -4,5 +4,11 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Deterministic Yu-Gi-Oh! rules engine: state, phases, summons, battle, chains"
 
 [dependencies]
+ygo-data.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+rand_core = "0.10"
+rand_chacha = "0.10"

@@ -15,6 +15,7 @@ spell_trap_zones = 5
 field_spells_on_field = 1   # owner: 1 on the whole field; a new one destroys the old, whoever owns it
 
 [hand]
+opening_size = 5                # owner: official 5-card opening hand
 max_size = 6                    # owner: no cap during the turn (Pot of Greed may exceed it)
 hand_limit_check = "after_draw" # owner: after your Draw Phase, send down to max_size to the GY; "end_phase" = official
 
