@@ -190,6 +190,7 @@ pub fn check_invariants(g: &Game) {
             (Location::Hand, s.hand.clone()),
             (Location::Graveyard, s.graveyard.clone()),
             (Location::Extra, s.extra.clone()),
+            (Location::Banished, s.banished.clone()),
         ];
         for (zone, ids) in zones {
             for id in ids {

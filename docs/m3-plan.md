@@ -60,13 +60,15 @@ Painful Choice (choice ownership), Delinquent Duo (random versus
 chosen). The list grows as cards are scripted; nothing is branched
 until the original-text data exists, see the questions below.
 
-## Questions for the owner
+## Owner's answers (2026-11-17)
 
-- Cyber Jar under the summon settings: the plan Special Summons as many
-  revealed monsters as the settings allow, the controller choosing which,
-  and the rest go to the hand. Agree?
-- Toon rules in your game: can a Toon monster attack directly whenever
-  the opponent has no Toon monster, and does it die when Toon World
-  leaves, as on the modern text?
-- Original 2002 text: branch now from memory of the old printings, or
-  wait for a data file with the original text and script modern only?
+- Cyber Jar Special Summons as many revealed Level 4 or lower monsters
+  as the summon settings allow, the controller choosing which; the rest
+  go to the hand.
+- Toons play by the modern text: Special Summon from the hand while
+  Toon World is up, direct attacks when the opponent controls no Toon
+  monster, destroyed when Toon World leaves, no attack in the turn they
+  are summoned.
+- Original 2002 text: scripts follow modern text only; the list of
+  cards whose 2002 printing differs is kept here and branched once an
+  original-text data file exists.

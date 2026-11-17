@@ -47,6 +47,7 @@ pub enum Location {
     FieldZone,
     Graveyard,
     Extra,
+    Banished,
 }
 
 impl Location {
@@ -83,6 +84,12 @@ impl Position {
 pub enum LingeringKind {
     /// Give `card` back to `to` when the effect expires (Change of Heart).
     ReturnControl { card: InstanceId, to: PlayerId },
+    /// `card` has these ATK and DEF changes until the effect expires.
+    Stats {
+        card: InstanceId,
+        atk: i32,
+        def: i32,
+    },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.
@@ -112,6 +119,8 @@ pub struct CardInstance {
     pub equipped_to: Option<InstanceId>,
     /// A script-owned counter (Swords of Revealing Light counts End Phases).
     pub counter: u8,
+    /// Bit `i` set: effect `i` was used this turn (once-per-turn effects).
+    pub effect_uses: u8,
 }
 
 impl CardInstance {
@@ -128,6 +137,7 @@ impl CardInstance {
             attacked_this_turn: false,
             equipped_to: None,
             counter: 0,
+            effect_uses: 0,
         }
     }
 }
@@ -178,6 +188,7 @@ pub struct PlayerState {
     pub hand: Vec<InstanceId>,
     pub graveyard: Vec<InstanceId>,
     pub extra: Vec<InstanceId>,
+    pub banished: Vec<InstanceId>,
     pub monster_zones: Vec<Option<InstanceId>>,
     pub spell_trap_zones: Vec<Option<InstanceId>>,
     pub field_zone: Option<InstanceId>,
@@ -195,6 +206,7 @@ impl PlayerState {
             hand: Vec::new(),
             graveyard: Vec::new(),
             extra: Vec::new(),
+            banished: Vec::new(),
             monster_zones: vec![None; monster_zones],
             spell_trap_zones: vec![None; spell_trap_zones],
             field_zone: None,

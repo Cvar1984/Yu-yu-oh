@@ -63,6 +63,8 @@ pub enum DecisionKind {
     Respond,
     /// Order (and for optional ones, choose) the triggers that fired.
     Triggers,
+    /// The attack target left the field: attack another monster, or stop.
+    Replay,
 }
 
 /// Who must choose, and what kind of choice.
@@ -201,6 +203,27 @@ pub enum Event {
     PlacedOnTopOfDeck {
         player: PlayerId,
         card: InstanceId,
+    },
+    Banished {
+        card: InstanceId,
+        from: Location,
+    },
+    CoinTossed {
+        player: PlayerId,
+        heads: bool,
+    },
+    FusionSummoned {
+        player: PlayerId,
+        card: InstanceId,
+        materials: Vec<InstanceId>,
+    },
+    RitualSummoned {
+        player: PlayerId,
+        card: InstanceId,
+        tributes: Vec<InstanceId>,
+    },
+    AttackReplay {
+        attacker: InstanceId,
     },
     GameOver {
         result: GameResult,

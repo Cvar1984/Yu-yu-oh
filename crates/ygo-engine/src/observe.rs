@@ -50,6 +50,7 @@ pub struct Side {
     pub deck_count: usize,
     pub extra_count: usize,
     pub graveyard: Vec<VisibleCard>,
+    pub banished: Vec<VisibleCard>,
     pub monster_zones: Vec<Option<VisibleCard>>,
     pub spell_trap_zones: Vec<Option<VisibleCard>>,
     pub field_zone: Option<VisibleCard>,
@@ -105,14 +106,15 @@ impl Game {
     /// opponent's hand and every face-down card are `Hidden`.
     pub fn observe(&self, viewer: PlayerId) -> Observation {
         let modifiers = self.modifiers();
+        let hands_revealed = self.hands_revealed();
         let side = |player: PlayerId| {
             let state: &PlayerState = &self.players[player.index()];
             let own = player == viewer;
             let see = |id: InstanceId, in_hand: bool| {
                 let inst = &self.instances[id.index()];
                 let revealed = match inst.location {
-                    Location::Hand => own,
-                    Location::Graveyard => true,
+                    Location::Hand => own || hands_revealed,
+                    Location::Graveyard | Location::Banished => true,
                     _ => inst.position.is_face_up() || own,
                 };
                 let position = if in_hand {
@@ -141,6 +143,7 @@ impl Game {
                 deck_count: state.deck.len(),
                 extra_count: state.extra.len(),
                 graveyard: state.graveyard.iter().map(|&id| see(id, false)).collect(),
+                banished: state.banished.iter().map(|&id| see(id, false)).collect(),
                 monster_zones: state
                     .monster_zones
                     .iter()
@@ -167,7 +170,7 @@ impl Game {
             })
             .collect();
         let (revealed, question) = match &self.pending_choice {
-            Some(pc) if pc.ctx.controller == viewer => (
+            Some(pc) if pc.decider() == viewer => (
                 pc.card_options()
                     .iter()
                     .map(|&id| VisibleCard::Known {

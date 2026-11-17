@@ -37,6 +37,153 @@ impl Game {
         drawn
     }
 
+    /// Removes a card from play (any location) to its owner's banished pile.
+    pub fn banish(&mut self, card: InstanceId) {
+        let from = self.instances[card.index()].location;
+        if from == Location::Banished {
+            return;
+        }
+        self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
+        let owner = self.instances[card.index()].owner;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Banished;
+        inst.position = Position::FaceUp;
+        inst.controller = owner;
+        inst.turn_set = None;
+        inst.turn_entered_field = None;
+        self.players[owner.index()].banished.push(card);
+        self.emit(Event::Banished { card, from });
+    }
+
+    pub fn banished(&self, player: PlayerId) -> &[InstanceId] {
+        &self.players[player.index()].banished
+    }
+
+    /// A coin toss from the game's seeded RNG; `true` is heads.
+    pub fn coin(&mut self, player: PlayerId) -> bool {
+        let heads = self.rng.next_u32() & 1 == 1;
+        self.emit(Event::CoinTossed { player, heads });
+        heads
+    }
+
+    /// A uniformly random index below `n` from the game's seeded RNG.
+    pub fn random_index(&mut self, n: usize) -> usize {
+        (self.rng.next_u64() % n as u64) as usize
+    }
+
+    /// Whether both hands are public right now (Ceremonial Bell).
+    pub fn hands_revealed(&self) -> bool {
+        let mut revealed = false;
+        self.for_each_face_up_script(|script| {
+            if script.has(Tag::RevealHands) {
+                revealed = true;
+            }
+        });
+        revealed
+    }
+
+    fn for_each_face_up_script(&self, mut f: impl FnMut(&crate::CardScript)) {
+        for p in PlayerId::BOTH {
+            let state = &self.players[p.index()];
+            let cards = state
+                .monster_zones
+                .iter()
+                .chain(state.spell_trap_zones.iter())
+                .flatten()
+                .copied()
+                .chain(state.field_zone);
+            for card in cards {
+                let inst = &self.instances[card.index()];
+                if inst.position.is_face_up()
+                    && let Some(script) = self.shared.script(inst.card)
+                {
+                    f(script);
+                }
+            }
+        }
+    }
+
+    pub fn fusion_summons_allowed(&self) -> bool {
+        self.shared.rules.summon.fusion_summons
+    }
+
+    pub fn ritual_summons_allowed(&self) -> bool {
+        self.shared.rules.summon.ritual_summons
+    }
+
+    /// Fusion Summons `fusion` from the Extra Deck, sending the materials
+    /// (from the hand or field) to the Graveyard first. The caller checks
+    /// the materials; this checks `can_special_summon`.
+    pub fn fusion_summon(
+        &mut self,
+        player: PlayerId,
+        fusion: InstanceId,
+        materials: &[InstanceId],
+        position: Position,
+    ) -> bool {
+        if !self.can_special_summon(player) || materials.is_empty() {
+            return false;
+        }
+        for &m in materials {
+            self.send_to_graveyard(m);
+        }
+        if !self.special_summon(fusion, player, position) {
+            return false;
+        }
+        self.emit(Event::FusionSummoned {
+            player,
+            card: fusion,
+            materials: materials.to_vec(),
+        });
+        true
+    }
+
+    /// Ritual Summons `monster` from the hand, tributing `tributes` from
+    /// the hand or field. The caller checks the levels.
+    pub fn ritual_summon(
+        &mut self,
+        player: PlayerId,
+        monster: InstanceId,
+        tributes: &[InstanceId],
+        position: Position,
+    ) -> bool {
+        if !self.can_special_summon(player) {
+            return false;
+        }
+        for &t in tributes {
+            self.send_to_graveyard(t);
+            self.emit(Event::Tributed { player, card: t });
+        }
+        if !self.special_summon(monster, player, position) {
+            return false;
+        }
+        self.emit(Event::RitualSummoned {
+            player,
+            card: monster,
+            tributes: tributes.to_vec(),
+        });
+        true
+    }
+
+    /// Gives `card` a temporary ATK/DEF change until this turn's End Phase.
+    pub fn modify_until_end_phase(
+        &mut self,
+        source: InstanceId,
+        card: InstanceId,
+        atk: i32,
+        def: i32,
+    ) {
+        let turn = self.turn;
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::Stats { card, atk, def },
+            expires_turn: turn,
+        });
+    }
+
     /// Sends a card on the field to the Graveyard by a card effect.
     pub fn destroy(&mut self, card: InstanceId, source: InstanceId) {
         if !self.on_field(card) {
@@ -245,6 +392,7 @@ impl Game {
                 LingeringKind::ReturnControl { card, to } => {
                     self.change_control(card, to);
                 }
+                LingeringKind::Stats { .. } => {}
             }
         }
     }
@@ -303,7 +451,7 @@ impl Game {
     /// ATK and DEF of `card` under the given modifiers.
     pub(crate) fn stats_with(&self, modifiers: &[Modifier], card: InstanceId) -> (i32, i32) {
         let base = self.stats(card);
-        let mut total = StatMod::default();
+        let mut total = self.temporary_mod(card);
         for (source, modify) in modifiers {
             let m = modify(self, *source, card);
             total.atk += m.atk;
@@ -312,8 +460,21 @@ impl Game {
         ((base.atk + total.atk).max(0), (base.def + total.def).max(0))
     }
 
-    fn stat_mod(&self, card: InstanceId) -> StatMod {
+    fn temporary_mod(&self, card: InstanceId) -> StatMod {
         let mut total = StatMod::default();
+        for l in &self.lingering {
+            if let LingeringKind::Stats { card: c, atk, def } = l.kind
+                && c == card
+            {
+                total.atk += atk;
+                total.def += def;
+            }
+        }
+        total
+    }
+
+    fn stat_mod(&self, card: InstanceId) -> StatMod {
+        let mut total = self.temporary_mod(card);
         self.for_each_continuous(|source, effect| {
             if let Some(modify) = effect.modify {
                 let m = modify(self, source, card);
@@ -332,6 +493,35 @@ impl Game {
     /// Current DEF: base plus every continuous modifier, never below 0.
     pub fn def(&self, card: InstanceId) -> i32 {
         (self.stats(card).def + self.stat_mod(card).def).max(0)
+    }
+
+    /// Runs every continuous `on_attack` hook for a declared attack.
+    pub(crate) fn run_attack_hooks(&mut self, attacker: InstanceId) {
+        let mut hooks: Vec<(Source, crate::AttackHook)> = Vec::new();
+        self.for_each_continuous(|source, effect| {
+            if let Some(h) = effect.on_attack {
+                hooks.push((source, h));
+            }
+        });
+        for (source, hook) in hooks {
+            hook(self, source, attacker);
+        }
+    }
+
+    /// The only monster `attacker` may attack, if a continuous effect
+    /// says so and that monster is still on the field.
+    pub fn attack_lock(&self, attacker: InstanceId) -> Option<InstanceId> {
+        let mut lock = None;
+        self.for_each_continuous(|source, effect| {
+            if lock.is_none()
+                && let Some(f) = effect.attack_lock
+                && let Some(t) = f(self, source, attacker)
+                && self.on_field(t)
+            {
+                lock = Some(t);
+            }
+        });
+        lock
     }
 
     /// Whether some continuous effect forbids `card` from attacking.
@@ -545,6 +735,10 @@ impl Game {
             Location::FieldZone => holder.field_zone = None,
             Location::Deck => holder.deck.retain(|&c| c != card),
             Location::Extra => holder.extra.retain(|&c| c != card),
+            Location::Banished => {
+                let owner = inst.owner;
+                self.players[owner.index()].banished.retain(|&c| c != card);
+            }
             Location::Graveyard => {
                 let owner = inst.owner;
                 self.players[owner.index()].graveyard.retain(|&c| c != card);

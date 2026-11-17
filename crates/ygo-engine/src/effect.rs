@@ -24,6 +24,12 @@ pub enum Tag {
     ExodiaHead,
     /// A Normal Spell that stays on the field after resolving (Swords).
     StaysOnField,
+    /// May attack the opponent directly even when they control monsters.
+    DirectAttacker,
+    /// A Toon monster.
+    Toon,
+    /// While face-up on the field, both hands are revealed.
+    RevealHands,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -44,6 +50,12 @@ pub enum EffectKind {
 
 /// Spell speed 1, 2 or 3.
 pub type Speed = u8;
+
+/// A continuous hook naming the only monster an attacker may attack.
+pub type AttackLock = fn(&Game, Source, InstanceId) -> Option<InstanceId>;
+
+/// A continuous hook run when an attack is declared.
+pub type AttackHook = fn(&mut Game, Source, InstanceId);
 
 /// The card an effect belongs to and who controls it right now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -84,6 +96,17 @@ impl Effect {
             modify: None,
             damage_step: false,
             restrict: None,
+            on_attack: None,
+            attack_lock: None,
+            once_per_turn: false,
+        }
+    }
+
+    /// An Ignition effect: a Main Phase action of the turn player, speed 1.
+    pub const fn ignition(resolve: fn(&mut Game, &mut EffectCtx) -> Flow) -> Self {
+        Self {
+            kind: EffectKind::Ignition,
+            ..Self::activate(1, resolve)
         }
     }
 
@@ -157,6 +180,13 @@ pub enum Flow {
         options: Vec<InstanceId>,
         then: fn(&mut Game, &mut EffectCtx, InstanceId) -> Flow,
     },
+    /// Like `Choose`, but `chooser` picks (the opponent, for Painful
+    /// Choice or Confiscation); the options are revealed to them.
+    ChooseBy {
+        chooser: PlayerId,
+        options: Vec<InstanceId>,
+        then: fn(&mut Game, &mut EffectCtx, InstanceId) -> Flow,
+    },
     /// The controller answers a question with one of the labelled
     /// options; the engine then calls `then` with the index.
     Ask {
@@ -199,6 +229,14 @@ pub struct Effect {
     /// Continuous restriction: while the source is active, `target`
     /// cannot declare an attack.
     pub restrict: Option<fn(&Game, Source, InstanceId) -> bool>,
+    /// Continuous: paid or done when `attacker` declares an attack
+    /// (Toll, Gravekeeper's Servant, Dark Elf).
+    pub on_attack: Option<AttackHook>,
+    /// Continuous: the only monster `attacker` may attack, if any
+    /// (Ring of Magnetism).
+    pub attack_lock: Option<AttackLock>,
+    /// An Ignition or Quick effect usable once per turn per card.
+    pub once_per_turn: bool,
 }
 
 impl std::fmt::Debug for Effect {
