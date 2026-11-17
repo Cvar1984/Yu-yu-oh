@@ -59,6 +59,7 @@ impl Game {
     /// opens the window Mirror Force lives in.
     pub(crate) fn declare_attack(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
         self.instances[attacker.index()].attacked_this_turn = true;
+        self.current_attack = Some((attacker, target));
         self.emit(Event::AttackDeclared { attacker, target });
         self.run_attack_hooks(attacker);
         self.pending.push(Pending::DamageStep { attacker, target });
@@ -68,8 +69,10 @@ impl Game {
     /// During a replay: a new target was chosen, or the attack stops.
     pub(crate) fn replay(&mut self, attacker: InstanceId, target: Option<Option<InstanceId>>) {
         self.pending.pop();
+        self.current_attack = None;
         match target {
             Some(target) => {
+                self.current_attack = Some((attacker, target));
                 self.emit(Event::AttackDeclared { attacker, target });
                 self.pending.push(Pending::DamageStep { attacker, target });
                 self.open_window(WindowKind::AttackDeclared, self.turn_player);
@@ -90,6 +93,7 @@ impl Game {
         let target_ok = target
             .is_none_or(|t| matches!(self.instances[t.index()].location, Location::MonsterZone(_)));
         if !attacker_ok {
+            self.current_attack = None;
             self.emit(Event::AttackCancelled { attacker });
             return;
         }
@@ -169,6 +173,7 @@ impl Game {
             self.destroy_by_battle(card);
         }
         self.damage_prevented = [false, false];
+        self.current_attack = None;
         self.check_life_points();
         if self.result.is_none() {
             self.phase = Phase::Battle(BattleStep::Battle);

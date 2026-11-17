@@ -233,6 +233,15 @@ pub enum Event {
         player: PlayerId,
         cards: Vec<InstanceId>,
     },
+    /// `card` was discarded or milled by an effect `controller` controls.
+    ByEffect {
+        card: InstanceId,
+        controller: PlayerId,
+    },
+    ReturnedToDeck {
+        player: PlayerId,
+        card: InstanceId,
+    },
     GameOver {
         result: GameResult,
     },
