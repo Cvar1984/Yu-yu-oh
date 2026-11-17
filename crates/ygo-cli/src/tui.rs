@@ -1,5 +1,5 @@
-//! The full-screen terminal UI for `ygo play`, drawn with ratatui. All
-//! game logic lives in `PlaySession`; this file only draws and reads keys.
+//! The full-screen terminal UI for `ygo play` and `ygo replay`, drawn with
+//! ratatui. Game logic lives in the sessions; this file draws and reads keys.
 
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -11,6 +11,27 @@ use ygo_engine::{CardPool, Observation, Side};
 
 use crate::describe;
 use crate::session::PlaySession;
+
+/// A full-screen view that draws itself and reacts to keys.
+pub trait Screen {
+    fn draw(&self, frame: &mut Frame);
+    fn key(&mut self, key: KeyCode);
+    fn done(&self) -> bool;
+}
+
+impl Screen for App {
+    fn draw(&self, frame: &mut Frame) {
+        draw(frame, self)
+    }
+
+    fn key(&mut self, key: KeyCode) {
+        self.handle_key(key)
+    }
+
+    fn done(&self) -> bool {
+        self.quit
+    }
+}
 
 /// What the screen shows besides the game itself.
 pub struct App {
@@ -56,7 +77,7 @@ impl App {
     }
 }
 
-fn side_lines(obs: &Observation, pool: &CardPool, side: &Side) -> Vec<Line<'static>> {
+pub(crate) fn side_lines(obs: &Observation, pool: &CardPool, side: &Side) -> Vec<Line<'static>> {
     let monsters: Vec<String> = side
         .monster_zones
         .iter()
@@ -250,19 +271,19 @@ fn centered(area: Rect, width_pct: u16, height_pct: u16) -> Rect {
     center
 }
 
-/// Runs the UI in the real terminal until the player quits.
-pub fn run(app: &mut App) -> std::io::Result<()> {
+/// Runs a screen in the real terminal until it is done.
+pub fn run(screen: &mut impl Screen) -> std::io::Result<()> {
     let mut terminal: DefaultTerminal = ratatui::init();
     let result = (|| -> std::io::Result<()> {
-        while !app.quit {
-            terminal.draw(|f| draw(f, app))?;
+        while !screen.done() {
+            terminal.draw(|f| screen.draw(f))?;
             if let Event::Key(KeyEvent {
                 code,
                 kind: KeyEventKind::Press,
                 ..
             }) = event::read()?
             {
-                app.handle_key(code);
+                screen.key(code);
             }
         }
         Ok(())

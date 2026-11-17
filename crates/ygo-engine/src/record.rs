@@ -8,7 +8,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use ygo_data::Rules;
 
-use crate::{Action, Game, GameResult, GameSetup, PlayerId, RuleError, SetupError, Shared};
+use crate::{Action, Event, Game, GameResult, GameSetup, PlayerId, RuleError, SetupError, Shared};
 
 /// The record format this build reads and writes.
 pub const RECORD_SCHEMA_VERSION: u32 = 1;
@@ -226,8 +226,13 @@ impl GameRecord {
         Ok(Game::new(shared, &self.header.setup)?)
     }
 
-    /// Applies recorded action number `index` to `game`, checking it.
-    pub fn step(game: &mut Game, index: usize, a: &RecordedAction) -> Result<(), RecordError> {
+    /// Applies recorded action number `index` to `game`, checking it, and
+    /// returns the events it caused.
+    pub fn step(
+        game: &mut Game,
+        index: usize,
+        a: &RecordedAction,
+    ) -> Result<Vec<Event>, RecordError> {
         let deciding = game.pending_decision().map(|d| d.player);
         if deciding != Some(a.player) || game.turn() != a.turn {
             return Err(RecordError::WrongPlayer {
@@ -238,12 +243,10 @@ impl GameRecord {
                 actual_turn: game.turn(),
             });
         }
-        game.apply(&a.action)
-            .map_err(|error| RecordError::Illegal {
-                index,
-                action: a.action.clone(),
-                error,
-            })?;
-        Ok(())
+        game.apply(&a.action).map_err(|error| RecordError::Illegal {
+            index,
+            action: a.action.clone(),
+            error,
+        })
     }
 }

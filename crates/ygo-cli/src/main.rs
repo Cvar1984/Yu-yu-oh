@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::{bots, play, sim, tui};
+use ygo_cli::{bots, play, replay, sim, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -90,6 +90,17 @@ enum Command {
         /// Record file; defaults to records/human/<time>-<seed>.jsonl.
         #[arg(long)]
         record: Option<PathBuf>,
+    },
+    /// Step through a recorded game in a full-screen terminal UI.
+    Replay {
+        /// A record written by `ygo play` or `ygo sim --record`.
+        record: PathBuf,
+        /// Whose cards are shown: one player's view, or everything.
+        #[arg(long, value_enum, default_value_t = replay::View::All)]
+        view: replay::View,
+        /// Start at this turn.
+        #[arg(long, default_value_t = 1)]
+        turn: u32,
     },
 }
 
@@ -223,6 +234,22 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             play::save_record(&app.session, &path)?;
             shown?;
             println!("record saved to {}", path.display());
+            Ok(true)
+        }
+        Command::Replay { record, view, turn } => {
+            let text = std::fs::read_to_string(&record).map_err(|source| DataError::Io {
+                path: record.clone(),
+                source,
+            })?;
+            let parsed = ygo_engine::GameRecord::from_jsonl(&text)?;
+            let shared =
+                ygo_engine::Shared::new(bundle.rules.clone(), &bundle.cards, ygo_cards::registry());
+            let mut session = replay::ReplaySession::new(&shared, parsed, view)?;
+            session.jump_to_turn(turn);
+            tui::run(&mut replay::ReplayApp {
+                session,
+                quit: false,
+            })?;
             Ok(true)
         }
     }
