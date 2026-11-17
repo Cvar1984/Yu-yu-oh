@@ -344,12 +344,10 @@ impl Game {
         }
     }
 
-    /// The attack whose Damage Step is running, if any.
+    /// The attack in progress, from its declaration to the end of its
+    /// Damage Step, if any.
     pub fn current_attack(&self) -> Option<(InstanceId, Option<InstanceId>)> {
-        self.pending.iter().rev().find_map(|p| match p {
-            Pending::DamageCalc { attacker, target } => Some((*attacker, *target)),
-            _ => None,
-        })
+        self.current_attack
     }
 
     /// The player with priority passes. Two passes in a row close the
@@ -620,7 +618,9 @@ impl Game {
             event: None,
         };
         if let Some(pay) = eff.cost {
+            self.resolving = Some(player);
             pay(self, &mut ctx);
+            self.resolving = None;
         }
         self.chain.push(ChainLink {
             card,
@@ -702,7 +702,9 @@ impl Game {
             cost: link.cost.clone(),
             event: None,
         };
+        self.resolving = Some(link.controller);
         let flow = (self.effect(link.card, link.effect).resolve)(self, &mut ctx);
+        self.resolving = None;
         self.continue_flow(link, ctx, flow);
     }
 
@@ -765,7 +767,9 @@ impl Game {
             unreachable!("Choose answers a card prompt")
         };
         let mut ctx = pc.ctx;
+        self.resolving = Some(ctx.controller);
         let flow = then(self, &mut ctx, picked);
+        self.resolving = None;
         self.continue_flow(pc.link, ctx, flow);
     }
 
@@ -779,7 +783,9 @@ impl Game {
             unreachable!("Answer answers a question prompt")
         };
         let mut ctx = pc.ctx;
+        self.resolving = Some(ctx.controller);
         let flow = then(self, &mut ctx, option);
+        self.resolving = None;
         self.continue_flow(pc.link, ctx, flow);
     }
 

@@ -34,6 +34,10 @@ pub struct Game {
     pub(crate) lingering: Vec<Lingering>,
     /// Per player: battle damage prevented for the current battle.
     pub(crate) damage_prevented: [bool; 2],
+    /// Controller of the effect currently paying a cost or resolving.
+    pub(crate) resolving: Option<PlayerId>,
+    /// The attack between its declaration and the end of its Damage Step.
+    pub(crate) current_attack: Option<(InstanceId, Option<InstanceId>)>,
     /// Computed once by `advance` for the state it stopped in.
     pub(crate) decision: Option<Decision>,
     pub(crate) actions: Vec<Action>,
@@ -158,6 +162,8 @@ impl Game {
             pending_choice: None,
             lingering: Vec::new(),
             damage_prevented: [false, false],
+            resolving: None,
+            current_attack: None,
             decision: None,
             actions: Vec::with_capacity(64),
         };

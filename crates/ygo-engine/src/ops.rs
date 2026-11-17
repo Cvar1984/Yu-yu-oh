@@ -220,6 +220,15 @@ impl Game {
     /// effect that is not a discard.
     pub fn mill(&mut self, card: InstanceId) {
         self.send_to_graveyard(card);
+        self.note_by_effect(card);
+    }
+
+    /// Tags a discard or mill with the controller of the resolving effect,
+    /// for cards that react to the opponent's effects.
+    fn note_by_effect(&mut self, card: InstanceId) {
+        if let Some(controller) = self.resolving {
+            self.emit(Event::ByEffect { card, controller });
+        }
     }
 
     /// Sends a card from the hand to the Graveyard.
@@ -231,6 +240,7 @@ impl Game {
         let player = inst.controller;
         self.send_to_graveyard(card);
         self.emit(Event::Discarded { player, card });
+        self.note_by_effect(card);
     }
 
     /// Moves a card from anywhere (Deck, Graveyard, field) to its owner's hand.
@@ -676,6 +686,33 @@ impl Game {
         inst.counter = 0;
         self.players[owner.index()].deck.push(card);
         self.emit(Event::PlacedOnTopOfDeck {
+            player: owner,
+            card,
+        });
+    }
+
+    /// Returns a card from anywhere to the bottom of its owner's Deck;
+    /// the caller shuffles if the card says so.
+    pub fn return_to_deck(&mut self, card: InstanceId) {
+        let from = self.instances[card.index()].location;
+        if from == Location::Deck {
+            return;
+        }
+        self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
+        let owner = self.instances[card.index()].owner;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Deck;
+        inst.position = Position::FaceDown;
+        inst.controller = owner;
+        inst.turn_set = None;
+        inst.turn_entered_field = None;
+        inst.equipped_to = None;
+        inst.counter = 0;
+        self.players[owner.index()].deck.insert(0, card);
+        self.emit(Event::ReturnedToDeck {
             player: owner,
             card,
         });
