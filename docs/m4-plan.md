@@ -107,3 +107,70 @@ similar).
 - `ygo play` is a full-screen terminal UI.
 - Card values and style weights live in config files.
 - The default bot is `heuristic:beatdown`.
+
+## Progress
+
+| Step | Commit | Result |
+| --- | --- | --- |
+| 1. Game records | `95d0a0e` | JSON Lines writer, reader, replay under the record's own rules; tampered records fail |
+| 2. Text rendering | `19f69eb` | Board and action sentences from the observation; fuzzed: nothing hidden is ever named |
+| 3. `ygo play` | `737c859` | `PlaySession` and a full-screen ratatui UI; games replay from their record |
+| 4. Heuristic bot | `922e44b` | `HeuristicPlayer`, six styles, `config/styles.toml` and `config/card_values.toml` |
+| 5. Bot evaluation | `dca13f8` | `ygo sim --bot-a/--bot-b`; every style beats random (below) |
+| 6. `ygo replay` | `bc96bf2` | Step through a record from either view or both; jump to a turn |
+| 7. Docs and gate | this commit | CLAUDE.md, this report |
+
+Found and fixed on the way:
+
+- Engine: a monster being summoned face-up was shown to the opponent as
+  a hidden hand card during its summon window, so a player deciding on
+  Solemn Judgment could not see what was being summoned. It is now
+  visible from its declaration; a Set stays hidden.
+- Bot: it Set Exodia pieces on the field, where they no longer count.
+  With the Exodia win on, pieces are never Summoned or Set (by engine
+  tag). The Exodia style on the Exodia deck went from 54.9% to 93.0%
+  against random.
+
+## Gate report (2026-11-17)
+
+Gate: the owner plays a full game with `ygo play`. That part is yours;
+everything that can be checked without you is below.
+
+```sh
+cargo run --release -p ygo-cli -- play --deck data/decks/owner_main_45.json
+cargo run --release -p ygo-cli -- replay records/human/<file>.jsonl --view all
+```
+
+| Check | Evidence |
+| --- | --- |
+| A whole game through `ygo play` | `a_human_plays_whole_games_and_the_record_replays` (6 games, random and Beatdown opponents); the real binary was driven in a pseudo-terminal: it draws, plays, quits and saves a record that parses |
+| The screen never shows a hidden card | `the_screen_shows_the_board_and_never_a_hidden_card`, the describe fuzz and the replay view test |
+| Records replay exactly | Records from `play`, `sim` and the bot tests replay to equal final states; tampered records are refused |
+| Every style beats random | 24 runs below, lowest 88.2% ±1.4 |
+| Tests | 301 in the workspace, `scripts/check.sh` clean |
+| Speed | Random games 1,870 to 2,580 games/s (350,000 to 400,000 actions/s); Beatdown against itself 3,777 games/s; one core, release |
+
+Style against the random bot, 2,000 games each (half with each player
+first), both players on the same deck, `--seed 1`, 95% intervals:
+
+| Deck | beatdown | control | stall | burn | exodia | patient |
+| --- | --- | --- | --- | --- | --- | --- |
+| Owner's main 45 | 96.0 ±0.9 | 95.5 ±0.9 | 95.5 ±0.9 | 95.5 ±0.9 | 95.5 ±0.9 | 95.4 ±0.9 |
+| Umiiruka WATER 40 | 95.2 ±0.9 | 93.5 ±1.1 | 92.0 ±1.2 | 94.3 ±1.0 | 91.8 ±1.2 | 91.4 ±1.2 |
+| Exodia stall 40 | 89.4 ±1.3 | 88.2 ±1.4 | 88.7 ±1.4 | 88.6 ±1.4 | 93.0 ±1.1 | 88.4 ±1.4 |
+| Defense-tuned 45 | 98.0 ±0.6 | 98.2 ±0.6 | 98.9 ±0.5 | 98.2 ±0.6 | 98.6 ±0.5 | 98.6 ±0.5 |
+
+Styles against Beatdown, owner's deck mirror, 2,000 games, `--seed 7`:
+control 43.5%, stall 44.4%, burn 44.6%, exodia 43.6%, patient 41.9%
+(each ±2.2). Beatdown against itself: 48.6% ±2.2.
+
+Reading these numbers: every style is far above the bar, so the bots
+and the engine agree on what good play is. The styles do play
+differently (on the owner's deck, mean game length runs from 18.8 turns
+for Beatdown to 22.7 for Exodia), but on these decks none beats
+Beatdown yet; the weights in `config/styles.toml` are a
+first guess, and tuning them is now a config change measured with
+`ygo sim`. Only the Exodia style is clearly best on its own deck. The
+heuristics read card values, not card effects, so a card whose worth
+depends on timing (Dark Hole with your own monsters out) is still
+played naively; search in M5 is the planned answer.
