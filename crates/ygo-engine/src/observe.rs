@@ -49,6 +49,8 @@ pub struct Side {
     pub hand: Vec<VisibleCard>,
     pub deck_count: usize,
     pub extra_count: usize,
+    /// The Extra Deck: known to its owner, hidden from the opponent.
+    pub extra: Vec<VisibleCard>,
     pub graveyard: Vec<VisibleCard>,
     pub banished: Vec<VisibleCard>,
     pub monster_zones: Vec<Option<VisibleCard>>,
@@ -142,6 +144,7 @@ impl Game {
                 hand: state.hand.iter().map(|&id| see(id, true)).collect(),
                 deck_count: state.deck.len(),
                 extra_count: state.extra.len(),
+                extra: state.extra.iter().map(|&id| see(id, false)).collect(),
                 graveyard: state.graveyard.iter().map(|&id| see(id, false)).collect(),
                 banished: state.banished.iter().map(|&id| see(id, false)).collect(),
                 monster_zones: state

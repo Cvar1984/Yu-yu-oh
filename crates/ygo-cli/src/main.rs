@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-mod sim;
+use ygo_cli::sim;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
