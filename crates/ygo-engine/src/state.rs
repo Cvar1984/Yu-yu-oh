@@ -90,6 +90,17 @@ pub enum LingeringKind {
         atk: i32,
         def: i32,
     },
+    /// `card` is destroyed when the effect expires, if still on the field.
+    Destroy { card: InstanceId },
+    /// `card` cannot declare an attack until the effect expires.
+    CannotAttack { card: InstanceId },
+    /// `card` has these ATK and DEF changes until the current damage
+    /// calculation ends.
+    DamageCalcStats {
+        card: InstanceId,
+        atk: i32,
+        def: i32,
+    },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.

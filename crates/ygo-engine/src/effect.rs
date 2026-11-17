@@ -30,6 +30,9 @@ pub enum Tag {
     Toon,
     /// While face-up on the field, both hands are revealed.
     RevealHands,
+    /// While face-up on the field, cards sent to the Graveyard are
+    /// banished instead (Banisher of the Light).
+    BanishInsteadOfGraveyard,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

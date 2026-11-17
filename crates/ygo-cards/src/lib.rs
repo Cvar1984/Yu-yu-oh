@@ -7,6 +7,7 @@ pub mod continuous;
 pub mod fusion;
 pub mod monsters;
 pub mod monsters_a;
+pub mod monsters_b;
 pub mod oneshot;
 pub mod reveal;
 pub mod ritual;
@@ -29,5 +30,6 @@ pub fn registry() -> Registry {
     fusion::register(&mut r);
     ritual::register(&mut r);
     monsters_a::register(&mut r);
+    monsters_b::register(&mut r);
     r
 }

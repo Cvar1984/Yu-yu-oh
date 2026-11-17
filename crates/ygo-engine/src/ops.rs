@@ -191,6 +191,63 @@ impl Game {
         self.emit(Event::Tributed { player, card });
     }
 
+    /// Gives `card` an ATK/DEF change that ends with the current damage
+    /// calculation (Sanga of the Thunder).
+    pub fn modify_during_damage_calculation(
+        &mut self,
+        source: InstanceId,
+        card: InstanceId,
+        atk: i32,
+        def: i32,
+    ) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::DamageCalcStats { card, atk, def },
+            expires_turn: u32::MAX,
+        });
+    }
+
+    /// Schedules `card`'s destruction for the End Phase of turn `turn`.
+    pub fn destroy_at_end_of_turn(&mut self, source: InstanceId, card: InstanceId, turn: u32) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::Destroy { card },
+            expires_turn: turn,
+        });
+    }
+
+    /// Forbids `card` from attacking until the End Phase of turn `turn`.
+    pub fn forbid_attacks_until(&mut self, source: InstanceId, card: InstanceId, turn: u32) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::CannotAttack { card },
+            expires_turn: turn,
+        });
+    }
+
+    /// Ends the Battle Phase at once (The Unhappy Maiden); the turn goes
+    /// on to Main Phase 2.
+    pub fn end_battle_phase(&mut self) {
+        if matches!(self.phase, crate::Phase::Battle(_)) {
+            self.phase = crate::Phase::Battle(crate::BattleStep::End);
+            self.emit(Event::PhaseEntered {
+                phase: crate::Phase::Battle(crate::BattleStep::End),
+            });
+        }
+    }
+
+    /// Whether a face-up card on the field banishes everything sent to the
+    /// Graveyard.
+    fn banish_instead_of_graveyard(&self) -> bool {
+        let mut banish = false;
+        self.for_each_face_up_script(|script| {
+            if script.has(Tag::BanishInsteadOfGraveyard) {
+                banish = true;
+            }
+        });
+        banish
+    }
+
     /// Gives `card` a temporary ATK/DEF change until this turn's End Phase.
     pub fn modify_until_end_phase(
         &mut self,
@@ -431,7 +488,12 @@ impl Game {
                 LingeringKind::ReturnControl { card, to } => {
                     self.change_control(card, to);
                 }
-                LingeringKind::Stats { .. } => {}
+                LingeringKind::Destroy { card } => {
+                    self.destroy(card, l.source);
+                }
+                LingeringKind::Stats { .. }
+                | LingeringKind::CannotAttack { .. }
+                | LingeringKind::DamageCalcStats { .. } => {}
             }
         }
     }
@@ -502,11 +564,15 @@ impl Game {
     fn temporary_mod(&self, card: InstanceId) -> StatMod {
         let mut total = StatMod::default();
         for l in &self.lingering {
-            if let LingeringKind::Stats { card: c, atk, def } = l.kind
-                && c == card
-            {
-                total.atk += atk;
-                total.def += def;
+            match l.kind {
+                LingeringKind::Stats { card: c, atk, def }
+                | LingeringKind::DamageCalcStats { card: c, atk, def }
+                    if c == card =>
+                {
+                    total.atk += atk;
+                    total.def += def;
+                }
+                _ => {}
             }
         }
         total
@@ -604,8 +670,15 @@ impl Game {
         lock
     }
 
-    /// Whether some continuous effect forbids `card` from attacking.
+    /// Whether some continuous or lingering effect forbids `card` from attacking.
     pub fn attack_restricted(&self, card: InstanceId) -> bool {
+        if self
+            .lingering
+            .iter()
+            .any(|l| matches!(l.kind, LingeringKind::CannotAttack { card: c } if c == card))
+        {
+            return true;
+        }
         let mut restricted = false;
         self.for_each_continuous(|source, effect| {
             if !restricted && effect.restrict.is_some_and(|r| r(self, source, card)) {
@@ -890,6 +963,10 @@ impl Game {
     pub(crate) fn send_to_graveyard(&mut self, card: InstanceId) {
         let from = self.instances[card.index()].location;
         if from == Location::Graveyard {
+            return;
+        }
+        if self.banish_instead_of_graveyard() {
+            self.banish(card);
             return;
         }
         self.remove_from_current_place(card);
