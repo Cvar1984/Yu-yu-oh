@@ -216,6 +216,12 @@ impl Game {
         self.emit(Event::DestroyedByEffect { card, source });
     }
 
+    /// Sends a card from the Deck (or anywhere) to the Graveyard by an
+    /// effect that is not a discard.
+    pub fn mill(&mut self, card: InstanceId) {
+        self.send_to_graveyard(card);
+    }
+
     /// Sends a card from the hand to the Graveyard.
     pub fn discard(&mut self, card: InstanceId) {
         let inst = &self.instances[card.index()];
@@ -631,6 +637,39 @@ impl Game {
         self.emit(Event::PlacedOnTopOfDeck {
             player: owner,
             card,
+        });
+    }
+
+    /// Puts `order` on top of its owner's Deck, the first card topmost.
+    /// Every card must already be in that Deck.
+    pub fn reorder_top(&mut self, player: PlayerId, order: &[InstanceId]) {
+        let deck = &mut self.players[player.index()].deck;
+        deck.retain(|c| !order.contains(c));
+        for &c in order.iter().rev() {
+            deck.push(c);
+        }
+        self.emit(Event::DeckReordered {
+            player,
+            count: order.len() as u8,
+        });
+    }
+
+    /// The top `n` cards of `player`'s Deck, topmost first.
+    pub fn top_of_deck(&self, player: PlayerId, n: usize) -> Vec<InstanceId> {
+        self.players[player.index()]
+            .deck
+            .iter()
+            .rev()
+            .take(n)
+            .copied()
+            .collect()
+    }
+
+    /// Shows cards to both players; the record keeps what was seen.
+    pub fn reveal(&mut self, player: PlayerId, cards: &[InstanceId]) {
+        self.emit(Event::Revealed {
+            player,
+            cards: cards.to_vec(),
         });
     }
 
