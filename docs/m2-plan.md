@@ -221,3 +221,36 @@ What changed from the plan while building:
   the scripted invariants found.
 - Speed ended at 2,600 to 3,500 games/s, outside the plan's factor-two
   target; the profile and the next step are in CLAUDE.md.
+
+## Gate report (2026-11-17)
+
+Gate: a rulings test per key card. All 30 cards have one in
+`crates/ygo-cards/tests` (53 card tests; 136 tests in the workspace),
+and the machinery they share has its own tests in the engine (a
+synthetic script for activation, costs, targets and choices; invariants
+under random play with and without scripts).
+
+| Check | Evidence |
+| --- | --- |
+| Rulings tests | 53 in ygo-cards: 15 Spells, 14 Traps and chain cases, 11 monsters and triggers, 8 continuous, 3 registry, 2 invariants |
+| Random games finish with every script active | 1,000,000 games over four deck pairs, no panics, no refused action, no draws |
+| Invariants | 1,000 proptest cases in release mode with the real registry; the run found and fixed one gap (a Life Point payment reaching zero) |
+| Speed | 2,750 to 3,700 games/s, 520,000 to 580,000 actions/s, one core, release |
+
+Random-play results, 250,000 games per pair, half with each player first:
+
+| A | B | A wins | A first | B first | Mean turns |
+| --- | --- | --- | --- | --- | --- |
+| Owner's main 45 | Umiiruka WATER 40 | 43.8% ±0.2 | 43.6% | 44.1% | 47 |
+| Defense-tuned 45 | Exodia stall 40 | 90.1% ±0.1 | 89.2% | 91.0% | 29 |
+| Owner's main 45 | Owner's main 45 | 50.1% ±0.2 | 50.0% | 50.2% | 40 |
+| Umiiruka WATER 40 | Defense-tuned 45 | 73.4% ±0.2 | 73.6% | 73.1% | 47 |
+
+Reading these numbers: the mirror match is on 50% again. Compared with
+M1, where only Normal Monsters acted, the Umiiruka deck flipped from
+losing to the owner's deck (68% against it) to beating it (56%), because
+its Spells now work, and the Exodia deck wins a tenth of its games by
+draws and searches instead of none. Random play still undervalues
+anything that needs intent, so these are not deck strengths yet; the
+heuristic bots of M4 and the search of M5 are what will make the table
+meaningful.
