@@ -20,6 +20,7 @@ ygo-engine.workspace = true
 ygo-cards.workspace = true
 ygo-ai.workspace = true
 clap.workspace = true
+ratatui = "0.30"
 
 [dev-dependencies]
 ygo-engine = { workspace = true, features = ["test-support"] }

@@ -375,7 +375,7 @@ pub fn result_sentence(obs: &Observation, result: GameResult) -> String {
     }
 }
 
-fn zone_text(pool: &CardPool, z: &Option<VisibleCard>) -> String {
+pub fn zone_text(pool: &CardPool, z: &Option<VisibleCard>) -> String {
     match z {
         None => "-".to_string(),
         Some(VisibleCard::Hidden { position, .. }) => match position {
