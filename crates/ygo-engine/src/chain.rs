@@ -95,12 +95,17 @@ pub(crate) enum Pending {
         attacker: InstanceId,
         target: Option<InstanceId>,
     },
+    /// The target left before the Damage Step: pick another or stop.
+    Replay {
+        attacker: InstanceId,
+    },
 }
 
 /// What a paused resolution waits for.
 #[derive(Clone)]
 pub(crate) enum Prompt {
     Choose {
+        chooser: PlayerId,
         options: Vec<InstanceId>,
         then: fn(&mut Game, &mut EffectCtx, InstanceId) -> Flow,
     },
@@ -119,6 +124,14 @@ pub(crate) struct PendingChoice {
 }
 
 impl PendingChoice {
+    /// Who answers: the controller, or the chooser of a `ChooseBy`.
+    pub fn decider(&self) -> PlayerId {
+        match &self.prompt {
+            Prompt::Choose { chooser, .. } => *chooser,
+            Prompt::Ask { .. } => self.ctx.controller,
+        }
+    }
+
     pub fn card_options(&self) -> &[InstanceId] {
         match &self.prompt {
             Prompt::Choose { options, .. } => options,
@@ -374,6 +387,7 @@ impl Game {
                 effect.kind == EffectKind::Quick && inst.position.is_face_up()
             }
             (Location::Hand, _, SpellTrapType::None) => effect.kind == EffectKind::Quick,
+            (Location::Graveyard, _, _) => effect.kind == EffectKind::Quick,
             _ => false,
         }
     }
@@ -394,8 +408,12 @@ impl Game {
             card,
             controller: player,
         };
+        let uses = self.instances[card.index()].effect_uses;
         for (i, effect) in script.effects.iter().enumerate() {
             if effect.kind == EffectKind::Continuous {
+                continue;
+            }
+            if effect.once_per_turn && uses & (1 << i) != 0 {
                 continue;
             }
             if !filter(i, effect) || !(effect.timing)(self, source, window) {
@@ -467,6 +485,38 @@ impl Game {
         }
     }
 
+    /// Ignition effects of the turn player's face-up monsters, and of cards
+    /// in their hand or Graveyard that say so, as Main Phase actions.
+    pub(crate) fn ignition_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
+        if !matches!(self.phase, Phase::Main1 | Phase::Main2) || !self.pending.is_empty() {
+            return;
+        }
+        let state = &self.players[player.index()];
+        let window = Window::default();
+        let candidates = state
+            .monster_zones
+            .iter()
+            .chain(state.spell_trap_zones.iter())
+            .flatten()
+            .copied()
+            .chain(state.field_zone)
+            .chain(state.hand.iter().copied())
+            .chain(state.graveyard.iter().copied());
+        for card in candidates {
+            let inst = &self.instances[card.index()];
+            if inst.location.on_field() && !inst.position.is_face_up() {
+                continue;
+            }
+            self.push_activations(
+                player,
+                card,
+                &window,
+                |_, e| e.kind == EffectKind::Ignition,
+                actions,
+            );
+        }
+    }
+
     /// Fast effects `player` may activate in the open window, without `Pass`.
     pub(crate) fn response_actions(&self, player: PlayerId) -> Vec<Action> {
         let mut actions = Vec::new();
@@ -513,6 +563,9 @@ impl Game {
         cost: Vec<InstanceId>,
     ) {
         let eff = self.effect(card, effect);
+        if eff.once_per_turn {
+            self.instances[card.index()].effect_uses |= 1 << effect;
+        }
         match self.instances[card.index()].location {
             Location::Hand if self.stats(card).subtype == SpellTrapType::Field => {
                 self.place_field_spell(player, card);
@@ -633,10 +686,31 @@ impl Game {
             }
             Flow::Choose { options, then } => {
                 assert!(!options.is_empty(), "a choice needs options");
+                let chooser = ctx.controller;
                 self.pending_choice = Some(PendingChoice {
                     link,
                     ctx,
-                    prompt: Prompt::Choose { options, then },
+                    prompt: Prompt::Choose {
+                        chooser,
+                        options,
+                        then,
+                    },
+                });
+            }
+            Flow::ChooseBy {
+                chooser,
+                options,
+                then,
+            } => {
+                assert!(!options.is_empty(), "a choice needs options");
+                self.pending_choice = Some(PendingChoice {
+                    link,
+                    ctx,
+                    prompt: Prompt::Choose {
+                        chooser,
+                        options,
+                        then,
+                    },
                 });
             }
             Flow::Ask { options, then } => {

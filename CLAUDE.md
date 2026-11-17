@@ -27,7 +27,7 @@ Full spec: `docs/handoff.md`. This file holds what every session must know.
 | `config/rules.toml` | House rules, also names the card and ban list files | |
 | `data/` | JSON data; see `data/README.md` | |
 
-Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0, M1 and M2 gates passed. M2 (`docs/m2-plan.md`) adds Spell and Trap plays, response windows, chains, triggers, continuous effects and 30 scripted cards with a rulings test each. Next: M3, every remaining non-Normal card.
+Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0, M1 and M2 gates passed. M2 (`docs/m2-plan.md`) adds Spell and Trap plays, response windows, chains, triggers, continuous effects and 30 scripted cards with a rulings test each. M3 (`docs/m3-plan.md`) is in progress: every remaining non-Normal card.
 
 ## Conventions
 
@@ -94,6 +94,7 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 - Training hardware: likely NVIDIA. Pick the neural-net crate at M6 with a spike on CUDA (candidates: burn, candle, tch-rs).
 - VR games cannot be exported; human games come only from this project's CLI and browser.
 - Bot thinking time against a human is adjustable: a bot setting, not a rule, introduced at M5.
+- Cyber Jar (2026-11-17): Special Summons as many revealed monsters as the summon settings allow, controller's choice, rest to the hand. Toons play by the modern text. Scripts follow modern text only until an original-text data file exists; `docs/m3-plan.md` lists the cards whose 2002 printing differs.
 
 ## Still open
 

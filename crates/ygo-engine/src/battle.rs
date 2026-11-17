@@ -15,8 +15,6 @@ impl Game {
     }
 
     pub(crate) fn battle_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
-        let opponent = player.opponent();
-        let targets: Vec<InstanceId> = self.players[opponent.index()].monsters().collect();
         for attacker in self.players[player.index()].monsters() {
             let inst = &self.instances[attacker.index()];
             if inst.position != Position::FaceUpAttack
@@ -25,29 +23,59 @@ impl Game {
             {
                 continue;
             }
-            if targets.is_empty() {
-                actions.push(Action::Attack {
-                    attacker,
-                    target: None,
-                });
-            } else {
-                for &target in &targets {
-                    actions.push(Action::Attack {
-                        attacker,
-                        target: Some(target),
-                    });
-                }
-            }
+            self.attack_options(attacker, actions);
         }
         actions.push(Action::EndBattlePhase);
     }
 
-    /// Marks the attack and opens the window Mirror Force lives in.
+    /// Every attack `attacker` may declare now: the opponent's monsters
+    /// (or only the one a lock names), plus a direct attack when the
+    /// opponent has none or the attacker may attack directly anyway.
+    pub(crate) fn attack_options(&self, attacker: InstanceId, actions: &mut Vec<Action>) {
+        let player = self.instances[attacker.index()].controller;
+        let opponent = player.opponent();
+        let targets: Vec<InstanceId> = match self.attack_lock(attacker) {
+            Some(t) => vec![t],
+            None => self.players[opponent.index()].monsters().collect(),
+        };
+        let direct = self
+            .script(attacker)
+            .is_some_and(|s| s.has(crate::Tag::DirectAttacker));
+        if targets.is_empty() || direct {
+            actions.push(Action::Attack {
+                attacker,
+                target: None,
+            });
+        }
+        for target in targets {
+            actions.push(Action::Attack {
+                attacker,
+                target: Some(target),
+            });
+        }
+    }
+
+    /// Marks the attack, runs the attack costs of continuous effects and
+    /// opens the window Mirror Force lives in.
     pub(crate) fn declare_attack(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
         self.instances[attacker.index()].attacked_this_turn = true;
         self.emit(Event::AttackDeclared { attacker, target });
+        self.run_attack_hooks(attacker);
         self.pending.push(Pending::DamageStep { attacker, target });
         self.open_window(WindowKind::AttackDeclared, self.turn_player);
+    }
+
+    /// During a replay: a new target was chosen, or the attack stops.
+    pub(crate) fn replay(&mut self, attacker: InstanceId, target: Option<Option<InstanceId>>) {
+        self.pending.pop();
+        match target {
+            Some(target) => {
+                self.emit(Event::AttackDeclared { attacker, target });
+                self.pending.push(Pending::DamageStep { attacker, target });
+                self.open_window(WindowKind::AttackDeclared, self.turn_player);
+            }
+            None => self.emit(Event::AttackCancelled { attacker }),
+        }
     }
 
     /// After the attack-declaration window. The attack goes ahead only if
@@ -61,8 +89,14 @@ impl Game {
         ) && self.instances[attacker.index()].position == Position::FaceUpAttack;
         let target_ok = target
             .is_none_or(|t| matches!(self.instances[t.index()].location, Location::MonsterZone(_)));
-        if !attacker_ok || !target_ok {
+        if !attacker_ok {
             self.emit(Event::AttackCancelled { attacker });
+            return;
+        }
+        if !target_ok {
+            // A replay: the attacker's controller picks another target or stops.
+            self.emit(Event::AttackReplay { attacker });
+            self.pending.push(Pending::Replay { attacker });
             return;
         }
         self.enter_phase(Phase::Battle(BattleStep::Damage));

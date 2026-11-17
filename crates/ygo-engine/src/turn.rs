@@ -52,6 +52,7 @@ impl Game {
                 self.position_actions(player, &mut actions);
                 self.set_spell_trap_actions(player, &mut actions);
                 self.activation_actions(player, &mut actions);
+                self.ignition_actions(player, &mut actions);
                 if self.phase == Phase::Main1 && self.attacks_allowed() {
                     actions.push(Action::EnterBattlePhase);
                 }
@@ -103,15 +104,25 @@ impl Game {
             } => self.activate(player, *card, *effect, targets.clone(), cost.clone()),
             Action::Choose { card } => self.choose(*card),
             Action::Answer { option } => self.answer(usize::from(*option)),
-            Action::Pass => {
-                if decision.kind == DecisionKind::Triggers {
-                    self.drop_trigger_group();
+            Action::Pass => match decision.kind {
+                DecisionKind::Triggers => self.drop_trigger_group(),
+                DecisionKind::Replay => {
+                    let Some(Pending::Replay { attacker }) = self.pending.last() else {
+                        unreachable!()
+                    };
+                    let attacker = *attacker;
+                    self.replay(attacker, None);
+                }
+                _ => self.pass(),
+            },
+            Action::EnterBattlePhase => self.enter_phase(Phase::Battle(BattleStep::Start)),
+            Action::Attack { attacker, target } => {
+                if decision.kind == DecisionKind::Replay {
+                    self.replay(*attacker, Some(*target));
                 } else {
-                    self.pass();
+                    self.declare_attack(*attacker, *target);
                 }
             }
-            Action::EnterBattlePhase => self.enter_phase(Phase::Battle(BattleStep::Start)),
-            Action::Attack { attacker, target } => self.declare_attack(*attacker, *target),
             Action::EndBattlePhase => self.enter_phase(Phase::Battle(BattleStep::End)),
             Action::EndTurn => self.enter_phase(Phase::End),
         }
@@ -131,7 +142,7 @@ impl Game {
             }
             if let Some(pc) = &self.pending_choice {
                 let decision = Decision {
-                    player: pc.ctx.controller,
+                    player: pc.decider(),
                     kind: DecisionKind::Choose,
                 };
                 let mut actions = Vec::new();
@@ -208,6 +219,19 @@ impl Game {
                     self.pending.pop();
                     self.damage_calculation(attacker, target);
                 }
+                Some(Pending::Replay { attacker }) => {
+                    let attacker = *attacker;
+                    let player = self.instances[attacker.index()].controller;
+                    let mut actions = Vec::new();
+                    self.attack_options(attacker, &mut actions);
+                    actions.push(Action::Pass);
+                    let decision = Decision {
+                        player,
+                        kind: DecisionKind::Replay,
+                    };
+                    self.stop_at(decision, actions);
+                    return;
+                }
                 None => {
                     if let Some((decision, actions)) = self.phase_decision() {
                         self.stop_at(decision, actions);
@@ -267,6 +291,7 @@ impl Game {
         for card in self.instances.iter_mut() {
             card.position_changed_this_turn = false;
             card.attacked_this_turn = false;
+            card.effect_uses = 0;
         }
         self.emit(Event::TurnStarted { turn, player });
         self.enter_phase(Phase::Draw);
