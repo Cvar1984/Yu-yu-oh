@@ -57,6 +57,22 @@ pub type AttackLock = fn(&Game, Source, InstanceId) -> Option<InstanceId>;
 /// A continuous hook run when an attack is declared.
 pub type AttackHook = fn(&mut Game, Source, InstanceId);
 
+/// A battle that inflicted damage, for `on_battle_damage` hooks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BattleDamage {
+    pub attacker: InstanceId,
+    pub target: Option<InstanceId>,
+    pub damaged: PlayerId,
+    pub amount: u32,
+}
+
+/// A continuous hook run after battle damage is dealt.
+pub type BattleDamageHook = fn(&mut Game, Source, BattleDamage);
+
+/// A continuous hook naming the card destroyed instead of `card` when
+/// `card` would be destroyed by battle.
+pub type DestructionReplacement = fn(&Game, Source, InstanceId) -> Option<InstanceId>;
+
 /// The card an effect belongs to and who controls it right now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Source {
@@ -100,6 +116,8 @@ impl Effect {
             attack_lock: None,
             once_per_turn: false,
             in_standby: false,
+            on_battle_damage: None,
+            replace_battle_destruction: None,
         }
     }
 
@@ -241,6 +259,10 @@ pub struct Effect {
     /// A Normal Spell activated in its controller's Standby Phase instead
     /// of a Main Phase (Curse of Fiend).
     pub in_standby: bool,
+    /// Continuous: run after battle damage is dealt.
+    pub on_battle_damage: Option<BattleDamageHook>,
+    /// Continuous: a card destroyed by battle in another's place.
+    pub replace_battle_destruction: Option<DestructionReplacement>,
 }
 
 impl std::fmt::Debug for Effect {

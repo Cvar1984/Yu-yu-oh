@@ -227,7 +227,10 @@ pub fn check_invariants(g: &Game) {
                 let inst = g.instance(*id);
                 assert_eq!(inst.location, Location::SpellTrapZone(i as u8));
                 assert_eq!(inst.controller, p);
-                assert!(!g.stats(*id).is_monster());
+                assert!(
+                    !g.stats(*id).is_monster() || inst.equipped_to.is_some(),
+                    "a monster in a Spell/Trap zone is an absorbed Equip"
+                );
                 assert!(matches!(
                     inst.position,
                     Position::FaceDown | Position::FaceUp

@@ -8,6 +8,7 @@ pub mod fusion;
 pub mod monsters;
 pub mod oneshot;
 pub mod reveal;
+pub mod ritual;
 pub mod spells;
 pub mod tables;
 pub mod traps;
@@ -25,5 +26,6 @@ pub fn registry() -> Registry {
     oneshot::register(&mut r);
     reveal::register(&mut r);
     fusion::register(&mut r);
+    ritual::register(&mut r);
     r
 }

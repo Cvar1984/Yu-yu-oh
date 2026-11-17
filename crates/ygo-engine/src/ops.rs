@@ -537,6 +537,47 @@ impl Game {
         }
     }
 
+    /// Runs every continuous `on_battle_damage` hook.
+    pub(crate) fn run_battle_damage_hooks(&mut self, damage: crate::BattleDamage) {
+        let mut hooks: Vec<(Source, crate::BattleDamageHook)> = Vec::new();
+        self.for_each_continuous(|source, effect| {
+            if let Some(h) = effect.on_battle_damage {
+                hooks.push((source, h));
+            }
+        });
+        for (source, hook) in hooks {
+            hook(self, source, damage);
+        }
+    }
+
+    /// The card a continuous effect destroys instead of `card`, if any.
+    pub(crate) fn battle_destruction_replacement(&self, card: InstanceId) -> Option<InstanceId> {
+        let mut replacement = None;
+        self.for_each_continuous(|source, effect| {
+            if replacement.is_none()
+                && let Some(f) = effect.replace_battle_destruction
+                && let Some(other) = f(self, source, card)
+                && self.on_field(other)
+            {
+                replacement = Some(other);
+            }
+        });
+        replacement
+    }
+
+    /// Moves a monster from the field into `holder`'s Spell/Trap zone as
+    /// an Equip Card attached to `to` (Relinquished). Returns `false`
+    /// without a free zone.
+    pub fn absorb_as_equip(&mut self, card: InstanceId, holder: PlayerId, to: InstanceId) -> bool {
+        let Some(zone) = self.free_spell_trap_zone(holder) else {
+            return false;
+        };
+        self.place_spell_trap(holder, card, zone, Position::FaceUp);
+        self.instances[card.index()].equipped_to = Some(to);
+        self.emit(Event::Equipped { card, to });
+        true
+    }
+
     /// The only monster `attacker` may attack, if a continuous effect
     /// says so and that monster is still on the field.
     pub fn attack_lock(&self, attacker: InstanceId) -> Option<InstanceId> {

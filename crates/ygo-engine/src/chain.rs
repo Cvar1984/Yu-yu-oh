@@ -467,7 +467,10 @@ impl Game {
                 continue;
             }
             match stats.subtype {
-                SpellTrapType::Normal | SpellTrapType::Equip | SpellTrapType::Continuous
+                SpellTrapType::Normal
+                | SpellTrapType::Equip
+                | SpellTrapType::Continuous
+                | SpellTrapType::Ritual
                     if has_free_zone =>
                 {
                     self.push_activations(
@@ -494,14 +497,16 @@ impl Game {
                 continue;
             }
             match stats.subtype {
-                SpellTrapType::Normal | SpellTrapType::Equip | SpellTrapType::Continuous => self
-                    .push_activations(
-                        player,
-                        card,
-                        &window,
-                        |_, e| e.speed == 1 && !e.in_standby,
-                        actions,
-                    ),
+                SpellTrapType::Normal
+                | SpellTrapType::Equip
+                | SpellTrapType::Continuous
+                | SpellTrapType::Ritual => self.push_activations(
+                    player,
+                    card,
+                    &window,
+                    |_, e| e.speed == 1 && !e.in_standby,
+                    actions,
+                ),
                 SpellTrapType::QuickPlay if inst.turn_set != Some(self.turn) => {
                     self.push_activations(player, card, &window, |_, e| e.speed == 2, actions)
                 }
