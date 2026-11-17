@@ -8,6 +8,7 @@ use std::sync::Arc;
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
 use ygo_data::{CardDb, CardId, CardKind, CardValues, Style};
+use ygo_engine::Tag;
 use ygo_engine::{
     Action, CardStats, InstanceId, Observation, Place, PlayerId, Position, Shared, SpellTrapType,
     VisibleCard, WindowKind,
@@ -104,6 +105,18 @@ impl HeuristicPlayer {
                 .map(|s| (s.atk, s.def)),
             VisibleCard::Hidden { .. } => None,
         }
+    }
+
+    /// A piece of Exodia, while the rules let the five pieces in hand win.
+    fn exodia_piece(&self, obs: &Observation, id: InstanceId) -> bool {
+        let shared = &self.shared;
+        shared.rules.win.exodia
+            && obs
+                .find(id)
+                .and_then(|f| f.card.card())
+                .and_then(|c| shared.pool.index_of(c))
+                .and_then(|i| shared.script(i))
+                .is_some_and(|s| s.has(Tag::ExodiaPiece) || s.has(Tag::ExodiaHead))
     }
 
     fn board(&self, obs: &Observation) -> Board {
@@ -222,6 +235,10 @@ impl HeuristicPlayer {
         let st = &self.style;
         let (atk, def) = self.atk_def(obs, card).unwrap_or((0, 0));
         let worth = self.value(obs, card);
+        if self.exodia_piece(obs, card) {
+            // A piece wins only from the hand.
+            return NEVER;
+        }
         let mut s = 10.0;
         if !tributes.is_empty() {
             if st.tribute_needs_cover && !b.have_cover {

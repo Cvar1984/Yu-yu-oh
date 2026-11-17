@@ -68,3 +68,53 @@ fn missing_file_exits_with_code_2() {
     assert_eq!(out.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&out.stderr).contains("cannot read"));
 }
+
+/// Runs `ygo` against the committed data and config.
+fn ygo_real(args: &[&str]) -> Output {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    Command::new(env!("CARGO_BIN_EXE_ygo"))
+        .arg("--rules")
+        .arg(root.join("config/rules.toml"))
+        .arg("--data-root")
+        .arg(&root)
+        .arg("--styles")
+        .arg(root.join("config/styles.toml"))
+        .arg("--card-values")
+        .arg(root.join("config/card_values.toml"))
+        .args(args)
+        .output()
+        .expect("ygo runs")
+}
+
+#[test]
+fn sim_plays_named_bots_and_refuses_unknown_ones() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let deck = root.join("data/decks/owner_main_45.json");
+    let deck = deck.to_str().unwrap();
+    let out = ygo_real(&[
+        "sim",
+        deck,
+        deck,
+        "-n",
+        "6",
+        "--bot-a",
+        "heuristic:beatdown",
+        "--bot-b",
+        "random",
+    ]);
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        out.status.success(),
+        "{stdout}{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(
+        stdout.contains("games: 6  heuristic:beatdown vs random"),
+        "{stdout}"
+    );
+
+    let out = ygo_real(&["sim", deck, deck, "-n", "1", "--bot-a", "heuristic:nope"]);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert_eq!(out.status.code(), Some(2), "{stderr}");
+    assert!(stderr.contains("unknown bot `heuristic:nope`"), "{stderr}");
+}
