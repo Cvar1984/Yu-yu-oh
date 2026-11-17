@@ -4,8 +4,8 @@
 
 use crate::chain::Pending;
 use crate::{
-    Action, BattleStep, DrawReason, Event, Game, GameResult, InstanceId, Location, Phase, PlayerId,
-    Position, WinReason, WindowKind,
+    Action, BattleDamage, BattleStep, DrawReason, Event, Game, GameResult, InstanceId, Location,
+    Phase, PlayerId, Position, WinReason, WindowKind,
 };
 
 impl Game {
@@ -120,8 +120,10 @@ impl Game {
     pub(crate) fn damage_calculation(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
         let player = self.instances[attacker.index()].controller;
         let atk = self.atk(attacker);
+        let mut damage: Option<(PlayerId, i32)> = None;
+        let mut destroyed: Vec<InstanceId> = Vec::new();
         match target {
-            None => self.battle_damage(player.opponent(), atk),
+            None => damage = Some((player.opponent(), atk)),
             Some(target) => {
                 let defender = self.instances[target.index()].controller;
                 let (target_atk, target_def) = (self.atk(target), self.def(target));
@@ -129,27 +131,42 @@ impl Game {
                     let diff = atk - target_atk;
                     match diff.signum() {
                         1 => {
-                            self.destroy_by_battle(target);
-                            self.battle_damage(defender, diff);
+                            destroyed.push(target);
+                            damage = Some((defender, diff));
                         }
                         -1 => {
-                            self.destroy_by_battle(attacker);
-                            self.battle_damage(player, -diff);
+                            destroyed.push(attacker);
+                            damage = Some((player, -diff));
                         }
                         _ => {
-                            self.destroy_by_battle(target);
-                            self.destroy_by_battle(attacker);
+                            destroyed.push(target);
+                            destroyed.push(attacker);
                         }
                     }
                 } else {
                     let diff = atk - target_def;
                     match diff.signum() {
-                        1 => self.destroy_by_battle(target),
-                        -1 => self.battle_damage(player, -diff),
+                        1 => destroyed.push(target),
+                        -1 => damage = Some((player, -diff)),
                         _ => {}
                     }
                 }
             }
+        }
+        // Damage and destruction are simultaneous in the rules; damage goes
+        // first here so replacement and damage hooks see the field intact.
+        if let Some((damaged, amount)) = damage
+            && let Some(amount) = self.battle_damage(damaged, amount)
+        {
+            self.run_battle_damage_hooks(BattleDamage {
+                attacker,
+                target,
+                damaged,
+                amount,
+            });
+        }
+        for card in destroyed {
+            self.destroy_by_battle(card);
         }
         self.damage_prevented = [false, false];
         self.check_life_points();
@@ -162,20 +179,28 @@ impl Game {
         }
     }
 
+    /// Destroys `card` by battle, or the card a continuous effect names in
+    /// its place (Relinquished's absorbed monster).
     fn destroy_by_battle(&mut self, card: InstanceId) {
-        self.send_to_graveyard(card);
-        self.emit(Event::DestroyedByBattle { card });
+        let victim = self.battle_destruction_replacement(card).unwrap_or(card);
+        self.send_to_graveyard(victim);
+        self.emit(Event::DestroyedByBattle { card: victim });
     }
 
-    fn battle_damage(&mut self, player: PlayerId, amount: i32) {
+    /// Deals battle damage unless prevented; returns the amount dealt.
+    fn battle_damage(&mut self, player: PlayerId, amount: i32) -> Option<u32> {
         if self.damage_prevented[player.index()] {
-            return;
+            return None;
         }
         let amount = u32::try_from(amount).unwrap_or(0);
+        if amount == 0 {
+            return None;
+        }
         let state = &mut self.players[player.index()];
         state.lp = state.lp.saturating_sub(amount);
         let lp = state.lp;
         self.emit(Event::DamageTaken { player, amount, lp });
+        Some(amount)
     }
 
     pub(crate) fn check_life_points(&mut self) {
