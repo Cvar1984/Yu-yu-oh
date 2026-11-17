@@ -10,6 +10,7 @@ pub mod monsters;
 pub mod monsters_a;
 pub mod monsters_b;
 pub mod oneshot;
+pub mod remaining;
 pub mod reveal;
 pub mod ritual;
 pub mod spells;
@@ -35,5 +36,6 @@ pub fn registry() -> Registry {
     monsters_b::register(&mut r);
     flips::register(&mut r);
     toons::register(&mut r);
+    remaining::register(&mut r);
     r
 }

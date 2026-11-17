@@ -40,6 +40,8 @@ pub struct Game {
     pub(crate) current_attack: Option<(InstanceId, Option<InstanceId>)>,
     /// A player allowed a second Battle Phase in this turn number.
     pub(crate) extra_battle_phase: Option<(PlayerId, u32)>,
+    /// Cards that destruction cannot touch until the chain ends (Fake Trap).
+    pub(crate) shielded: Vec<InstanceId>,
     /// Computed once by `advance` for the state it stopped in.
     pub(crate) decision: Option<Decision>,
     pub(crate) actions: Vec<Action>,
@@ -167,6 +169,7 @@ impl Game {
             resolving: None,
             current_attack: None,
             extra_battle_phase: None,
+            shielded: Vec::new(),
             decision: None,
             actions: Vec::with_capacity(64),
         };

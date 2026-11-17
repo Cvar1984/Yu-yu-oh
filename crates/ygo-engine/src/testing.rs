@@ -251,7 +251,6 @@ pub fn check_invariants(g: &Game) {
                     g.instance(to).location.on_field(),
                     "an Equip's monster is on the field"
                 );
-                assert!(g.instance(to).position.is_face_up());
             }
         }
         for id in s.monsters() {

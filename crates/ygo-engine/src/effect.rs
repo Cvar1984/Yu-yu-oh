@@ -33,6 +33,9 @@ pub enum Tag {
     /// While face-up on the field, cards sent to the Graveyard are
     /// banished instead (Banisher of the Light).
     BanishInsteadOfGraveyard,
+    /// While face-up on the field, playing a card from the hand costs its
+    /// player 500 LP (Chain Energy).
+    HandPlayToll,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

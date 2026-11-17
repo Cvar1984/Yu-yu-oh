@@ -66,7 +66,11 @@ impl Game {
         Some((Decision { player, kind }, actions))
     }
 
-    fn stop_at(&mut self, decision: Decision, actions: Vec<Action>) {
+    fn stop_at(&mut self, decision: Decision, mut actions: Vec<Action>) {
+        let toll = self.hand_play_toll();
+        if toll > 0 && self.players[decision.player.index()].lp <= toll {
+            actions.retain(|a| !self.plays_from_hand(a));
+        }
         self.decision = Some(decision);
         self.actions = actions;
     }
@@ -82,6 +86,10 @@ impl Game {
             return Err(RuleError::IllegalAction(action.clone()));
         }
         let player = decision.player;
+        let toll = self.hand_play_toll();
+        if toll > 0 && self.plays_from_hand(action) {
+            self.pay_lp(player, toll);
+        }
         match action {
             Action::Discard { card } => self.discard(*card),
             Action::Summon {
@@ -200,6 +208,7 @@ impl Game {
                 }
                 Some(Pending::ResolveChain) => {
                     if self.chain.is_empty() {
+                        self.shielded.clear();
                         self.pending.pop();
                         self.open_window(WindowKind::AfterChain, self.turn_player);
                     } else {

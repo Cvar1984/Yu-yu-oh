@@ -266,7 +266,7 @@ impl Game {
 
     /// Sends a card on the field to the Graveyard by a card effect.
     pub fn destroy(&mut self, card: InstanceId, source: InstanceId) {
-        if !self.on_field(card) {
+        if !self.on_field(card) || self.shielded.contains(&card) {
             return;
         }
         self.send_to_graveyard(card);
@@ -669,6 +669,66 @@ impl Game {
             }
         });
         lock
+    }
+
+    /// Protects `card` from destruction until the current chain ends.
+    pub fn shield_until_chain_ends(&mut self, card: InstanceId) {
+        self.shielded.push(card);
+    }
+
+    /// Links a Spell or Trap on the field to a monster without the face-up
+    /// requirement of `equip` (Spellbinding Circle); it leaves with it.
+    pub fn attach(&mut self, card: InstanceId, to: InstanceId) -> bool {
+        if !self.on_field(card)
+            || !matches!(
+                self.instances[to.index()].location,
+                Location::MonsterZone(_)
+            )
+        {
+            return false;
+        }
+        self.instances[card.index()].equipped_to = Some(to);
+        true
+    }
+
+    /// Sends a card from the Deck to the Graveyard by an effect `controller`
+    /// controls, outside a chain (an attack cost such as Gravekeeper's Servant).
+    pub fn mill_by(&mut self, card: InstanceId, controller: PlayerId) {
+        self.send_to_graveyard(card);
+        self.emit(Event::ByEffect { card, controller });
+    }
+
+    /// Changes the targets of the chain link `card` activated (Fairy's Hand Mirror).
+    pub fn retarget(&mut self, card: InstanceId, targets: Vec<InstanceId>) -> bool {
+        match self.chain.iter_mut().find(|l| l.card == card) {
+            Some(link) => {
+                link.targets = targets;
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// LP a player pays to play a card from the hand right now.
+    pub fn hand_play_toll(&self) -> u32 {
+        let mut toll = 0;
+        self.for_each_face_up_script(|script| {
+            if script.has(Tag::HandPlayToll) {
+                toll += 500;
+            }
+        });
+        toll
+    }
+
+    /// Whether `action` plays a card from the hand.
+    pub(crate) fn plays_from_hand(&self, action: &crate::Action) -> bool {
+        let card = match action {
+            crate::Action::Summon { card, .. }
+            | crate::Action::SetSpellTrap { card }
+            | crate::Action::Activate { card, .. } => *card,
+            _ => return false,
+        };
+        self.instances[card.index()].location == Location::Hand
     }
 
     /// Whether a continuous effect forbids changing `card`'s position.
