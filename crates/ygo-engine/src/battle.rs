@@ -174,6 +174,8 @@ impl Game {
         }
         self.damage_prevented = [false, false];
         self.current_attack = None;
+        self.lingering
+            .retain(|l| !matches!(l.kind, crate::LingeringKind::DamageCalcStats { .. }));
         self.check_life_points();
         if self.result.is_none() {
             self.phase = Phase::Battle(BattleStep::Battle);
