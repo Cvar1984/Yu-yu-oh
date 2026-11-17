@@ -3,13 +3,16 @@
 
 use std::sync::Arc;
 
+mod common;
+
+use common::assert_no_hidden_names;
 use ygo_cli::describe;
 use ygo_data::CardId;
 use ygo_engine::testing::{
     CELTIC_GUARDIAN, MYSTICAL_ELF, SUMMONED_SKULL, in_hand, next_turn, pass_all, play, sample_deck,
     shared_from, stacked, summon,
 };
-use ygo_engine::{Action, CardIndex, Game, GameSetup, Observation, PlayerId, Shared, VisibleCard};
+use ygo_engine::{Action, Game, GameSetup, PlayerId, Shared};
 
 const P0: PlayerId = PlayerId(0);
 const P1: PlayerId = PlayerId(1);
@@ -81,52 +84,6 @@ fn the_board_and_actions_read_as_sentences() {
         ),
         "Attack directly with Celtic Guardian"
     );
-}
-
-/// Names of every card the viewer can see right now.
-fn visible_names<'a>(obs: &Observation, shared: &'a Shared) -> Vec<&'a str> {
-    let mut ids: Vec<CardId> = Vec::new();
-    let mut add = |c: &VisibleCard| {
-        if let VisibleCard::Known { card, .. } = c {
-            ids.push(*card);
-        }
-    };
-    for side in &obs.sides {
-        side.hand
-            .iter()
-            .chain(&side.graveyard)
-            .chain(&side.banished)
-            .chain(&side.extra)
-            .for_each(&mut add);
-        side.monster_zones
-            .iter()
-            .chain(&side.spell_trap_zones)
-            .flatten()
-            .for_each(&mut add);
-        side.field_zone.iter().for_each(&mut add);
-    }
-    obs.revealed.iter().for_each(&mut add);
-    ids.extend(obs.chain.iter().map(|l| l.card));
-    ids.iter()
-        .map(|&id| describe::card_name(&shared.pool, id))
-        .collect()
-}
-
-/// Fails if `text` names any card except those `obs` shows.
-fn assert_no_hidden_names(text: &str, obs: &Observation, shared: &Shared) {
-    let mut visible = visible_names(obs, shared);
-    visible.sort_by_key(|n| std::cmp::Reverse(n.len()));
-    let mut rest = text.to_string();
-    for name in &visible {
-        rest = rest.replace(name, "#");
-    }
-    for i in 0..shared.pool.len() as u16 {
-        let name = &shared.pool.get(CardIndex(i)).name;
-        assert!(
-            !rest.contains(name.as_str()),
-            "hidden card {name:?} named in:\n{text}"
-        );
-    }
 }
 
 #[test]

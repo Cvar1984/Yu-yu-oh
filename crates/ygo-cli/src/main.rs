@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::sim;
+use ygo_cli::{play, sim, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -56,6 +56,29 @@ enum Command {
         #[arg(long)]
         record: Option<PathBuf>,
     },
+    /// Play against a bot in a full-screen terminal UI.
+    Play {
+        /// Your deck.
+        #[arg(long)]
+        deck: PathBuf,
+        /// The bot's deck; defaults to a copy of yours.
+        #[arg(long)]
+        bot_deck: Option<PathBuf>,
+        /// The opponent: `random`.
+        #[arg(long, default_value = "random")]
+        bot: String,
+        /// Shuffle seed; taken from the clock when left out.
+        #[arg(long)]
+        seed: Option<u64>,
+        #[arg(long, value_enum, default_value_t = play::First::Random)]
+        first: play::First,
+        /// A game still running after this many turns is a draw.
+        #[arg(long, default_value_t = ygo_engine::GameSetup::DEFAULT_MAX_TURNS)]
+        max_turns: u32,
+        /// Record file; defaults to records/human/<time>-<seed>.jsonl.
+        #[arg(long)]
+        record: Option<PathBuf>,
+    },
 }
 
 fn main() -> ExitCode {
@@ -65,7 +88,7 @@ fn main() -> ExitCode {
         Ok(false) => ExitCode::FAILURE,
         Err(err) => {
             eprintln!("error: {err}");
-            let mut source = std::error::Error::source(&err);
+            let mut source = err.source();
             while let Some(s) = source {
                 eprintln!("  caused by: {s}");
                 source = s.source();
@@ -77,7 +100,7 @@ fn main() -> ExitCode {
 
 /// `Ok(true)` when the checked data or deck is clean, `Ok(false)` when problems
 /// were printed, `Err` when a file could not be loaded.
-fn run(cli: Cli) -> Result<bool, DataError> {
+fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
     let bundle = Bundle::load(&cli.rules, &cli.data_root)?;
     match cli.command {
         Command::CheckData { collection } => {
@@ -150,6 +173,38 @@ fn run(cli: Cli) -> Result<bool, DataError> {
                     record_dir: record.as_deref(),
                 },
             )?;
+            Ok(true)
+        }
+        Command::Play {
+            deck,
+            bot_deck,
+            bot,
+            seed,
+            first,
+            max_turns,
+            record,
+        } => {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default();
+            let seed = seed.unwrap_or(now.as_nanos() as u64);
+            let session = play::start(
+                &bundle,
+                &play::PlayOptions {
+                    deck: &deck,
+                    bot_deck: bot_deck.as_deref(),
+                    bot: &bot,
+                    seed,
+                    first,
+                    max_turns,
+                },
+            )?;
+            let path = record.unwrap_or_else(|| play::default_record_path(seed, now.as_secs()));
+            let mut app = tui::App::new(session);
+            let shown = tui::run(&mut app);
+            play::save_record(&app.session, &path)?;
+            shown?;
+            println!("record saved to {}", path.display());
             Ok(true)
         }
     }
