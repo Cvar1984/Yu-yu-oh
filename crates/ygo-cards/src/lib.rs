@@ -5,6 +5,7 @@
 
 pub mod continuous;
 pub mod monsters;
+pub mod oneshot;
 pub mod spells;
 pub mod tables;
 pub mod traps;
@@ -19,5 +20,6 @@ pub fn registry() -> Registry {
     traps::register(&mut r);
     continuous::register(&mut r);
     tables::register(&mut r);
+    oneshot::register(&mut r);
     r
 }

@@ -168,6 +168,29 @@ impl Game {
         true
     }
 
+    /// Changes a monster's battle position by an effect; it then counts as
+    /// having changed position this turn.
+    pub fn set_position(&mut self, card: InstanceId, position: Position) {
+        let inst = &mut self.instances[card.index()];
+        if !matches!(inst.location, Location::MonsterZone(_)) || inst.position == position {
+            return;
+        }
+        let was_face_down = inst.position == Position::FaceDownDefense;
+        inst.position = position;
+        inst.position_changed_this_turn = true;
+        if was_face_down && position.is_face_up() {
+            self.emit(Event::Flipped { card });
+        }
+        self.emit(Event::PositionChanged { card, position });
+    }
+
+    /// Tributes a monster for a card's cost or effect.
+    pub fn tribute(&mut self, card: InstanceId) {
+        let player = self.instances[card.index()].controller;
+        self.send_to_graveyard(card);
+        self.emit(Event::Tributed { player, card });
+    }
+
     /// Gives `card` a temporary ATK/DEF change until this turn's End Phase.
     pub fn modify_until_end_phase(
         &mut self,
