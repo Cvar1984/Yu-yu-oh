@@ -121,6 +121,7 @@ impl Effect {
             in_standby: false,
             on_battle_damage: None,
             replace_battle_destruction: None,
+            lock_position: None,
         }
     }
 
@@ -215,6 +216,12 @@ pub enum Flow {
         options: Vec<&'static str>,
         then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
     },
+    /// Like `Ask`, but `chooser` answers.
+    AskBy {
+        chooser: PlayerId,
+        options: Vec<&'static str>,
+        then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
+    },
 }
 
 /// Every legal set of targets for an effect, each set in the order the
@@ -266,6 +273,9 @@ pub struct Effect {
     pub on_battle_damage: Option<BattleDamageHook>,
     /// Continuous: a card destroyed by battle in another's place.
     pub replace_battle_destruction: Option<DestructionReplacement>,
+    /// Continuous: `target` cannot change its battle position by its
+    /// controller's choice (Dragon Capture Jar).
+    pub lock_position: Option<fn(&Game, Source, InstanceId) -> bool>,
 }
 
 impl std::fmt::Debug for Effect {

@@ -412,6 +412,7 @@ impl Game {
         inst.turn_set = None;
         inst.position_changed_this_turn = false;
         inst.attacked_this_turn = false;
+        inst.counter = 0;
         self.emit(Event::SpecialSummoned {
             player,
             card,
@@ -670,6 +671,50 @@ impl Game {
         lock
     }
 
+    /// Whether a continuous effect forbids changing `card`'s position.
+    pub fn position_locked(&self, card: InstanceId) -> bool {
+        let mut locked = false;
+        self.for_each_continuous(|source, effect| {
+            if !locked && effect.lock_position.is_some_and(|f| f(self, source, card)) {
+                locked = true;
+            }
+        });
+        locked
+    }
+
+    /// Lets `player` enter a second Battle Phase from Main Phase 2 of turn
+    /// `turn` (Weather Report).
+    pub fn grant_extra_battle_phase(&mut self, player: PlayerId, turn: u32) {
+        self.extra_battle_phase = Some((player, turn));
+    }
+
+    /// Swaps two monsters on opposite sides of the field, each taking the
+    /// other's zone (Invader of the Throne).
+    pub fn swap_control(&mut self, a: InstanceId, b: InstanceId) -> bool {
+        let (ia, ib) = (&self.instances[a.index()], &self.instances[b.index()]);
+        let (Location::MonsterZone(za), Location::MonsterZone(zb)) = (ia.location, ib.location)
+        else {
+            return false;
+        };
+        let (pa, pb) = (ia.controller, ib.controller);
+        if pa == pb {
+            return false;
+        }
+        self.players[pa.index()].monster_zones[za as usize] = Some(b);
+        self.players[pb.index()].monster_zones[zb as usize] = Some(a);
+        let turn = self.turn;
+        for (card, zone, to) in [(a, zb, pb), (b, za, pa)] {
+            let inst = &mut self.instances[card.index()];
+            inst.location = Location::MonsterZone(zone);
+            inst.controller = to;
+            inst.turn_entered_field = Some(turn);
+            inst.position_changed_this_turn = false;
+            inst.attacked_this_turn = false;
+            self.emit(Event::ControlChanged { card, to });
+        }
+        true
+    }
+
     /// Whether some continuous or lingering effect forbids `card` from attacking.
     pub fn attack_restricted(&self, card: InstanceId) -> bool {
         if self
@@ -849,11 +894,13 @@ impl Game {
         inst.controller = player;
         inst.turn_set = None;
         inst.turn_entered_field = Some(turn);
+        inst.counter = 0;
     }
 
     /// Housekeeping when a card leaves the field: its equips go to the
-    /// Graveyard and its counters reset. Lingering effects it created
-    /// stay, since a resolved Spell's effect outlives the card.
+    /// Graveyard. Its counter is kept (Spear Cretin remembers it was
+    /// flipped) and reset when it next enters the field. Lingering effects
+    /// it created stay, since a resolved Spell's effect outlives the card.
     fn on_leave_field(&mut self, card: InstanceId) {
         let equips: Vec<InstanceId> = self
             .instances
@@ -865,9 +912,7 @@ impl Game {
         for e in equips {
             self.send_to_graveyard(e);
         }
-        let inst = &mut self.instances[card.index()];
-        inst.equipped_to = None;
-        inst.counter = 0;
+        self.instances[card.index()].equipped_to = None;
     }
 
     // ----- queries scripts use -----
@@ -935,6 +980,7 @@ impl Game {
         inst.controller = player;
         inst.turn_set = (position == Position::FaceDown).then_some(turn);
         inst.turn_entered_field = Some(turn);
+        inst.counter = 0;
     }
 
     /// Detaches a card from whatever list or zone holds it.

@@ -38,6 +38,8 @@ pub struct Game {
     pub(crate) resolving: Option<PlayerId>,
     /// The attack between its declaration and the end of its Damage Step.
     pub(crate) current_attack: Option<(InstanceId, Option<InstanceId>)>,
+    /// A player allowed a second Battle Phase in this turn number.
+    pub(crate) extra_battle_phase: Option<(PlayerId, u32)>,
     /// Computed once by `advance` for the state it stopped in.
     pub(crate) decision: Option<Decision>,
     pub(crate) actions: Vec<Action>,
@@ -164,6 +166,7 @@ impl Game {
             damage_prevented: [false, false],
             resolving: None,
             current_attack: None,
+            extra_battle_phase: None,
             decision: None,
             actions: Vec::with_capacity(64),
         };

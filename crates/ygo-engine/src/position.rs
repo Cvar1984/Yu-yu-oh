@@ -15,6 +15,7 @@ impl Game {
         inst.turn_entered_field != Some(self.turn)
             && !inst.position_changed_this_turn
             && !inst.attacked_this_turn
+            && !self.position_locked(card)
     }
 
     fn flip_summon_allowed(&self, player: PlayerId) -> bool {

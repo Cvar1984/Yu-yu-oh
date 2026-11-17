@@ -149,6 +149,7 @@ impl Game {
                 inst.turn_set = face_down.then_some(turn);
                 inst.position_changed_this_turn = false;
                 inst.attacked_this_turn = false;
+                inst.counter = 0;
                 self.emit(Event::Summoned {
                     player,
                     card,

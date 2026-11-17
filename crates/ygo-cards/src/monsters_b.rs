@@ -23,7 +23,7 @@ pub const DREAM_CLOWN: CardId = CardId(13215230);
 pub const YADO_KARU: CardId = CardId(29380133);
 pub const TAINTED_WISDOM: CardId = CardId(28725004);
 pub const PUMPKING_THE_KING_OF_GHOSTS: CardId = CardId(29155212);
-pub const CASTLE_OF_DARK_ILLUSIONS: CardId = CardId(62121);
+pub use crate::flips::CASTLE_OF_DARK_ILLUSIONS;
 pub const MUSHROOM_MAN_2: CardId = CardId(93900406);
 pub const DARK_ZEBRA: CardId = CardId(59784896);
 pub const SANGA_OF_THE_THUNDER: CardId = CardId(25955164);
