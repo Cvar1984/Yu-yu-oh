@@ -50,6 +50,12 @@ enum Command {
     Sim {
         deck_a: PathBuf,
         deck_b: PathBuf,
+        /// Player A: `random` or `heuristic:<style>`.
+        #[arg(long, default_value = "random")]
+        bot_a: String,
+        /// Player B: `random` or `heuristic:<style>`.
+        #[arg(long, default_value = "random")]
+        bot_b: String,
         /// Number of games; each player goes first in half of them.
         #[arg(short = 'n', long, default_value_t = 100)]
         games: u32,
@@ -157,6 +163,8 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
         Command::Sim {
             deck_a,
             deck_b,
+            bot_a,
+            bot_b,
             games,
             seed,
             max_turns,
@@ -168,11 +176,14 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     source,
                 })?;
             }
+            let bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
             sim::run(
-                &bundle,
+                &bots,
                 &sim::SimOptions {
                     deck_a: &deck_a,
                     deck_b: &deck_b,
+                    bot_a: &bot_a,
+                    bot_b: &bot_b,
                     games,
                     seed,
                     max_turns,

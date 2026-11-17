@@ -356,3 +356,42 @@ fn every_style_finishes_games_against_the_random_bot() {
         }
     }
 }
+
+#[test]
+fn never_summons_or_sets_a_piece_of_exodia() {
+    const HEAD: CardId = CardId(33396948);
+    const LEFT_ARM: CardId = CardId(7902349);
+    const RIGHT_ARM: CardId = CardId(70903634);
+    const LEFT_LEG: CardId = CardId(44519536);
+    let g = game(&[HEAD, LEFT_ARM, RIGHT_ARM, LEFT_LEG, CELTIC_GUARDIAN], &[]);
+    let pieces: Vec<InstanceId> = [HEAD, LEFT_ARM, RIGHT_ARM, LEFT_LEG]
+        .iter()
+        .map(|&id| in_hand(&g, P0, id))
+        .collect();
+    assert!(
+        g.actions()
+            .iter()
+            .any(|a| matches!(a, Action::Summon { card, .. } if pieces.contains(card))),
+        "the pieces could be summoned, so keeping them is a choice"
+    );
+    for style in ["exodia", "beatdown", "stall"] {
+        let mut b = bot(style);
+        let choice = pick(&mut b, &g);
+        assert!(
+            !matches!(choice, Action::Summon { card, .. } if pieces.contains(&card)),
+            "{style}: {choice:?}"
+        );
+    }
+    // With the Exodia win switched off, a piece is just a monster.
+    let off = with_rules(&shared(), |r| r.win.exodia = false);
+    let g = Game::new(
+        off.clone(),
+        &stacked([&[HEAD, LEFT_ARM, RIGHT_ARM, LEFT_LEG, LEFT_LEG], &[]], PAD),
+    )
+    .unwrap();
+    let b = bundle();
+    let values = CardValues::load(&root().join("config/card_values.toml"), &b.cards).unwrap();
+    let styles = Styles::load(&root().join("config/styles.toml"), &b.cards).unwrap();
+    let mut beat = HeuristicPlayer::new(off, &b.cards, &values, styles.get("beatdown").unwrap(), 1);
+    assert!(matches!(pick(&mut beat, &g), Action::Summon { .. }));
+}

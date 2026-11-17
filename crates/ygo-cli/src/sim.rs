@@ -1,16 +1,20 @@
 //! `ygo sim`: bot versus bot, with win rates and games per second.
 
 use std::path::Path;
-use std::sync::Arc;
 use std::time::Instant;
 
-use ygo_ai::{Player, RandomPlayer, play_game};
-use ygo_data::{Bundle, DataError, Deck};
-use ygo_engine::{DeckList, GameResult, GameSetup, PlayerId, Shared};
+use ygo_ai::{Player, play_game};
+use ygo_data::{DataError, Deck};
+use ygo_engine::{DeckList, GameResult, GameSetup, PlayerId, WinReason};
+
+use crate::bots::Bots;
 
 pub struct SimOptions<'a> {
     pub deck_a: &'a Path,
     pub deck_b: &'a Path,
+    /// Bot names, as `Bots::make` reads them.
+    pub bot_a: &'a str,
+    pub bot_b: &'a str,
     pub games: u32,
     pub seed: u64,
     pub max_turns: u32,
@@ -23,30 +27,41 @@ pub struct SimOptions<'a> {
 pub struct Tally {
     /// Indexed by first player, then by [wins for A, wins for B, draws].
     pub by_first: [[u32; 3]; 2],
+    /// Wins by Life Points, deck-out and Exodia, indexed by winner.
+    pub by_reason: [[u32; 3]; 2],
     pub turns: u64,
 }
 
 impl Tally {
     fn record(&mut self, first: PlayerId, result: GameResult, turns: u32) {
         let slot = match result {
-            GameResult::Win { winner, .. } => winner.index(),
+            GameResult::Win { winner, reason } => {
+                let r = match reason {
+                    WinReason::LifePoints => 0,
+                    WinReason::DeckOut => 1,
+                    WinReason::Exodia => 2,
+                };
+                self.by_reason[winner.index()][r] += 1;
+                winner.index()
+            }
             GameResult::Draw { .. } => 2,
         };
         self.by_first[first.index()][slot] += 1;
         self.turns += u64::from(turns);
     }
 
-    fn total(&self, slot: usize) -> u32 {
+    /// Wins for A, wins for B and draws over all games.
+    pub fn total(&self, slot: usize) -> u32 {
         self.by_first[0][slot] + self.by_first[1][slot]
     }
 }
 
-pub fn run(bundle: &Bundle, opts: &SimOptions) -> Result<(), DataError> {
-    let shared = Arc::new(Shared::new(
-        bundle.rules.clone(),
-        &bundle.cards,
-        ygo_cards::registry(),
-    ));
+/// Plays the games, prints the report and returns the tally.
+pub fn run(bots: &Bots, opts: &SimOptions) -> Result<Tally, Box<dyn std::error::Error>> {
+    let shared = bots.shared.clone();
+    // Refuse unknown names before the first game.
+    bots.make(opts.bot_a, 0)?;
+    bots.make(opts.bot_b, 0)?;
     let deck_a = Deck::load(opts.deck_a)?;
     let deck_b = Deck::load(opts.deck_b)?;
     let decks = [DeckList::from(&deck_a), DeckList::from(&deck_b)];
@@ -58,17 +73,11 @@ pub fn run(bundle: &Bundle, opts: &SimOptions) -> Result<(), DataError> {
         let mut setup = GameSetup::new(decks.clone(), opts.seed.wrapping_add(u64::from(i)));
         setup.first_player = Some(PlayerId((i % 2) as u8));
         setup.max_turns = opts.max_turns;
-        let mut a = RandomPlayer::new(setup.seed ^ 0xA);
-        let mut b = RandomPlayer::new(setup.seed ^ 0xB);
-        let mut players: [&mut dyn Player; 2] = [&mut a, &mut b];
-        let labels = ["random".to_string(), "random".to_string()];
-        let (game, record) = match play_game(shared.clone(), &setup, &mut players, labels) {
-            Ok(done) => done,
-            Err(e) => {
-                eprintln!("error: {e}");
-                std::process::exit(2);
-            }
-        };
+        let mut a = bots.make(opts.bot_a, setup.seed ^ 0xA)?;
+        let mut b = bots.make(opts.bot_b, setup.seed ^ 0xB)?;
+        let mut players: [&mut dyn Player; 2] = [a.as_mut(), b.as_mut()];
+        let labels = [opts.bot_a.to_string(), opts.bot_b.to_string()];
+        let (game, record) = play_game(shared.clone(), &setup, &mut players, labels)?;
         if let Some(dir) = opts.record_dir {
             let path = dir.join(format!("game-{}.jsonl", setup.seed));
             std::fs::write(&path, record.to_jsonl())
@@ -83,8 +92,8 @@ pub fn run(bundle: &Bundle, opts: &SimOptions) -> Result<(), DataError> {
     println!("A: {}", deck_a.name);
     println!("B: {}", deck_b.name);
     println!(
-        "games: {}  random vs random  seed {}",
-        opts.games, opts.seed
+        "games: {}  {} vs {}  seed {}",
+        opts.games, opts.bot_a, opts.bot_b, opts.seed
     );
     report("overall", tally.total(0), tally.total(1), tally.total(2));
     report(
@@ -99,6 +108,12 @@ pub fn run(bundle: &Bundle, opts: &SimOptions) -> Result<(), DataError> {
         tally.by_first[1][1],
         tally.by_first[1][2],
     );
+    for (label, r) in [("A", tally.by_reason[0]), ("B", tally.by_reason[1])] {
+        println!(
+            "{label:>8} wins by: Life Points {}, deck-out {}, Exodia {}",
+            r[0], r[1], r[2]
+        );
+    }
     println!(
         "mean turns: {:.1}   actions/game: {:.0}",
         tally.turns as f64 / f64::from(opts.games).max(1.0),
@@ -109,7 +124,7 @@ pub fn run(bundle: &Bundle, opts: &SimOptions) -> Result<(), DataError> {
         f64::from(opts.games) / elapsed,
         actions as f64 / elapsed
     );
-    Ok(())
+    Ok(tally)
 }
 
 /// Win rate for A with a 95% normal-approximation confidence interval.
