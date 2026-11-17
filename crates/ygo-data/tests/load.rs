@@ -75,9 +75,16 @@ fn committed_rules_file_parses() {
 fn committed_banlist_parses() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/banlist.json");
     let banlist = Banlist::load(&path).expect("data/banlist.json is valid");
-    // Owner's decision: no limits yet, so every card falls back to the default.
-    assert!(banlist.limits.is_empty());
-    assert_eq!(banlist.limit_for(POT_OF_GREED, 3), 3);
+    // Owner, 2026-11-17: three cards at 1; everything else uses the default.
+    assert_eq!(banlist.limits.len(), 3);
+    assert_eq!(banlist.limit_for(POT_OF_GREED, 3), 1);
+    assert_eq!(banlist.limit_for(CardId(4031928), 3), 1, "Change of Heart");
+    assert_eq!(banlist.limit_for(CardId(12580477), 3), 1, "Raigeki");
+    assert_eq!(
+        banlist.limit_for(CardId(72302403), 3),
+        3,
+        "Swords stays unlimited"
+    );
 }
 
 #[test]

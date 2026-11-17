@@ -32,7 +32,16 @@ fn all_374_cards_load_with_the_handoff_counts() {
             (CardKind::Trap, 15),
         ]
     );
-    assert!(b.banlist.limits.is_empty(), "owner: no limits for now");
+    // Owner, 2026-11-17: one copy each of Pot of Greed, Change of Heart, Raigeki.
+    let limited: Vec<(CardId, usize)> = b.banlist.limits.iter().map(|l| (l.id, l.limit)).collect();
+    assert_eq!(
+        limited,
+        [
+            (CardId(55144522), 1),
+            (CardId(4031928), 1),
+            (CardId(12580477), 1)
+        ]
+    );
 }
 
 #[test]
@@ -62,19 +71,27 @@ fn owned_card_decks_are_legal_under_the_collection() {
 }
 
 #[test]
-fn full_pool_exodia_deck_is_legal_only_without_the_collection() {
+fn full_pool_exodia_deck_breaks_only_the_pot_of_greed_limit_and_the_collection() {
     let b = bundle();
     let d = deck("exodia_stall_full_pool_40.json");
-    assert!(check_deck(&d, &b.cards, &b.banlist, &b.rules, None).is_empty());
+    // It runs 3 Pot of Greed, written before the 2026-11-17 limits.
+    assert_eq!(
+        check_deck(&d, &b.cards, &b.banlist, &b.rules, None),
+        [DeckProblem::OverLimit {
+            id: CardId(55144522),
+            name: "Pot of Greed".into(),
+            copies: 3,
+            limit: 1,
+        }]
+    );
 
     let c = Collection::load(&root().join("data/collection.json")).unwrap();
     let problems = check_deck(&d, &b.cards, &b.banlist, &b.rules, Some(&c));
     assert!(!problems.is_empty());
-    assert!(
-        problems
-            .iter()
-            .all(|p| matches!(p, DeckProblem::NotOwned { .. }))
-    );
+    assert!(problems.iter().all(|p| matches!(
+        p,
+        DeckProblem::NotOwned { .. } | DeckProblem::OverLimit { .. }
+    )));
     assert!(problems.contains(&DeckProblem::NotOwned {
         id: CardId(33396948),
         name: "Exodia the Forbidden One".into(),
