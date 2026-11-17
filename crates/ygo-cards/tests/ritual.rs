@@ -231,3 +231,28 @@ fn relinquished_loses_its_absorbed_monster_when_it_leaves() {
         "the Equip went with it"
     );
 }
+
+#[test]
+fn every_ritual_spell_summons_its_monster() {
+    for (spell, monster, _) in RITUALS {
+        let mut g = Game::new(
+            shared(),
+            &stacked(
+                [
+                    &[spell, monster, SUMMONED_SKULL, MYSTICAL_ELF, MYSTICAL_ELF],
+                    &[],
+                ],
+                CELTIC_GUARDIAN,
+            ),
+        )
+        .unwrap();
+        let offered = activations(&g, spell);
+        assert!(!offered.is_empty(), "{spell}");
+        play(&mut g, offered[0].clone());
+        pass_all(&mut g);
+        assert!(
+            g.player(P0).monsters().any(|m| g.stats(m).id == monster),
+            "{spell} summoned {monster}"
+        );
+    }
+}

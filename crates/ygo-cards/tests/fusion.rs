@@ -201,3 +201,31 @@ fn polymerization_waits_for_a_free_zone_and_obeys_fusion_summons() {
         "one monster already entered this turn"
     );
 }
+
+#[test]
+fn every_fusion_monster_with_materials_in_the_pool_can_be_fusion_summoned() {
+    let b = bundle();
+    let mut summoned = 0;
+    for (fusion, materials) in FUSIONS {
+        if !materials.iter().all(|m| b.cards.contains(*m)) {
+            continue;
+        }
+        let top: Vec<CardId> = materials.iter().copied().chain([POLYMERIZATION]).collect();
+        let mut g = Game::new(shared(), &setup(&top, &[fusion])).unwrap();
+        let offered = activations(&g, POLYMERIZATION);
+        assert!(!offered.is_empty(), "{fusion}: Polymerization not offered");
+        play(&mut g, offered[0].clone());
+        pass_all(&mut g);
+        assert!(
+            g.player(P0).monsters().any(|m| g.stats(m).id == fusion),
+            "{fusion} not on the field"
+        );
+        assert_eq!(
+            g.graveyard(P0).len(),
+            3,
+            "{fusion}: both materials and Polymerization"
+        );
+        summoned += 1;
+    }
+    assert_eq!(summoned, 23);
+}

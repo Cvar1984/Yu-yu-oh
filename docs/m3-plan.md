@@ -52,13 +52,11 @@ assertion.
 
 ## Text versions
 
-`cards.json` holds modern text and every script follows it. Where the
-2002 printing plays differently, the script branches on
-`game.text_version()` and the plan records the card. Known so far:
-Fissure (2002: any monster, modern: face-up only), Cyber Jar and
-Painful Choice (choice ownership), Delinquent Duo (random versus
-chosen). The list grows as cards are scripted; nothing is branched
-until the original-text data exists, see the questions below.
+`cards.json` holds modern text and every script follows it. The plan
+promised a list of cards whose 2002 printing plays differently; it was
+not built, because `cards.json` has no 2002 text to compare against and
+a list from memory would be guesswork. Building it, and branching the
+scripts on `game.text_version()`, waits for an original-text data file.
 
 ## Owner's answers (2026-11-17)
 
@@ -72,3 +70,51 @@ until the original-text data exists, see the questions below.
 - Original 2002 text: scripts follow modern text only; the list of
   cards whose 2002 printing differs is kept here and branched once an
   original-text data file exists.
+
+## Progress
+
+All twelve steps are done; the gate report is at the end of this file.
+
+What changed from the plan while building:
+
+- Step 1's machinery grew in later steps, each time a card needed it:
+  battle-damage and destruction-replacement hooks (Relinquished), a
+  record of which player's effect discarded or milled a card (Electric
+  Snake, Minar, Penguin Knight), timed destruction and attack bans
+  (Steel Scorpion, Electric Lizard), stat changes that end with damage
+  calculation (Sanga, Kazejin, Suijin), banish-instead (Banisher of the
+  Light), a position lock (Dragon Capture Jar), a second Battle Phase
+  (Weather Report), control swaps (Invader of the Throne), questions
+  either player answers (Cyber Jar), destruction shields (Fake Trap),
+  retargeting a chain link (Fairy's Hand Mirror) and the hand-play toll
+  (Chain Energy).
+- Battle damage is now applied before battle destruction; the rules
+  treat them as simultaneous, and Relinquished's reflection needs the
+  field intact.
+- Set Traps can be activated directly in the Main Phase, not only in a
+  response window.
+- Dragon Capture Jar moved from step 11 to step 9, next to Dragon Piper.
+- Penguin Knight's test moved to step 11, where Gravekeeper's Servant
+  can mill it.
+
+Simplifications, each a candidate for a later rulings pass:
+
+- Catapult Turtle burns half the tributed monster's printed ATK, not its
+  ATK on the field.
+- Time Wizard and Jirai Gumo do not ask for the coin call; a call is a
+  50/50 either way.
+- Castle of Dark Illusions boosts every Zombie, not only those on the
+  field when it flipped.
+- Spear Cretin revives in Attack Position only; Cyber Jar asks for the
+  position.
+- Insect Soldiers of the Sky gain their 1,000 ATK for the whole attack,
+  not only the Damage Step.
+- A Toon's tribute summon still needs a free Monster Zone before the
+  tributes are paid.
+- Snatch Steal returns control when it goes to the Graveyard, but not
+  when it returns to the hand.
+- Fake Trap recognises destruction aimed at its controller's Traps by
+  targets, plus Heavy Storm and Final Destiny by name.
+- Ritual Spells offer tribute sets of up to three monsters.
+- Still open from M2: Monster Reborn revives in Attack Position only,
+  Field Spells activate from the hand only.
