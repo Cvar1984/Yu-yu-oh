@@ -380,6 +380,20 @@ impl Game {
             (Location::SpellTrapZone(_), CardKind::Spell, SpellTrapType::QuickPlay) => {
                 inst.position == Position::FaceDown && inst.turn_set != Some(self.turn)
             }
+            (Location::SpellTrapZone(_), CardKind::Spell, SpellTrapType::Normal) => {
+                effect.in_standby
+                    && inst.position == Position::FaceDown
+                    && self.phase == Phase::Standby
+                    && player == self.turn_player
+                    && self.chain.is_empty()
+            }
+            (Location::Hand, CardKind::Spell, SpellTrapType::Normal) => {
+                effect.in_standby
+                    && self.phase == Phase::Standby
+                    && player == self.turn_player
+                    && self.chain.is_empty()
+                    && self.free_spell_trap_zone(player).is_some()
+            }
             (Location::Hand, CardKind::Spell, SpellTrapType::QuickPlay) => {
                 player == self.turn_player && self.free_spell_trap_zone(player).is_some()
             }
@@ -456,7 +470,13 @@ impl Game {
                 SpellTrapType::Normal | SpellTrapType::Equip | SpellTrapType::Continuous
                     if has_free_zone =>
                 {
-                    self.push_activations(player, card, &window, |_, e| e.speed == 1, actions)
+                    self.push_activations(
+                        player,
+                        card,
+                        &window,
+                        |_, e| e.speed == 1 && !e.in_standby,
+                        actions,
+                    )
                 }
                 SpellTrapType::QuickPlay if has_free_zone => {
                     self.push_activations(player, card, &window, |_, e| e.speed == 2, actions)
@@ -474,9 +494,14 @@ impl Game {
                 continue;
             }
             match stats.subtype {
-                SpellTrapType::Normal | SpellTrapType::Equip | SpellTrapType::Continuous => {
-                    self.push_activations(player, card, &window, |_, e| e.speed == 1, actions)
-                }
+                SpellTrapType::Normal | SpellTrapType::Equip | SpellTrapType::Continuous => self
+                    .push_activations(
+                        player,
+                        card,
+                        &window,
+                        |_, e| e.speed == 1 && !e.in_standby,
+                        actions,
+                    ),
                 SpellTrapType::QuickPlay if inst.turn_set != Some(self.turn) => {
                     self.push_activations(player, card, &window, |_, e| e.speed == 2, actions)
                 }
@@ -524,7 +549,8 @@ impl Game {
             return actions;
         };
         let window = Window { kind, events };
-        let min_speed = self.chain.last().map_or(2, |l| l.speed);
+        // With no chain, speed 1 is left to `fast_effect_allowed` (Standby Spells).
+        let min_speed = self.chain.last().map_or(1, |l| l.speed);
         let in_damage_step = kind == WindowKind::DamageCalculation;
         let state = &self.players[player.index()];
         let candidates = state

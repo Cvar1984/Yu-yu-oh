@@ -99,6 +99,7 @@ impl Effect {
             on_attack: None,
             attack_lock: None,
             once_per_turn: false,
+            in_standby: false,
         }
     }
 
@@ -237,6 +238,9 @@ pub struct Effect {
     pub attack_lock: Option<AttackLock>,
     /// An Ignition or Quick effect usable once per turn per card.
     pub once_per_turn: bool,
+    /// A Normal Spell activated in its controller's Standby Phase instead
+    /// of a Main Phase (Curse of Fiend).
+    pub in_standby: bool,
 }
 
 impl std::fmt::Debug for Effect {
