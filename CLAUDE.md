@@ -104,7 +104,7 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 - Flip and Special Summons do not count toward a per-turn limit, but this may change, so both stay config keys.
 - Fusion and Ritual Summons are allowed (`fusion_summons`, `ritual_summons`).
 - Card text: support both modern and original 2002 text. `cards.json` holds only modern text; the original text needs a second data source, keyed by id, before `text_version = "original_2002"` can do anything. Effect scripts whose rulings differ by printing (Sangan, Witch of the Black Forest) must branch on this key.
-- Ban list: empty for now (`data/banlist.json`). The four limit-1 badges seen earlier are recorded in its `note` in case the game enforces them.
+- Ban list (2026-11-17): Pot of Greed, Change of Heart and Raigeki are limited to 1 per deck (`data/banlist.json`). Swords of Revealing Light, the fourth badge seen earlier, stays unlimited. `exodia_stall_full_pool_40.json` still runs 3 Pot of Greed and is reported over the limit.
 - Deck-out is a loss.
 - Training hardware: likely NVIDIA. Pick the neural-net crate at M6 with a spike on CUDA (candidates: burn, candle, tch-rs).
 - VR games cannot be exported; human games come only from this project's CLI and browser.
