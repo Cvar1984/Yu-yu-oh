@@ -7,7 +7,7 @@ use ygo_cards::reveal::*;
 use ygo_data::{CardId, CardKind};
 use ygo_engine::testing::{
     CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, in_hand, next_turn, pass_all, play,
-    shared_from, stacked, summon, with_rules,
+    shared_from, stacked, with_rules,
 };
 use ygo_engine::{Action, DecisionKind, Event, Game, Location, PlayerId, Shared, VisibleCard};
 

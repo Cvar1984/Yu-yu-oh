@@ -4,6 +4,7 @@
 //! Module per card type; each module has a `register` function.
 
 pub mod continuous;
+pub mod fusion;
 pub mod monsters;
 pub mod oneshot;
 pub mod reveal;
@@ -23,5 +24,6 @@ pub fn registry() -> Registry {
     tables::register(&mut r);
     oneshot::register(&mut r);
     reveal::register(&mut r);
+    fusion::register(&mut r);
     r
 }
