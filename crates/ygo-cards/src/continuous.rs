@@ -13,7 +13,7 @@ pub const MESSENGER_OF_PEACE: CardId = CardId(44656491);
 pub const SWORDS_OF_REVEALING_LIGHT: CardId = CardId(72302403);
 
 /// Face-up monsters on the field that `keep` accepts, as target sets.
-fn face_up_monsters(g: &Game, keep: impl Fn(&Game, InstanceId) -> bool) -> TargetSets {
+pub(crate) fn face_up_monsters(g: &Game, keep: impl Fn(&Game, InstanceId) -> bool) -> TargetSets {
     ygo_engine::PlayerId::BOTH
         .into_iter()
         .flat_map(|p| g.monsters_controlled(p))
@@ -24,14 +24,20 @@ fn face_up_monsters(g: &Game, keep: impl Fn(&Game, InstanceId) -> bool) -> Targe
 
 /// Resolving an Equip Spell: attach to the target if it is still a
 /// face-up monster, otherwise the Equip is destroyed.
-fn equip_resolve(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
+pub(crate) fn equip_resolve(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
     if !g.equip(ctx.source, ctx.targets[0]) {
         g.destroy(ctx.source, ctx.source);
     }
     Flow::Done
 }
 
-fn equipped_bonus(g: &Game, s: Source, target: InstanceId, atk: i32, def: i32) -> StatMod {
+pub(crate) fn equipped_bonus(
+    g: &Game,
+    s: Source,
+    target: InstanceId,
+    atk: i32,
+    def: i32,
+) -> StatMod {
     if g.equip_target(s.card) == Some(target) {
         StatMod { atk, def }
     } else {
