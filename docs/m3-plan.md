@@ -118,3 +118,31 @@ Simplifications, each a candidate for a later rulings pass:
 - Ritual Spells offer tribute sets of up to three monsters.
 - Still open from M2: Monster Reborn revives in Attack Position only,
   Field Spells activate from the hand only.
+
+## Gate report (2026-11-17)
+
+Gate: all 228 non-Normal cards scripted, a rulings test per card.
+
+| Check | Evidence |
+| --- | --- |
+| Every non-Normal card scripted | `every_non_normal_card_in_the_pool_has_a_script` in `crates/ygo-cards/tests/registry.rs` |
+| A rulings test per card | 172 card tests (263 in the workspace); table-driven cards are checked row by row, and every Fusion Monster whose materials exist (23 of 25) and every Ritual monster is actually summoned in a test |
+| Sample decks, random play | 1,000,000 games over four deck pairs, no panics, no refused action, no draws |
+| Whole pool, random play | 5,000 property cases with random legal decks drawn from all 374 cards, invariants checked after every action; it found one stale invariant (hidden hands under Ceremonial Bell) |
+| Speed | 1,700 to 2,200 games/s, 300,000 to 330,000 actions/s, one core, release |
+
+Random-play results, 250,000 games per pair, half with each player first:
+
+| A | B | A wins | A first | B first | Mean turns |
+| --- | --- | --- | --- | --- | --- |
+| Owner's main 45 | Umiiruka WATER 40 | 35.4% ±0.2 | 35.2% | 35.6% | 44 |
+| Defense-tuned 45 | Exodia stall 40 | 89.9% ±0.1 | 89.2% | 90.6% | 29 |
+| Owner's main 45 | Owner's main 45 | 50.1% ±0.2 | 49.7% | 50.5% | 38 |
+| Umiiruka WATER 40 | Defense-tuned 45 | 68.2% ±0.2 | 68.4% | 68.0% | 42 |
+
+Reading these numbers: the mirror match is on 50% again. With every
+effect live, the Umiiruka deck pulls further ahead of the owner's deck
+(64.6% against it, up from 56% at M2), close to the prototype's 60%
+for that deck. Random play still cannot pilot combo or stall plans, so
+the Exodia deck stays near 10%; the heuristic bots of M4 are the next
+real measure.

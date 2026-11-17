@@ -58,7 +58,7 @@ cargo run --release -p ygo-cli -- sim data/decks/<a>.json data/decks/<b>.json -n
 - `scripts/check.sh` must pass before every commit; `cargo test --no-fail-fast` shows every failing binary at once.
 - `GameSetup.shuffle = false` keeps decks in listed order for scenario tests; `tests/common/mod.rs` has `stacked`, `shared_with` (rules with one change) and known card ids.
 - Instance ids are assigned in a seeded random order so an id never reveals a face-down card's identity. `observe(player)` is the only view bots get.
-- Speed baseline (M2, release, one core of this cloud container, every script active): 2,600 to 3,500 random games/s, about 520,000 actions/s. M1 without effects was 7,300 games/s. Profiling (`valgrind --tool=callgrind` on `ygo sim`) shows a third of the time in `observe` and a fifth in allocation; reusing an observation buffer is the next win when bots define what they need. Re-measure with `ygo sim` after engine changes and keep the numbers here current.
+- Speed baseline (M3, release, one core of this cloud container, all 228 scripts active): 1,700 to 2,200 random games/s, about 310,000 actions/s. M2 was 2,600 to 3,500 and M1 7,300. Profiling (`valgrind --tool=callgrind` on `ygo sim`) at M2 showed a third of the time in `observe` and a fifth in allocation; M3 adds continuous-hook scans on every attack, summon and Graveyard move. An observation buffer reused across decisions, and caching the face-up continuous effects per state, are the next wins. Re-measure with `ygo sim` after engine changes and keep the numbers here current.
 
 ## Writing a card script (ygo-cards)
 
