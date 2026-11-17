@@ -4,6 +4,7 @@
 pub mod bots;
 pub mod describe;
 pub mod play;
+pub mod replay;
 pub mod session;
 pub mod sim;
 pub mod tui;
