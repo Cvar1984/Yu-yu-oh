@@ -4,9 +4,9 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
 
-use ygo_ai::{Player, RandomPlayer, play_out};
+use ygo_ai::{Player, RandomPlayer, play_game};
 use ygo_data::{Bundle, DataError, Deck};
-use ygo_engine::{DeckList, Game, GameResult, GameSetup, PlayerId, Shared};
+use ygo_engine::{DeckList, GameResult, GameSetup, PlayerId, Shared};
 
 pub struct SimOptions<'a> {
     pub deck_a: &'a Path,
@@ -14,6 +14,8 @@ pub struct SimOptions<'a> {
     pub games: u32,
     pub seed: u64,
     pub max_turns: u32,
+    /// Write each game's record to this directory.
+    pub record_dir: Option<&'a Path>,
 }
 
 /// Outcome counts, split by who went first.
@@ -56,18 +58,24 @@ pub fn run(bundle: &Bundle, opts: &SimOptions) -> Result<(), DataError> {
         let mut setup = GameSetup::new(decks.clone(), opts.seed.wrapping_add(u64::from(i)));
         setup.first_player = Some(PlayerId((i % 2) as u8));
         setup.max_turns = opts.max_turns;
-        let mut game = match Game::new(shared.clone(), &setup) {
-            Ok(g) => g,
+        let mut a = RandomPlayer::new(setup.seed ^ 0xA);
+        let mut b = RandomPlayer::new(setup.seed ^ 0xB);
+        let mut players: [&mut dyn Player; 2] = [&mut a, &mut b];
+        let labels = ["random".to_string(), "random".to_string()];
+        let (game, record) = match play_game(shared.clone(), &setup, &mut players, labels) {
+            Ok(done) => done,
             Err(e) => {
                 eprintln!("error: {e}");
                 std::process::exit(2);
             }
         };
-        let mut a = RandomPlayer::new(setup.seed ^ 0xA);
-        let mut b = RandomPlayer::new(setup.seed ^ 0xB);
-        let mut players: [&mut dyn Player; 2] = [&mut a, &mut b];
-        let (result, record) = play_out(&mut game, &mut players);
-        actions += record.len() as u64;
+        if let Some(dir) = opts.record_dir {
+            let path = dir.join(format!("game-{}.jsonl", setup.seed));
+            std::fs::write(&path, record.to_jsonl())
+                .map_err(|source| DataError::Io { path, source })?;
+        }
+        actions += record.actions.len() as u64;
+        let result = record.result.expect("a played-out game has a result");
         tally.record(setup.first_player.unwrap(), result, game.turn());
     }
     let elapsed = started.elapsed().as_secs_f64();

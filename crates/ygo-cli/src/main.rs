@@ -52,6 +52,9 @@ enum Command {
         /// A game still running after this many turns is a draw.
         #[arg(long, default_value_t = ygo_engine::GameSetup::DEFAULT_MAX_TURNS)]
         max_turns: u32,
+        /// Write every game's record (JSON Lines) into this directory.
+        #[arg(long)]
+        record: Option<PathBuf>,
     },
 }
 
@@ -128,7 +131,14 @@ fn run(cli: Cli) -> Result<bool, DataError> {
             games,
             seed,
             max_turns,
+            record,
         } => {
+            if let Some(dir) = &record {
+                std::fs::create_dir_all(dir).map_err(|source| DataError::Io {
+                    path: dir.clone(),
+                    source,
+                })?;
+            }
             sim::run(
                 &bundle,
                 &sim::SimOptions {
@@ -137,6 +147,7 @@ fn run(cli: Cli) -> Result<bool, DataError> {
                     games,
                     seed,
                     max_turns,
+                    record_dir: record.as_deref(),
                 },
             )?;
             Ok(true)

@@ -10,3 +10,7 @@ description = "Players for the engine: random, heuristic, search and learned"
 ygo-engine.workspace = true
 rand_core = "0.10"
 rand_chacha = "0.10"
+
+[dev-dependencies]
+ygo-cards.workspace = true
+ygo-engine = { workspace = true, features = ["test-support"] }

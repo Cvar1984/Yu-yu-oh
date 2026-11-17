@@ -20,6 +20,7 @@ mod observe;
 mod ops;
 mod pool;
 mod position;
+mod record;
 mod setup;
 mod state;
 mod summon;
@@ -38,6 +39,7 @@ pub use error::SetupError;
 pub use game::Game;
 pub use observe::{ChainView, Observation, Side, VisibleCard};
 pub use pool::{CardIndex, CardPool, CardStats, Shared, SpellTrapType};
+pub use record::{GameRecord, RECORD_SCHEMA_VERSION, RecordError, RecordHeader, RecordedAction};
 pub use setup::{DeckList, GameSetup};
 pub use state::{
     BattleStep, CardInstance, DrawReason, GameResult, InstanceId, Lingering, LingeringKind,
