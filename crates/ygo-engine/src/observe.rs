@@ -33,6 +33,12 @@ impl VisibleCard {
         }
     }
 
+    pub fn position(&self) -> Position {
+        match self {
+            VisibleCard::Known { position, .. } | VisibleCard::Hidden { position, .. } => *position,
+        }
+    }
+
     pub fn card(&self) -> Option<CardId> {
         match self {
             VisibleCard::Known { card, .. } => Some(*card),
@@ -67,6 +73,87 @@ pub struct ChainView {
     pub effect: u8,
     pub targets: Vec<InstanceId>,
     pub negated: bool,
+}
+
+/// Where a card sits, as the viewer sees it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Place {
+    Hand,
+    Monster(usize),
+    SpellTrap(usize),
+    Field,
+    Graveyard,
+    Banished,
+    Extra,
+    /// Shown for a choice (a Deck search, a revealed hand).
+    Revealed,
+    Chain,
+}
+
+/// A card found in the observation: how it is seen, and where.
+#[derive(Debug, Clone, Copy)]
+pub struct Found<'a> {
+    pub card: &'a VisibleCard,
+    pub owner: Option<PlayerId>,
+    pub place: Place,
+}
+
+impl Observation {
+    /// Finds instance `id` in what the viewer can see.
+    pub fn find(&self, id: InstanceId) -> Option<Found<'_>> {
+        let obs = self;
+        for p in PlayerId::BOTH {
+            let side = &obs.sides[p.index()];
+            let zones: [(&[VisibleCard], Place); 4] = [
+                (&side.hand, Place::Hand),
+                (&side.graveyard, Place::Graveyard),
+                (&side.banished, Place::Banished),
+                (&side.extra, Place::Extra),
+            ];
+            for (cards, place) in zones.iter() {
+                if let Some(card) = cards.iter().find(|c| c.instance() == id) {
+                    return Some(Found {
+                        card,
+                        owner: Some(p),
+                        place: *place,
+                    });
+                }
+            }
+            for (i, z) in side.monster_zones.iter().enumerate() {
+                if let Some(card) = z.as_ref().filter(|c| c.instance() == id) {
+                    return Some(Found {
+                        card,
+                        owner: Some(p),
+                        place: Place::Monster(i),
+                    });
+                }
+            }
+            for (i, z) in side.spell_trap_zones.iter().enumerate() {
+                if let Some(card) = z.as_ref().filter(|c| c.instance() == id) {
+                    return Some(Found {
+                        card,
+                        owner: Some(p),
+                        place: Place::SpellTrap(i),
+                    });
+                }
+            }
+            if let Some(card) = side.field_zone.as_ref().filter(|c| c.instance() == id) {
+                return Some(Found {
+                    card,
+                    owner: Some(p),
+                    place: Place::Field,
+                });
+            }
+        }
+        obs.revealed
+            .iter()
+            .find(|c| c.instance() == id)
+            .map(|card| Found {
+                card,
+                owner: None,
+                place: Place::Revealed,
+            })
+    }
 }
 
 /// The game from `viewer`'s point of view. This, not the `Game`, is what
@@ -109,13 +196,19 @@ impl Game {
     pub fn observe(&self, viewer: PlayerId) -> Observation {
         let modifiers = self.modifiers();
         let hands_revealed = self.hands_revealed();
+        // A monster being Normal, Tribute or Flip Summoned face-up is public
+        // from its declaration, while the opponent decides on a response.
+        let declared = self
+            .pending_summon()
+            .filter(|p| !p.face_down)
+            .map(|p| p.card);
         let side = |player: PlayerId| {
             let state: &PlayerState = &self.players[player.index()];
             let own = player == viewer;
             let see = |id: InstanceId, in_hand: bool| {
                 let inst = &self.instances[id.index()];
                 let revealed = match inst.location {
-                    Location::Hand => own || hands_revealed,
+                    Location::Hand => own || hands_revealed || declared == Some(id),
                     Location::Graveyard | Location::Banished => true,
                     _ => inst.position.is_face_up() || own,
                 };

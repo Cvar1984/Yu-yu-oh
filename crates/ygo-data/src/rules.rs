@@ -112,14 +112,7 @@ pub struct WinRules {
 
 impl Rules {
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        let text = std::fs::read_to_string(path).map_err(|source| DataError::Io {
-            path: path.to_path_buf(),
-            source,
-        })?;
-        let rules: Rules = toml::from_str(&text).map_err(|source| DataError::Toml {
-            path: path.to_path_buf(),
-            source,
-        })?;
+        let rules: Rules = crate::read_toml(path)?;
         rules.validate()?;
         Ok(rules)
     }

@@ -1,11 +1,13 @@
 //! Loading and validation of everything the engine reads from disk: the card
-//! pool, the ban list, the owner's collection, decks and the house rules.
+//! pool, the ban list, the owner's collection, decks, the house rules and
+//! the heuristic bots' card values and styles.
 //!
 //! Every file refers to cards by their id (the official password). Formats
 //! are strict: unknown fields are errors, so a changed data bundle fails
 //! loudly instead of silently dropping information.
 
 mod banlist;
+mod bot;
 mod bundle;
 mod card;
 mod check;
@@ -15,6 +17,7 @@ mod error;
 mod rules;
 
 pub use banlist::{Banlist, CardLimit};
+pub use bot::{CardValues, MAX_CARD_VALUE, Style, Styles, ValueDefaults};
 pub use bundle::Bundle;
 pub use card::{Card, CardDb, CardFile, CardId, CardKind, CardType, Images, Printing};
 pub use check::{DeckProblem, check_deck};
@@ -50,6 +53,18 @@ pub(crate) fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T
         source,
     })?;
     serde_json::from_str(&text).map_err(|source| DataError::Json {
+        path: path.to_path_buf(),
+        source,
+    })
+}
+
+/// Reads and deserializes one TOML file, naming the file in any error.
+pub(crate) fn read_toml<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, DataError> {
+    let text = std::fs::read_to_string(path).map_err(|source| DataError::Io {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    toml::from_str(&text).map_err(|source| DataError::Toml {
         path: path.to_path_buf(),
         source,
     })

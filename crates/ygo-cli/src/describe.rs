@@ -6,87 +6,9 @@ use std::fmt::Write;
 
 use ygo_data::CardId;
 use ygo_engine::{
-    Action, BattleStep, CardPool, DecisionKind, Event, GameResult, InstanceId, Observation, Phase,
-    PlayerId, Position, Side, VisibleCard, WinReason,
+    Action, BattleStep, CardPool, DecisionKind, Event, Found, GameResult, InstanceId, Observation,
+    Phase, Place, PlayerId, Position, Side, VisibleCard, WinReason,
 };
-
-/// Where a card sits, as the viewer sees it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Place {
-    Hand,
-    Monster(usize),
-    SpellTrap(usize),
-    Field,
-    Graveyard,
-    Banished,
-    Extra,
-    /// Shown for a choice (a Deck search, a revealed hand).
-    Revealed,
-    Chain,
-}
-
-/// A card found in the observation: how it is seen, and where.
-#[derive(Debug, Clone, Copy)]
-pub struct Found<'a> {
-    pub card: &'a VisibleCard,
-    pub owner: Option<PlayerId>,
-    pub place: Place,
-}
-
-/// Finds instance `id` in what the viewer can see.
-pub fn find(obs: &Observation, id: InstanceId) -> Option<Found<'_>> {
-    for p in PlayerId::BOTH {
-        let side = &obs.sides[p.index()];
-        let zones: [(&[VisibleCard], Place); 4] = [
-            (&side.hand, Place::Hand),
-            (&side.graveyard, Place::Graveyard),
-            (&side.banished, Place::Banished),
-            (&side.extra, Place::Extra),
-        ];
-        for (cards, place) in zones.iter() {
-            if let Some(card) = cards.iter().find(|c| c.instance() == id) {
-                return Some(Found {
-                    card,
-                    owner: Some(p),
-                    place: *place,
-                });
-            }
-        }
-        for (i, z) in side.monster_zones.iter().enumerate() {
-            if let Some(card) = z.as_ref().filter(|c| c.instance() == id) {
-                return Some(Found {
-                    card,
-                    owner: Some(p),
-                    place: Place::Monster(i),
-                });
-            }
-        }
-        for (i, z) in side.spell_trap_zones.iter().enumerate() {
-            if let Some(card) = z.as_ref().filter(|c| c.instance() == id) {
-                return Some(Found {
-                    card,
-                    owner: Some(p),
-                    place: Place::SpellTrap(i),
-                });
-            }
-        }
-        if let Some(card) = side.field_zone.as_ref().filter(|c| c.instance() == id) {
-            return Some(Found {
-                card,
-                owner: Some(p),
-                place: Place::Field,
-            });
-        }
-    }
-    obs.revealed
-        .iter()
-        .find(|c| c.instance() == id)
-        .map(|card| Found {
-            card,
-            owner: None,
-            place: Place::Revealed,
-        })
-}
 
 /// "You" or "Your opponent", from the viewer's side.
 pub fn who(obs: &Observation, player: PlayerId) -> &'static str {
@@ -114,7 +36,7 @@ pub fn card_name(pool: &CardPool, id: CardId) -> &str {
 /// of where the hidden card is.
 pub fn card(obs: &Observation, pool: &CardPool, id: InstanceId) -> String {
     let chain = obs.chain.iter().find(|l| l.instance == id);
-    match (find(obs, id), chain) {
+    match (obs.find(id), chain) {
         (
             Some(Found {
                 card: VisibleCard::Known { card, .. },
@@ -174,7 +96,7 @@ pub fn action(obs: &Observation, pool: &CardPool, a: &Action) -> String {
         }
         Action::FlipSummon { card } => format!("Flip Summon {}", c(*card)),
         Action::ChangePosition { card } => {
-            let to = match find(obs, *card).map(|f| f.card) {
+            let to = match obs.find(*card).map(|f| f.card) {
                 Some(VisibleCard::Known {
                     position: Position::FaceUpAttack,
                     ..

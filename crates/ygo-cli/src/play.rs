@@ -2,12 +2,10 @@
 //! terminal UI and saves the game record.
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use ygo_data::{DataError, Deck};
+use ygo_engine::{DeckList, GameSetup, PlayerId};
 
-use ygo_ai::{Player, RandomPlayer};
-use ygo_data::{Bundle, DataError, Deck};
-use ygo_engine::{DeckList, GameSetup, PlayerId, Shared};
-
+use crate::bots::Bots;
 use crate::session::PlaySession;
 
 /// The human always plays as player 0 with their own deck.
@@ -31,22 +29,10 @@ pub struct PlayOptions<'a> {
     pub max_turns: u32,
 }
 
-/// Builds the bot named by `spec`. Only `random` exists until the
-/// heuristic bots arrive.
-pub fn bot(spec: &str, seed: u64) -> Result<Box<dyn Player>, String> {
-    match spec {
-        "random" => Ok(Box::new(RandomPlayer::new(seed))),
-        other => Err(format!("unknown bot `{other}`; available: random")),
-    }
-}
-
 /// Loads the decks and starts the session; the bot has played up to the
 /// human's first decision when this returns.
-pub fn start(
-    bundle: &Bundle,
-    opts: &PlayOptions,
-) -> Result<PlaySession, Box<dyn std::error::Error>> {
-    let player = bot(opts.bot, opts.seed ^ 0xB0)?;
+pub fn start(bots: &Bots, opts: &PlayOptions) -> Result<PlaySession, Box<dyn std::error::Error>> {
+    let player = bots.make(opts.bot, opts.seed ^ 0xB0)?;
     let mine = Deck::load(opts.deck)?;
     let theirs = match opts.bot_deck {
         Some(path) => Deck::load(path)?,
@@ -59,14 +45,9 @@ pub fn start(
         First::Bot => Some(HUMAN.opponent()),
         First::Random => None,
     };
-    let shared = Arc::new(Shared::new(
-        bundle.rules.clone(),
-        &bundle.cards,
-        ygo_cards::registry(),
-    ));
     let session = PlaySession::new(
-        shared,
-        Arc::new(bundle.cards.clone()),
+        bots.shared.clone(),
+        bots.cards.clone(),
         &setup,
         HUMAN,
         player,

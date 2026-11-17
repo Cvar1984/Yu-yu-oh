@@ -596,3 +596,44 @@ fn mirror_force_does_not_see_a_face_down_or_defense_monster() {
     assert!(g.on_field(elf));
     assert_eq!(g.instance(elf).position, Position::FaceDownDefense);
 }
+
+#[test]
+fn a_declared_summon_is_visible_while_solemn_judgment_decides() {
+    let mut g = Game::new(
+        shared(),
+        &stacked(
+            [&[SOLEMN_JUDGMENT], &[CELTIC_GUARDIAN, MYSTICAL_ELF]],
+            SEVEN_COLORED_FISH,
+        ),
+    )
+    .unwrap();
+    set(&mut g, P0, SOLEMN_JUDGMENT);
+    next_turn(&mut g);
+    let celtic = in_hand(&g, P1, CELTIC_GUARDIAN);
+    play(&mut g, summon(celtic));
+    assert!(respond_pending(&g, P0));
+    let seen = g.observe(P0);
+    assert_eq!(seen.pending_summon.map(|p| p.card), Some(celtic));
+    assert_eq!(
+        seen.find(celtic).and_then(|f| f.card.card()),
+        Some(CELTIC_GUARDIAN),
+        "a face-up summon is public from its declaration"
+    );
+    let other = in_hand(&g, P1, MYSTICAL_ELF);
+    assert_eq!(seen.find(other).and_then(|f| f.card.card()), None);
+
+    // A Set stays hidden, if it opens a window at all.
+    pass_all(&mut g);
+    next_turn(&mut g);
+    next_turn(&mut g);
+    let elf = in_hand(&g, P1, MYSTICAL_ELF);
+    play(
+        &mut g,
+        Action::Summon {
+            card: elf,
+            tributes: Vec::new(),
+            face_down: true,
+        },
+    );
+    assert_eq!(g.observe(P0).find(elf).and_then(|f| f.card.card()), None);
+}
