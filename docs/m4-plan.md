@@ -33,18 +33,21 @@ Skull, tributing Mystical Elf"). Both read only the observation, so a
 human never sees a hidden card. They live in `ygo-cli` until the server
 needs them too.
 
-**`ygo play`.** Plain numbered text, no full-screen UI: it works in any
-terminal and over SSH from a phone.
+**`ygo play`.** A full-screen terminal UI (`ratatui` on `crossterm`):
+panels for the opponent's field, your field, your hand, the chain and
+open window, a log of recent events, and the list of legal actions.
+Arrow keys or numbers select an action, Enter plays it, `c` shows the
+selected card's full text, `q` quits. The screen is a thin layer over a
+`PlaySession` that holds the game, the bot and the record, so tests
+drive the session directly and check the drawn screen with ratatui's
+test backend, without a real terminal.
 
 ```text
-ygo play --deck data/decks/owner_main_45.json --bot heuristic:control \
+ygo play --deck data/decks/owner_main_45.json [--bot heuristic:beatdown] \
          [--bot-deck <file>] [--seed S] [--first me|bot|random] [--record <file>]
 ```
 
-Each decision prints the board and the numbered legal actions. Input is
-a number, or `card <n>` (full card text), `log` (recent events),
-`help`, `quit`. The bot's actions are printed as sentences. Every game
-is recorded.
+The default bot is `heuristic:beatdown`. Every game is recorded.
 
 **Heuristic bots.** One `HeuristicPlayer`, parameterised by a style, so
 six playstyles are six configurations, not six programs. It scores each
@@ -84,9 +87,10 @@ similar).
 2. **Text rendering**: board and action sentences. Tests: known states
    render as expected; a render for one player never contains the name
    of a card hidden from them (fuzzed over random games).
-3. **`ygo play`**: the interactive loop, help, card text, recording.
-   Test: a full game driven by scripted input runs to the end and
-   leaves a record that replays.
+3. **`ygo play`**: `PlaySession`, the full-screen UI, card text,
+   recording. Tests: a full game driven through `PlaySession` runs to
+   the end and leaves a record that replays; the screen drawn on the
+   test backend shows the board and never a hidden card.
 4. **Heuristic bot and styles**: `HeuristicPlayer`, the two config
    files, loading and validation in `ygo-data`. Tests: one per rule of
    thumb above, in stacked scenarios.
@@ -98,10 +102,8 @@ similar).
 7. **Docs and gate**: CLAUDE.md, this plan's progress, a gate report.
    The gate is yours: you play a full game with `ygo play`.
 
-## Questions for the owner
+## Owner's answers (2026-11-17)
 
-- Plain numbered text for `ygo play`, or a full-screen terminal UI
-  (more work, nicer to look at)?
-- Card values and style weights in config files, as planned, or derived
-  only from card stats with no hand-made table?
-- Which style should `ygo play` use when `--bot` is not given?
+- `ygo play` is a full-screen terminal UI.
+- Card values and style weights live in config files.
+- The default bot is `heuristic:beatdown`.
