@@ -6,6 +6,7 @@
 pub mod continuous;
 pub mod monsters;
 pub mod spells;
+pub mod tables;
 pub mod traps;
 
 use ygo_engine::Registry;
@@ -17,5 +18,6 @@ pub fn registry() -> Registry {
     spells::register(&mut r);
     traps::register(&mut r);
     continuous::register(&mut r);
+    tables::register(&mut r);
     r
 }
