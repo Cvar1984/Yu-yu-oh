@@ -110,6 +110,7 @@ pub(crate) enum Prompt {
         then: fn(&mut Game, &mut EffectCtx, InstanceId) -> Flow,
     },
     Ask {
+        chooser: PlayerId,
         options: Vec<&'static str>,
         then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
     },
@@ -127,8 +128,7 @@ impl PendingChoice {
     /// Who answers: the controller, or the chooser of a `ChooseBy`.
     pub fn decider(&self) -> PlayerId {
         match &self.prompt {
-            Prompt::Choose { chooser, .. } => *chooser,
-            Prompt::Ask { .. } => self.ctx.controller,
+            Prompt::Choose { chooser, .. } | Prompt::Ask { chooser, .. } => *chooser,
         }
     }
 
@@ -491,6 +491,18 @@ impl Game {
         for card in state.spell_trap_zones.iter().flatten().copied() {
             let inst = &self.instances[card.index()];
             let stats = self.stats(card);
+            if inst.position == Position::FaceDown && stats.kind == CardKind::Trap {
+                self.push_activations(
+                    player,
+                    card,
+                    &window,
+                    |_, e| {
+                        e.kind == EffectKind::Activate && self.fast_effect_allowed(card, e, player)
+                    },
+                    actions,
+                );
+                continue;
+            }
             if inst.position != Position::FaceDown || stats.kind != CardKind::Spell {
                 continue;
             }
@@ -748,10 +760,31 @@ impl Game {
             }
             Flow::Ask { options, then } => {
                 assert!(!options.is_empty(), "a question needs options");
+                let chooser = ctx.controller;
                 self.pending_choice = Some(PendingChoice {
                     link,
                     ctx,
-                    prompt: Prompt::Ask { options, then },
+                    prompt: Prompt::Ask {
+                        chooser,
+                        options,
+                        then,
+                    },
+                });
+            }
+            Flow::AskBy {
+                chooser,
+                options,
+                then,
+            } => {
+                assert!(!options.is_empty(), "a question needs options");
+                self.pending_choice = Some(PendingChoice {
+                    link,
+                    ctx,
+                    prompt: Prompt::Ask {
+                        chooser,
+                        options,
+                        then,
+                    },
                 });
             }
         }

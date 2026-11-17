@@ -53,7 +53,9 @@ impl Game {
                 self.set_spell_trap_actions(player, &mut actions);
                 self.activation_actions(player, &mut actions);
                 self.ignition_actions(player, &mut actions);
-                if self.phase == Phase::Main1 && self.attacks_allowed() {
+                let second = self.phase == Phase::Main2
+                    && self.extra_battle_phase == Some((player, self.turn));
+                if (self.phase == Phase::Main1 || second) && self.attacks_allowed() {
                     actions.push(Action::EnterBattlePhase);
                 }
                 actions.push(Action::EndTurn);
@@ -115,7 +117,7 @@ impl Game {
                 }
                 _ => self.pass(),
             },
-            Action::EnterBattlePhase => self.enter_phase(Phase::Battle(BattleStep::Start)),
+            Action::EnterBattlePhase => self.enter_battle_phase(),
             Action::Attack { attacker, target } => {
                 if decision.kind == DecisionKind::Replay {
                     self.replay(*attacker, Some(*target));
@@ -344,6 +346,21 @@ impl Game {
             .expect("checked when the action was offered");
         self.place_spell_trap(player, card, zone, crate::Position::FaceDown);
         self.emit(Event::SetCard { player, card });
+    }
+
+    /// From Main Phase 1, or from Main Phase 2 with a granted second Battle
+    /// Phase, in which monsters may attack again.
+    fn enter_battle_phase(&mut self) {
+        if self.phase == Phase::Main2 {
+            self.extra_battle_phase = None;
+            let player = self.turn_player;
+            for card in self.instances.iter_mut() {
+                if card.controller == player {
+                    card.attacked_this_turn = false;
+                }
+            }
+        }
+        self.enter_phase(Phase::Battle(BattleStep::Start));
     }
 
     pub(crate) fn finish(&mut self, result: GameResult) {
