@@ -172,7 +172,7 @@ impl PlaySession {
     /// Full text of a card the human can see: name, type, stats and effect.
     pub fn card_text(&self, id: InstanceId) -> Option<String> {
         let obs = self.observation();
-        let known = match describe::find(&obs, id).map(|f| f.card) {
+        let known = match obs.find(id).map(|f| f.card) {
             Some(VisibleCard::Known { card, .. }) => Some(*card),
             _ => obs.chain.iter().find(|l| l.instance == id).map(|l| l.card),
         }?;

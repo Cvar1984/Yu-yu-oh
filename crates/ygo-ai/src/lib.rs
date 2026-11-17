@@ -2,6 +2,10 @@
 //! recorded game between two of them. The uniform random player is the
 //! floor of the evaluation ladder and the engine's fuzzing driver.
 
+mod heuristic;
+
+pub use heuristic::HeuristicPlayer;
+
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
 use std::sync::Arc;

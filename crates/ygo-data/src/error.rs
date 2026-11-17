@@ -58,4 +58,6 @@ pub enum DataError {
     DefaultLimitMismatch { banlist: usize, rules: usize },
     #[error("invalid rules: {0}")]
     InvalidRules(String),
+    #[error("invalid bot configuration: {0}")]
+    InvalidBotConfig(String),
 }

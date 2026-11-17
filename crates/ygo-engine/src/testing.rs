@@ -292,10 +292,14 @@ pub fn check_invariants(g: &Game) {
         let obs = g.observe(viewer);
         let opp = obs.opponent();
         if !g.hands_revealed() {
+            // Only a monster being summoned face-up is shown from the hand.
+            let declared = g.pending_summon().filter(|p| !p.face_down).map(|p| p.card);
             assert!(
                 opp.hand
                     .iter()
-                    .all(|c| matches!(c, VisibleCard::Hidden { .. }))
+                    .all(|c| matches!(c, VisibleCard::Hidden { .. })
+                        || Some(c.instance()) == declared),
+                "only a declared face-up summon is visible in the opponent's hand"
             );
         }
         for zone in opp.monster_zones.iter().flatten() {

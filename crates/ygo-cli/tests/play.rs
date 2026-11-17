@@ -9,10 +9,11 @@ use common::assert_no_hidden_names;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::KeyCode;
+use ygo_cli::bots::{Bots, DEFAULT_BOT};
 use ygo_cli::play::{self, First, HUMAN, PlayOptions};
 use ygo_cli::session::PlaySession;
 use ygo_cli::tui::{self, App};
-use ygo_engine::testing::bundle;
+use ygo_engine::testing::{bundle, root};
 use ygo_engine::{CardIndex, GameRecord, GameSetup, VisibleCard};
 
 fn deck(name: &str) -> PathBuf {
@@ -21,21 +22,34 @@ fn deck(name: &str) -> PathBuf {
         .join(name)
 }
 
-fn start(seed: u64, first: First) -> PlaySession {
+fn bots() -> Bots {
+    Bots::load(
+        &bundle(),
+        &root().join("config/styles.toml"),
+        &root().join("config/card_values.toml"),
+    )
+    .unwrap()
+}
+
+fn start_with(bot: &str, seed: u64, first: First) -> PlaySession {
     let mine = deck("owner_main_45.json");
     let theirs = deck("umiiruka_water_40.json");
     play::start(
-        &bundle(),
+        &bots(),
         &PlayOptions {
             deck: &mine,
             bot_deck: Some(&theirs),
-            bot: "random",
+            bot,
             seed,
             first,
             max_turns: GameSetup::DEFAULT_MAX_TURNS,
         },
     )
     .expect("session starts")
+}
+
+fn start(seed: u64, first: First) -> PlaySession {
+    start_with("random", seed, first)
 }
 
 /// The text of every cell on the screen, row by row.
@@ -64,7 +78,12 @@ fn lcg(state: &mut u64) -> usize {
 fn a_human_plays_whole_games_and_the_record_replays() {
     let shared = ygo_engine::testing::shared_from(ygo_cards::registry());
     for seed in 0..6u64 {
-        let mut s = start(seed, if seed % 2 == 0 { First::Me } else { First::Bot });
+        let bot = if seed < 3 { "random" } else { DEFAULT_BOT };
+        let mut s = start_with(
+            bot,
+            seed,
+            if seed % 2 == 0 { First::Me } else { First::Bot },
+        );
         let mut rng = seed;
         while s.result().is_none() {
             let n = s.actions().len();
@@ -77,7 +96,7 @@ fn a_human_plays_whole_games_and_the_record_replays() {
         assert!(s.log().len() > 2, "{:?}", s.log());
         let record = s.record();
         assert_eq!(record.header.players[HUMAN.index()], "human");
-        assert_eq!(record.header.players[HUMAN.opponent().index()], "random");
+        assert_eq!(record.header.players[HUMAN.opponent().index()], bot);
         assert_eq!(record.result, s.result());
         let parsed = GameRecord::from_jsonl(&record.to_jsonl()).unwrap();
         let replayed = parsed.replay(&shared).unwrap();
@@ -96,7 +115,18 @@ fn who_goes_first_follows_the_choice() {
         "{:?}",
         s.log()
     );
-    assert!(play::bot("nonsense", 1).is_err());
+    let err = bots()
+        .make("nonsense", 1)
+        .err()
+        .expect("unknown bot refused");
+    assert!(
+        err.contains("heuristic:beatdown") && err.contains("random"),
+        "{err}"
+    );
+    assert!(bots().make("heuristic:nonsense", 1).is_err());
+    for name in bots().names() {
+        assert!(bots().make(&name, 1).is_ok(), "{name}");
+    }
 }
 
 #[test]

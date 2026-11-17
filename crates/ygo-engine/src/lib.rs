@@ -37,7 +37,7 @@ pub use effect::{
 };
 pub use error::SetupError;
 pub use game::Game;
-pub use observe::{ChainView, Observation, Side, VisibleCard};
+pub use observe::{ChainView, Found, Observation, Place, Side, VisibleCard};
 pub use pool::{CardIndex, CardPool, CardStats, Shared, SpellTrapType};
 pub use record::{GameRecord, RECORD_SCHEMA_VERSION, RecordError, RecordHeader, RecordedAction};
 pub use setup::{DeckList, GameSetup};

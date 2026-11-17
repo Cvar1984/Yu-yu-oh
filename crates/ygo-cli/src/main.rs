@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::{play, sim, tui};
+use ygo_cli::{bots, play, sim, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -21,6 +21,12 @@ struct Cli {
     /// Directory that relative paths in the rules file resolve against.
     #[arg(long, global = true, default_value = ".")]
     data_root: PathBuf,
+    /// Playstyles for the heuristic bots.
+    #[arg(long, global = true, default_value = "config/styles.toml")]
+    styles: PathBuf,
+    /// Card values for the heuristic bots.
+    #[arg(long, global = true, default_value = "config/card_values.toml")]
+    card_values: PathBuf,
     #[command(subcommand)]
     command: Command,
 }
@@ -64,8 +70,8 @@ enum Command {
         /// The bot's deck; defaults to a copy of yours.
         #[arg(long)]
         bot_deck: Option<PathBuf>,
-        /// The opponent: `random`.
-        #[arg(long, default_value = "random")]
+        /// The opponent: `random` or `heuristic:<style>` (see config/styles.toml).
+        #[arg(long, default_value = bots::DEFAULT_BOT)]
         bot: String,
         /// Shuffle seed; taken from the clock when left out.
         #[arg(long)]
@@ -188,8 +194,9 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default();
             let seed = seed.unwrap_or(now.as_nanos() as u64);
+            let bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
             let session = play::start(
-                &bundle,
+                &bots,
                 &play::PlayOptions {
                     deck: &deck,
                     bot_deck: bot_deck.as_deref(),
