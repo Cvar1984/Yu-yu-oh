@@ -25,9 +25,11 @@ Full spec: `docs/handoff.md`. This file holds what every session must know.
 | `crates/ygo-server` | HTTP and WebSocket API for the browser | ygo-engine, ygo-ai |
 | `web/` | Browser board | the server's protocol |
 | `config/rules.toml` | House rules, also names the card and ban list files | |
+| `config/styles.toml`, `config/card_values.toml` | Heuristic bot styles and card values (read by `ygo-data`) | |
+| `records/` | Game records (git-ignored) | |
 | `data/` | JSON data; see `data/README.md` | |
 
-Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 to M3 gates passed. All 228 non-Normal cards are scripted with rulings tests (`docs/m3-plan.md`, which also lists the simplifications made). Next: M4, the CLI with heuristic bots, game records and replay (`docs/m4-plan.md`).
+Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 to M3 gates passed. All 228 non-Normal cards are scripted with rulings tests (`docs/m3-plan.md`, which also lists the simplifications made). M4 (records, `ygo play`, heuristic bots, `ygo replay`) is built and its checks pass (`docs/m4-plan.md`, gate report); its gate is the owner playing a full game with `ygo play`. Next after that: M5.
 
 ## Conventions
 
@@ -45,7 +47,11 @@ Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a mil
 scripts/check.sh                       # fmt, clippy -D warnings, tests
 cargo run -p ygo-cli -- check-data [--collection data/collection.json]
 cargo run -p ygo-cli -- check-deck data/decks/<deck>.json [--collection data/collection.json]
-cargo run --release -p ygo-cli -- sim data/decks/<a>.json data/decks/<b>.json -n 2000 [--seed S]
+cargo run --release -p ygo-cli -- sim data/decks/<a>.json data/decks/<b>.json -n 2000 [--seed S] \
+    [--bot-a random|heuristic:<style>] [--bot-b ...] [--record <dir>]
+cargo run --release -p ygo-cli -- play --deck data/decks/<deck>.json [--bot heuristic:beatdown] \
+    [--bot-deck <file>] [--seed S] [--first me|bot|random] [--record <file>]
+cargo run --release -p ygo-cli -- replay <record.jsonl> [--view p0|p1|all] [--turn N]
 ```
 
 ## Engine notes (ygo-engine)
@@ -58,7 +64,14 @@ cargo run --release -p ygo-cli -- sim data/decks/<a>.json data/decks/<b>.json -n
 - `scripts/check.sh` must pass before every commit; `cargo test --no-fail-fast` shows every failing binary at once.
 - `GameSetup.shuffle = false` keeps decks in listed order for scenario tests; `tests/common/mod.rs` has `stacked`, `shared_with` (rules with one change) and known card ids.
 - Instance ids are assigned in a seeded random order so an id never reveals a face-down card's identity. `observe(player)` is the only view bots get.
-- Speed baseline (M3, release, one core of this cloud container, all 228 scripts active): 1,700 to 2,200 random games/s, about 310,000 actions/s. M2 was 2,600 to 3,500 and M1 7,300. Profiling (`valgrind --tool=callgrind` on `ygo sim`) at M2 showed a third of the time in `observe` and a fifth in allocation; M3 adds continuous-hook scans on every attack, summon and Graveyard move. An observation buffer reused across decisions, and caching the face-up continuous effects per state, are the next wins. Re-measure with `ygo sim` after engine changes and keep the numbers here current.
+- Speed baseline (M4, release, one core of this cloud container, all 228 scripts active): 1,870 to 2,580 random games/s, 350,000 to 400,000 actions/s; the Beatdown bot against itself 3,777 games/s. M3 was 1,700 to 2,200, M2 2,600 to 3,500 and M1 7,300. Profiling (`valgrind --tool=callgrind` on `ygo sim`) at M2 showed a third of the time in `observe` and a fifth in allocation; M3 adds continuous-hook scans on every attack, summon and Graveyard move. An observation buffer reused across decisions, and caching the face-up continuous effects per state, are the next wins. Re-measure with `ygo sim` after engine changes and keep the numbers here current.
+
+## Records, play and bots (ygo-engine, ygo-ai, ygo-cli)
+
+- A game record is JSON Lines: a header with the full `Rules`, the `GameSetup` and player labels, one line per action, then the result. It replays under its own rules, so `rules.toml` changes never break old records. `GameRecord::note` goes before `apply`.
+- Bots implement `ygo_ai::Player` and see only the `Observation`. `HeuristicPlayer` scores each legal action; its weights come from a style in `config/styles.toml` and card worth from `config/card_values.toml` (style values override). Card knowledge goes in those files, not in code. Use engine tags (Exodia pieces) when a rule of thumb needs a card property.
+- `ygo_cli::bots::Bots` turns `random` or `heuristic:<style>` into a player for `play` and `sim`. Evaluate any bot change with `ygo sim` (2,000 games, 95% interval) and record the numbers.
+- `PlaySession` and `ReplaySession` hold the logic; `tui.rs` only draws and reads keys, so tests drive sessions and check screens with ratatui's `TestBackend`. Anything shown to a player is rendered from that player's observation (`describe.rs`).
 
 ## Writing a card script (ygo-cards)
 
