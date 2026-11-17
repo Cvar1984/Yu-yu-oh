@@ -225,6 +225,14 @@ pub enum Event {
     AttackReplay {
         attacker: InstanceId,
     },
+    DeckReordered {
+        player: PlayerId,
+        count: u8,
+    },
+    Revealed {
+        player: PlayerId,
+        cards: Vec<InstanceId>,
+    },
     GameOver {
         result: GameResult,
     },
