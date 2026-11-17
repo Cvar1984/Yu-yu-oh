@@ -291,11 +291,13 @@ pub fn check_invariants(g: &Game) {
     for viewer in PlayerId::BOTH {
         let obs = g.observe(viewer);
         let opp = obs.opponent();
-        assert!(
-            opp.hand
-                .iter()
-                .all(|c| matches!(c, VisibleCard::Hidden { .. }))
-        );
+        if !g.hands_revealed() {
+            assert!(
+                opp.hand
+                    .iter()
+                    .all(|c| matches!(c, VisibleCard::Hidden { .. }))
+            );
+        }
         for zone in opp.monster_zones.iter().flatten() {
             let face_up = g.instance(zone.instance()).position.is_face_up();
             assert_eq!(matches!(zone, VisibleCard::Known { .. }), face_up);

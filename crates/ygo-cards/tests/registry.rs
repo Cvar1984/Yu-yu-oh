@@ -68,3 +68,22 @@ fn effect_monsters_summon_as_vanilla_but_toons_cannot() {
         CardKind::Effect
     );
 }
+
+#[test]
+fn every_non_normal_card_in_the_pool_has_a_script() {
+    let registry = ygo_cards::registry();
+    let b = bundle();
+    let missing: Vec<String> = b
+        .cards
+        .iter()
+        .filter(|c| c.kind() != CardKind::Normal && registry.get(c.id).is_none())
+        .map(|c| format!("{} ({})", c.name, c.id))
+        .collect();
+    assert!(missing.is_empty(), "unscripted: {missing:?}");
+    let non_normal = b
+        .cards
+        .iter()
+        .filter(|c| c.kind() != CardKind::Normal)
+        .count();
+    assert_eq!(non_normal, 228);
+}
