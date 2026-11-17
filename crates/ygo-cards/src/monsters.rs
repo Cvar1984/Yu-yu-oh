@@ -20,15 +20,6 @@ pub const EXODIA_LIMBS: [CardId; 4] = [
     CardId(44519536), // Left Leg of the Forbidden One
 ];
 
-/// Toon Monsters: "Cannot be Normal Summoned/Set." Their other effects
-/// (Toon World, direct attacks) are M3.
-const TOON_MONSTERS: [(CardId, &str); 4] = [
-    (CardId(65458948), "Toon Mermaid"),
-    (CardId(91842653), "Toon Summoned Skull"),
-    (CardId(53183600), "Blue-Eyes Toon Dragon"),
-    (CardId(38369349), "Manga Ryu-Ran"),
-];
-
 fn single(effect: Effect) -> CardScript {
     CardScript {
         tags: Vec::new(),
@@ -71,15 +62,6 @@ fn add_and_shuffle(g: &mut Game, ctx: &mut ygo_engine::EffectCtx, picked: Instan
 }
 
 pub fn register(r: &mut Registry) {
-    for (id, _name) in TOON_MONSTERS {
-        r.register(
-            id,
-            CardScript {
-                tags: vec![Tag::CannotNormalSummon],
-                effects: Vec::new(),
-            },
-        );
-    }
     r.register(
         EXODIA_THE_FORBIDDEN_ONE,
         CardScript {

@@ -34,13 +34,28 @@ impl Game {
     pub(crate) fn attack_options(&self, attacker: InstanceId, actions: &mut Vec<Action>) {
         let player = self.instances[attacker.index()].controller;
         let opponent = player.opponent();
-        let targets: Vec<InstanceId> = match self.attack_lock(attacker) {
+        let mut targets: Vec<InstanceId> = match self.attack_lock(attacker) {
             Some(t) => vec![t],
             None => self.players[opponent.index()].monsters().collect(),
         };
-        let direct = self
-            .script(attacker)
-            .is_some_and(|s| s.has(crate::Tag::DirectAttacker));
+        let has = |card: InstanceId, tag: crate::Tag| self.script(card).is_some_and(|s| s.has(tag));
+        let mut direct = has(attacker, crate::Tag::DirectAttacker);
+        // A Toon attacks directly unless the opponent controls a face-up
+        // Toon, in which case it may only attack Toons.
+        if has(attacker, crate::Tag::Toon) {
+            let toons: Vec<InstanceId> = self.players[opponent.index()]
+                .monsters()
+                .filter(|&m| {
+                    has(m, crate::Tag::Toon) && self.instances[m.index()].position.is_face_up()
+                })
+                .collect();
+            if toons.is_empty() {
+                direct = true;
+            } else {
+                targets.retain(|t| toons.contains(t));
+                direct = false;
+            }
+        }
         if targets.is_empty() || direct {
             actions.push(Action::Attack {
                 attacker,

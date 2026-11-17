@@ -14,6 +14,7 @@ pub mod reveal;
 pub mod ritual;
 pub mod spells;
 pub mod tables;
+pub mod toons;
 pub mod traps;
 
 use ygo_engine::Registry;
@@ -33,5 +34,6 @@ pub fn registry() -> Registry {
     monsters_a::register(&mut r);
     monsters_b::register(&mut r);
     flips::register(&mut r);
+    toons::register(&mut r);
     r
 }
