@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::{bots, play, replay, sim, tui};
+use ygo_cli::{bots, decks, play, replay, sim, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -188,6 +188,8 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 })?;
             }
             let bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            let deck_a = decks::load_legal(&deck_a, &bundle)?;
+            let deck_b = decks::load_legal(&deck_b, &bundle)?;
             sim::run(
                 &bots,
                 &sim::SimOptions {
@@ -217,11 +219,15 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 .unwrap_or_default();
             let seed = seed.unwrap_or(now.as_nanos() as u64);
             let bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            let deck = decks::load_legal(&deck, &bundle)?;
+            let bot_deck = bot_deck
+                .map(|p| decks::load_legal(&p, &bundle))
+                .transpose()?;
             let session = play::start(
                 &bots,
                 &play::PlayOptions {
                     deck: &deck,
-                    bot_deck: bot_deck.as_deref(),
+                    bot_deck: bot_deck.as_ref(),
                     bot: &bot,
                     seed,
                     first,

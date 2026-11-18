@@ -2,6 +2,7 @@
 //! replay. `main.rs` only parses arguments and calls into these modules.
 
 pub mod bots;
+pub mod decks;
 pub mod describe;
 pub mod play;
 pub mod replay;

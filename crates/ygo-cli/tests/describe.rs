@@ -92,15 +92,14 @@ fn nothing_hidden_is_ever_named_in_random_games() {
     let decks = [
         "owner_main_45.json",
         "umiiruka_water_40.json",
-        "exodia_stall_full_pool_40.json",
         "defense_tuned_45.json",
     ];
     let mut lcg = 11u64;
     for seed in 0..24u64 {
         let setup = GameSetup::new(
             [
-                sample_deck(decks[seed as usize % 4]),
-                sample_deck(decks[(seed as usize + 1) % 4]),
+                sample_deck(decks[seed as usize % decks.len()]),
+                sample_deck(decks[(seed as usize + 1) % decks.len()]),
             ],
             seed,
         );

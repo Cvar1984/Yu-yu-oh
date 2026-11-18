@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use ygo_data::{Bundle, CardId, CardKind, Collection, Deck, DeckProblem, check_deck};
+use ygo_data::{Bundle, CardId, CardKind, Collection, Deck, check_deck};
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -68,34 +68,4 @@ fn owned_card_decks_are_legal_under_the_collection() {
     }
     assert_eq!(deck("owner_main_45.json").main_size(), 45);
     assert_eq!(deck("umiiruka_water_40.json").main_size(), 40);
-}
-
-#[test]
-fn full_pool_exodia_deck_breaks_only_the_pot_of_greed_limit_and_the_collection() {
-    let b = bundle();
-    let d = deck("exodia_stall_full_pool_40.json");
-    // It runs 3 Pot of Greed, written before the 2026-11-17 limits.
-    assert_eq!(
-        check_deck(&d, &b.cards, &b.banlist, &b.rules, None),
-        [DeckProblem::OverLimit {
-            id: CardId(55144522),
-            name: "Pot of Greed".into(),
-            copies: 3,
-            limit: 1,
-        }]
-    );
-
-    let c = Collection::load(&root().join("data/collection.json")).unwrap();
-    let problems = check_deck(&d, &b.cards, &b.banlist, &b.rules, Some(&c));
-    assert!(!problems.is_empty());
-    assert!(problems.iter().all(|p| matches!(
-        p,
-        DeckProblem::NotOwned { .. } | DeckProblem::OverLimit { .. }
-    )));
-    assert!(problems.contains(&DeckProblem::NotOwned {
-        id: CardId(33396948),
-        name: "Exodia the Forbidden One".into(),
-        copies: 3,
-        owned: 0,
-    }));
 }

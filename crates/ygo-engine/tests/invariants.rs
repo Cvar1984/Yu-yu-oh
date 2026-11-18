@@ -13,7 +13,6 @@ fn decks() -> Vec<DeckList> {
         sample_deck("owner_main_45.json"),
         sample_deck("defense_tuned_45.json"),
         sample_deck("umiiruka_water_40.json"),
-        sample_deck("exodia_stall_full_pool_40.json"),
     ]
 }
 
@@ -48,8 +47,8 @@ proptest! {
 
     #[test]
     fn invariants_hold_along_random_play(
-        deck_a in 0usize..5,
-        deck_b in 0usize..5,
+        deck_a in 0usize..4,
+        deck_b in 0usize..4,
         seed in any::<u64>(),
         choices in prop::collection::vec(any::<u32>(), 0..400),
     ) {

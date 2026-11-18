@@ -118,3 +118,38 @@ fn sim_plays_named_bots_and_refuses_unknown_ones() {
     assert_eq!(out.status.code(), Some(2), "{stderr}");
     assert!(stderr.contains("unknown bot `heuristic:nope`"), "{stderr}");
 }
+
+#[test]
+fn play_and_sim_refuse_a_deck_over_the_ban_list() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let legal = root.join("data/decks/owner_main_45.json");
+    // The owner's deck with its one Raigeki doubled: 46 cards, 2 Raigeki.
+    let text = std::fs::read_to_string(&legal).unwrap();
+    let illegal_text = text.replace(
+        "\"name\": \"Raigeki\",\n   \"count\": 1",
+        "\"name\": \"Raigeki\",\n   \"count\": 2",
+    );
+    assert_ne!(text, illegal_text, "the deck lists Raigeki once");
+    let dir = std::env::temp_dir().join(format!("ygo-cli-illegal-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let illegal = dir.join("two_raigeki.json");
+    std::fs::write(&illegal, illegal_text).unwrap();
+    let (legal, illegal) = (legal.to_str().unwrap(), illegal.to_str().unwrap());
+
+    for args in [
+        vec!["sim", illegal, legal, "-n", "1"],
+        vec!["sim", legal, illegal, "-n", "1"],
+        vec!["play", "--deck", illegal],
+        vec!["play", "--deck", legal, "--bot-deck", illegal],
+    ] {
+        let out = ygo_real(&args);
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        assert_eq!(out.status.code(), Some(2), "{args:?}: {stderr}");
+        assert!(stderr.contains("is not legal"), "{stderr}");
+        assert!(
+            stderr.contains("2 copies of Raigeki (12580477); limit is 1"),
+            "{stderr}"
+        );
+    }
+    std::fs::remove_dir_all(&dir).unwrap();
+}
