@@ -20,25 +20,22 @@ pub enum First {
 }
 
 pub struct PlayOptions<'a> {
-    pub deck: &'a Path,
+    pub deck: &'a Deck,
     /// The bot's deck; `None` mirrors the human's deck.
-    pub bot_deck: Option<&'a Path>,
+    pub bot_deck: Option<&'a Deck>,
     pub bot: &'a str,
     pub seed: u64,
     pub first: First,
     pub max_turns: u32,
 }
 
-/// Loads the decks and starts the session; the bot has played up to the
+/// Starts the session; the bot has played up to the
 /// human's first decision when this returns.
 pub fn start(bots: &Bots, opts: &PlayOptions) -> Result<PlaySession, Box<dyn std::error::Error>> {
     let player = bots.make(opts.bot, opts.seed ^ 0xB0)?;
-    let mine = Deck::load(opts.deck)?;
-    let theirs = match opts.bot_deck {
-        Some(path) => Deck::load(path)?,
-        None => mine.clone(),
-    };
-    let mut setup = GameSetup::new([DeckList::from(&mine), DeckList::from(&theirs)], opts.seed);
+    let mine = opts.deck;
+    let theirs = opts.bot_deck.unwrap_or(mine);
+    let mut setup = GameSetup::new([DeckList::from(mine), DeckList::from(theirs)], opts.seed);
     setup.max_turns = opts.max_turns;
     setup.first_player = match opts.first {
         First::Me => Some(HUMAN),

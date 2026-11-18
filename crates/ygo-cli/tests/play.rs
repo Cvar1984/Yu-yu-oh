@@ -10,6 +10,7 @@ use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::KeyCode;
 use ygo_cli::bots::{Bots, DEFAULT_BOT};
+use ygo_cli::decks;
 use ygo_cli::play::{self, First, HUMAN, PlayOptions};
 use ygo_cli::session::PlaySession;
 use ygo_cli::tui::{self, App};
@@ -32,8 +33,9 @@ fn bots() -> Bots {
 }
 
 fn start_with(bot: &str, seed: u64, first: First) -> PlaySession {
-    let mine = deck("owner_main_45.json");
-    let theirs = deck("umiiruka_water_40.json");
+    let b = bundle();
+    let mine = decks::load_legal(&deck("owner_main_45.json"), &b).unwrap();
+    let theirs = decks::load_legal(&deck("umiiruka_water_40.json"), &b).unwrap();
     play::start(
         &bots(),
         &PlayOptions {

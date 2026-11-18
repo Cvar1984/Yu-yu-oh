@@ -10,8 +10,8 @@ use ygo_engine::{DeckList, GameResult, GameSetup, PlayerId, WinReason};
 use crate::bots::Bots;
 
 pub struct SimOptions<'a> {
-    pub deck_a: &'a Path,
-    pub deck_b: &'a Path,
+    pub deck_a: &'a Deck,
+    pub deck_b: &'a Deck,
     /// Bot names, as `Bots::make` reads them.
     pub bot_a: &'a str,
     pub bot_b: &'a str,
@@ -62,9 +62,8 @@ pub fn run(bots: &Bots, opts: &SimOptions) -> Result<Tally, Box<dyn std::error::
     // Refuse unknown names before the first game.
     bots.make(opts.bot_a, 0)?;
     bots.make(opts.bot_b, 0)?;
-    let deck_a = Deck::load(opts.deck_a)?;
-    let deck_b = Deck::load(opts.deck_b)?;
-    let decks = [DeckList::from(&deck_a), DeckList::from(&deck_b)];
+    let (deck_a, deck_b) = (opts.deck_a, opts.deck_b);
+    let decks = [DeckList::from(deck_a), DeckList::from(deck_b)];
 
     let mut tally = Tally::default();
     let mut actions = 0u64;
