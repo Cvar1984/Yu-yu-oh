@@ -283,3 +283,11 @@ fn copy_limit_change_in_rules_is_honoured() {
         DeckProblem::OverLimit { id, copies: 3, limit: 2, .. } if *id == BLUE_EYES
     )));
 }
+
+#[test]
+fn card_type_labels_match_the_data_spelling() {
+    for t in ygo_data::CardType::ALL {
+        let json = serde_json::to_string(&t).unwrap();
+        assert_eq!(json, format!("\"{}\"", t.label()));
+    }
+}

@@ -1,0 +1,23 @@
+[package]
+name = "ygo-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "The engine, card scripts and bots in the browser: JSON commands in, JSON views out"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ygo-data.workspace = true
+ygo-engine.workspace = true
+ygo-ai.workspace = true
+ygo-play.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+ygo-cards.workspace = true
+ygo-engine = { workspace = true, features = ["test-support"] }
+ygo-play = { workspace = true, features = ["test-support"] }

@@ -76,6 +76,33 @@ impl fmt::Display for CardKind {
 }
 
 impl CardType {
+    pub const ALL: [CardType; 9] = [
+        CardType::NormalMonster,
+        CardType::EffectMonster,
+        CardType::FlipEffectMonster,
+        CardType::ToonMonster,
+        CardType::FusionMonster,
+        CardType::RitualMonster,
+        CardType::RitualEffectMonster,
+        CardType::SpellCard,
+        CardType::TrapCard,
+    ];
+
+    /// The type as people read it, spelled as in `cards.json`.
+    pub fn label(self) -> &'static str {
+        match self {
+            CardType::NormalMonster => "Normal Monster",
+            CardType::EffectMonster => "Effect Monster",
+            CardType::FlipEffectMonster => "Flip Effect Monster",
+            CardType::ToonMonster => "Toon Monster",
+            CardType::FusionMonster => "Fusion Monster",
+            CardType::RitualMonster => "Ritual Monster",
+            CardType::RitualEffectMonster => "Ritual Effect Monster",
+            CardType::SpellCard => "Spell Card",
+            CardType::TrapCard => "Trap Card",
+        }
+    }
+
     pub fn kind(self) -> CardKind {
         match self {
             CardType::NormalMonster => CardKind::Normal,

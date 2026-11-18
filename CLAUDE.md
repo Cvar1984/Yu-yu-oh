@@ -21,15 +21,18 @@ Full spec: `docs/handoff.md`. This file holds what every session must know.
 | `crates/ygo-ai` | Observations, heuristic bots, search, neural policy | ygo-engine |
 | `crates/ygo-train` | Self-play, replay buffer, league, checkpoints | ygo-ai |
 | `crates/ygo-deckbuilder` | Deck search under collection and ban list | ygo-ai |
+| `crates/ygo-play` | A human against a bot without a screen: `PlaySession`, card text (`describe`), bots by name, deck checks | ygo-ai, ygo-cards |
+| `crates/ygo-wasm` | The game for a web page: JSON commands in, JSON views out; WebAssembly exports for `wasm32` only | ygo-play |
 | `crates/ygo-cli` | The `ygo` binary | all of the above |
 | `crates/ygo-server` | HTTP and WebSocket API for the browser | ygo-engine, ygo-ai |
-| `web/` | Browser board | the server's protocol |
+| `web/` | Browser board (M9, over the server's protocol) | the server's protocol |
+| `web/play/` | Standalone browser game: the engine in WebAssembly, built by `scripts/build-web.sh` into `web/play/dist/` (git-ignored) | ygo-wasm |
 | `config/rules.toml` | House rules, also names the card and ban list files | |
 | `config/styles.toml`, `config/card_values.toml` | Heuristic bot styles and card values (read by `ygo-data`) | |
 | `records/` | Game records (git-ignored) | |
 | `data/` | JSON data; see `data/README.md` | |
 
-Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 to M3 gates passed. All 228 non-Normal cards are scripted with rulings tests (`docs/m3-plan.md`, which also lists the simplifications made). M4 (records, `ygo play`, heuristic bots, `ygo replay`) is built and its checks pass (`docs/m4-plan.md`, gate report); its gate is the owner playing a full game with `ygo play`. Next after that: M5.
+Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 to M3 gates passed. All 228 non-Normal cards are scripted with rulings tests (`docs/m3-plan.md`, which also lists the simplifications made). M4 (records, `ygo play`, heuristic bots, `ygo replay`) is built and its checks pass (`docs/m4-plan.md`, gate report); its gate is the owner playing a full game, with `ygo play` or in the browser game (`web/play/`). Next after that: M5.
 
 ## Conventions
 
@@ -52,6 +55,8 @@ cargo run --release -p ygo-cli -- sim data/decks/<a>.json data/decks/<b>.json -n
 cargo run --release -p ygo-cli -- play --deck data/decks/<deck>.json [--bot heuristic:beatdown] \
     [--bot-deck <file>] [--seed S] [--first me|bot|random] [--record <file>]
 cargo run --release -p ygo-cli -- replay <record.jsonl> [--view p0|p1|all] [--turn N]
+scripts/build-web.sh                   # browser game into web/play/dist (needs: rustup target add wasm32-unknown-unknown)
+python3 -m http.server -d web/play/dist  # play it locally
 ```
 
 ## Engine notes (ygo-engine)
@@ -71,6 +76,8 @@ cargo run --release -p ygo-cli -- replay <record.jsonl> [--view p0|p1|all] [--tu
 - A game record is JSON Lines: a header with the full `Rules`, the `GameSetup` and player labels, one line per action, then the result. It replays under its own rules, so `rules.toml` changes never break old records. `GameRecord::note` goes before `apply`.
 - Bots implement `ygo_ai::Player` and see only the `Observation`. `HeuristicPlayer` scores each legal action; its weights come from a style in `config/styles.toml` and card worth from `config/card_values.toml` (style values override). Card knowledge goes in those files, not in code. Use engine tags (Exodia pieces) when a rule of thumb needs a card property.
 - `ygo_cli::bots::Bots` turns `random` or `heuristic:<style>` into a player for `play` and `sim`. Evaluate any bot change with `ygo sim` (2,000 games, 95% interval) and record the numbers.
+- `ygo play` and `ygo sim` refuse a deck that fails the check-deck report (cards, ban list, deck rules; not the collection).
+- The browser game sends JSON commands to `ygo_wasm::Host::handle` (tests call it natively); its view is built from the human's observation only, so hidden cards never reach the page. A game resumes from its seed and the human's choices. The published page ships a card file without images or print records, and no Konami art.
 - `PlaySession` and `ReplaySession` hold the logic; `tui.rs` only draws and reads keys, so tests drive sessions and check screens with ratatui's `TestBackend`. Anything shown to a player is rendered from that player's observation (`describe.rs`).
 
 ## Writing a card script (ygo-cards)
