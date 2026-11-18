@@ -46,26 +46,32 @@ pub(crate) fn check_schema(file: &'static str, found: u32) -> Result<(), DataErr
     }
 }
 
-/// Reads and deserializes one JSON file, naming the file in any error.
-pub(crate) fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, DataError> {
-    let text = std::fs::read_to_string(path).map_err(|source| DataError::Io {
-        path: path.to_path_buf(),
-        source,
-    })?;
-    serde_json::from_str(&text).map_err(|source| DataError::Json {
+/// Reads a whole file as text, naming it in any error.
+pub(crate) fn read_text(path: &Path) -> Result<String, DataError> {
+    std::fs::read_to_string(path).map_err(|source| DataError::Io {
         path: path.to_path_buf(),
         source,
     })
 }
 
-/// Reads and deserializes one TOML file, naming the file in any error.
-pub(crate) fn read_toml<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, DataError> {
-    let text = std::fs::read_to_string(path).map_err(|source| DataError::Io {
-        path: path.to_path_buf(),
+/// Deserializes JSON text; `origin` names its source in any error.
+pub(crate) fn parse_json<T: serde::de::DeserializeOwned>(
+    text: &str,
+    origin: &Path,
+) -> Result<T, DataError> {
+    serde_json::from_str(text).map_err(|source| DataError::Json {
+        path: origin.to_path_buf(),
         source,
-    })?;
-    toml::from_str(&text).map_err(|source| DataError::Toml {
-        path: path.to_path_buf(),
+    })
+}
+
+/// Deserializes TOML text; `origin` names its source in any error.
+pub(crate) fn parse_toml<T: serde::de::DeserializeOwned>(
+    text: &str,
+    origin: &Path,
+) -> Result<T, DataError> {
+    toml::from_str(text).map_err(|source| DataError::Toml {
+        path: origin.to_path_buf(),
         source,
     })
 }

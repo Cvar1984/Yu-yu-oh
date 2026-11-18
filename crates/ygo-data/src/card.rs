@@ -164,7 +164,12 @@ pub struct CardDb {
 impl CardDb {
     /// Loads `cards.json` (a [`CardFile`]) and checks its declared count.
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        let file: CardFile = crate::read_json(path)?;
+        Self::parse(&crate::read_text(path)?, path)
+    }
+
+    /// Reads `cards.json` text; `origin` names it in errors.
+    pub fn parse(text: &str, origin: &Path) -> Result<Self, DataError> {
+        let file: CardFile = crate::parse_json(text, origin)?;
         crate::check_schema("cards", file.schema_version)?;
         if file.count != file.cards.len() {
             return Err(DataError::CountMismatch {

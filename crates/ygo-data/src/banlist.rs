@@ -36,7 +36,12 @@ pub struct Banlist {
 
 impl Banlist {
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        let banlist: Self = crate::read_json(path)?;
+        Self::parse(&crate::read_text(path)?, path)
+    }
+
+    /// Reads `banlist.json` text; `origin` names it in errors.
+    pub fn parse(text: &str, origin: &Path) -> Result<Self, DataError> {
+        let banlist: Self = crate::parse_json(text, origin)?;
         crate::check_schema("banlist", banlist.schema_version)?;
         Ok(banlist)
     }

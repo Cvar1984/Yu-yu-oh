@@ -32,7 +32,12 @@ pub struct Collection {
 
 impl Collection {
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        let collection: Self = crate::read_json(path)?;
+        Self::parse(&crate::read_text(path)?, path)
+    }
+
+    /// Reads `collection.json` text; `origin` names it in errors.
+    pub fn parse(text: &str, origin: &Path) -> Result<Self, DataError> {
+        let collection: Self = crate::parse_json(text, origin)?;
         crate::check_schema("collection", collection.schema_version)?;
         Ok(collection)
     }

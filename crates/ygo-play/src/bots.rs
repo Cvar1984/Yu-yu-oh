@@ -20,16 +20,25 @@ pub struct Bots {
 
 impl Bots {
     pub fn load(bundle: &Bundle, styles: &Path, card_values: &Path) -> Result<Self, DataError> {
-        Ok(Self {
+        Ok(Self::new(
+            bundle,
+            CardValues::load(card_values, &bundle.cards)?,
+            Styles::load(styles, &bundle.cards)?,
+        ))
+    }
+
+    /// From configuration already loaded (from text, in a browser).
+    pub fn new(bundle: &Bundle, values: CardValues, styles: Styles) -> Self {
+        Self {
             shared: Arc::new(Shared::new(
                 bundle.rules.clone(),
                 &bundle.cards,
                 ygo_cards::registry(),
             )),
             cards: Arc::new(bundle.cards.clone()),
-            values: CardValues::load(card_values, &bundle.cards)?,
-            styles: Styles::load(styles, &bundle.cards)?,
-        })
+            values,
+            styles,
+        }
     }
 
     /// Every name `make` accepts.
