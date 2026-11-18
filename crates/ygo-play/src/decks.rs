@@ -29,13 +29,21 @@ impl std::error::Error for IllegalDeck {}
 /// Loads `path` and checks it against the bundle's cards, ban list and
 /// rules (not the collection).
 pub fn load_legal(path: &Path, bundle: &Bundle) -> Result<Deck, Box<dyn std::error::Error>> {
-    let deck = Deck::load(path)?;
+    check_legal(Deck::load(path)?, path, bundle)
+}
+
+/// Checks a deck already loaded; `origin` names it in the report.
+pub fn check_legal(
+    deck: Deck,
+    origin: &Path,
+    bundle: &Bundle,
+) -> Result<Deck, Box<dyn std::error::Error>> {
     let problems = check_deck(&deck, &bundle.cards, &bundle.banlist, &bundle.rules, None);
     if problems.is_empty() {
         Ok(deck)
     } else {
         Err(Box::new(IllegalDeck {
-            path: path.to_path_buf(),
+            path: origin.to_path_buf(),
             name: deck.name,
             problems,
         }))

@@ -49,8 +49,13 @@ pub const MAX_CARD_VALUE: i32 = 100;
 
 impl CardValues {
     pub fn load(path: &Path, cards: &CardDb) -> Result<Self, DataError> {
+        Self::parse(&crate::read_text(path)?, path, cards)
+    }
+
+    /// Reads `card_values.toml` text; `origin` names it in errors.
+    pub fn parse(text: &str, origin: &Path, cards: &CardDb) -> Result<Self, DataError> {
         const FILE: &str = "card_values.toml";
-        let file: CardValuesFile = crate::read_toml(path)?;
+        let file: CardValuesFile = crate::parse_toml(text, origin)?;
         check_schema(FILE, file.schema_version)?;
         let d = &file.defaults;
         for (what, v) in [
@@ -130,8 +135,13 @@ pub struct Styles {
 
 impl Styles {
     pub fn load(path: &Path, cards: &CardDb) -> Result<Self, DataError> {
+        Self::parse(&crate::read_text(path)?, path, cards)
+    }
+
+    /// Reads `styles.toml` text; `origin` names it in errors.
+    pub fn parse(text: &str, origin: &Path, cards: &CardDb) -> Result<Self, DataError> {
         const FILE: &str = "styles.toml";
-        let file: StylesFile = crate::read_toml(path)?;
+        let file: StylesFile = crate::parse_toml(text, origin)?;
         check_schema(FILE, file.schema_version)?;
         if file.styles.is_empty() {
             return invalid("styles.toml defines no style".into());

@@ -112,7 +112,12 @@ pub struct WinRules {
 
 impl Rules {
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        let rules: Rules = crate::read_toml(path)?;
+        Self::parse(&crate::read_text(path)?, path)
+    }
+
+    /// Reads `rules.toml` text; `origin` names it in errors.
+    pub fn parse(text: &str, origin: &Path) -> Result<Self, DataError> {
+        let rules: Rules = crate::parse_toml(text, origin)?;
         rules.validate()?;
         Ok(rules)
     }

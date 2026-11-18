@@ -13,6 +13,7 @@ ygo-data = { path = "crates/ygo-data" }
 ygo-engine = { path = "crates/ygo-engine" }
 ygo-cards = { path = "crates/ygo-cards" }
 ygo-ai = { path = "crates/ygo-ai" }
+ygo-play = { path = "crates/ygo-play" }
 ygo-train = { path = "crates/ygo-train" }
 ygo-deckbuilder = { path = "crates/ygo-deckbuilder" }
 ygo-server = { path = "crates/ygo-server" }

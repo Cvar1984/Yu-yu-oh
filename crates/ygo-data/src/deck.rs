@@ -33,7 +33,12 @@ pub struct Deck {
 
 impl Deck {
     pub fn load(path: &Path) -> Result<Self, DataError> {
-        let deck: Self = crate::read_json(path)?;
+        Self::parse(&crate::read_text(path)?, path)
+    }
+
+    /// Reads deck JSON text; `origin` names it in errors.
+    pub fn parse(text: &str, origin: &Path) -> Result<Self, DataError> {
+        let deck: Self = crate::parse_json(text, origin)?;
         crate::check_schema("deck", deck.schema_version)?;
         Ok(deck)
     }

@@ -1,0 +1,17 @@
+[package]
+name = "ygo-play"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A human against a bot, without a screen: sessions, card text, bots and deck checks, shared by the terminal and the browser"
+
+[dependencies]
+ygo-data.workspace = true
+ygo-engine.workspace = true
+ygo-cards.workspace = true
+ygo-ai.workspace = true
+
+[features]
+# Helpers for other crates' tests.
+test-support = []

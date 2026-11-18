@@ -1,11 +1,10 @@
-//! The `ygo` command line: rendering, the play session, simulation and
-//! replay. `main.rs` only parses arguments and calls into these modules.
+//! The `ygo` command line: the terminal screens, simulation and replay. The
+//! play session, card text, bots and deck checks come from `ygo-play`.
+//! `main.rs` only parses arguments and calls into these modules.
 
-pub mod bots;
-pub mod decks;
-pub mod describe;
+pub use ygo_play::{bots, decks, describe, session};
+
 pub mod play;
 pub mod replay;
-pub mod session;
 pub mod sim;
 pub mod tui;

@@ -18,6 +18,12 @@ impl Bundle {
         let rules = Rules::load(rules_path)?;
         let cards = CardDb::load(&data_root.join(&rules.cards.cards))?;
         let banlist = Banlist::load(&data_root.join(&rules.cards.banlist))?;
+        Self::from_parts(rules, cards, banlist)
+    }
+
+    /// Joins parts loaded elsewhere (from text, in a browser), with the
+    /// same cross-checks as `load`.
+    pub fn from_parts(rules: Rules, cards: CardDb, banlist: Banlist) -> Result<Self, DataError> {
         banlist.validate(&cards, rules.deck.default_copy_limit)?;
         Ok(Self {
             rules,
