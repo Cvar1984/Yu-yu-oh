@@ -191,7 +191,11 @@ fn keys_step_switch_views_and_quit() {
     assert_eq!(app.session.index(), 1);
     app.key(KeyCode::End);
     assert_eq!(app.session.index(), app.session.len());
-    assert!(screen(&app).contains("wins") || screen(&app).contains("draw"));
+    let status = screen(&app).lines().next().unwrap().to_string();
+    assert!(
+        status.contains("win") || status.contains("draw"),
+        "{status}"
+    );
     app.key(KeyCode::Home);
     assert_eq!(app.session.index(), 0);
     app.key(KeyCode::Char(']'));

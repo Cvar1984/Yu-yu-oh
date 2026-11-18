@@ -445,7 +445,10 @@ fn a_monster_set_this_turn_cannot_be_targeted_unless_the_rules_allow_it() {
     // when the Set and the Spell happen in the same turn, which needs
     // Change of Heart on the opponent's own turn: impossible for a Normal
     // Spell. So test the helper directly.
-    let mut g = Game::new(shared(), &stacked([&[MYSTICAL_ELF], &[]], CELTIC_GUARDIAN)).unwrap();
+    let house = with_rules(&shared(), |r| {
+        r.turn.spell_target_monster_set_this_turn = false
+    });
+    let mut g = Game::new(house, &stacked([&[MYSTICAL_ELF], &[]], CELTIC_GUARDIAN)).unwrap();
     let elf = in_hand(&g, P0, MYSTICAL_ELF);
     play(
         &mut g,
@@ -455,7 +458,7 @@ fn a_monster_set_this_turn_cannot_be_targeted_unless_the_rules_allow_it() {
             face_down: true,
         },
     );
-    assert!(!g.spell_targetable(elf), "owner's rule: Set this turn");
+    assert!(!g.spell_targetable(elf), "house rule: Set this turn");
     next_turn(&mut g);
     assert!(g.spell_targetable(elf), "from the next turn on");
 

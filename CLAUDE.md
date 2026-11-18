@@ -100,14 +100,16 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 - `decks/*.json`: `{ schema_version, name, notes, main: [ { id, name, count } ], extra: [ ... ] }`. Copy limits count Main and Extra Deck together.
 - `tools/refresh_cards.py [root]` rebuilds `cards.json` and fetches missing images from YGOPRODeck; it never touches the ban list. `reference/python_prototype/` is the simplified Python simulator, reference only.
 
-## Owner's answers (2026-11-16)
+## Owner's answers (2026-11-16, updated 2026-11-18)
+
+- 2026-11-18: the basic rules and every card follow the modern official rules and modern card text. The earlier house rules stay as switches in `rules.toml`, now set to the modern values (hand limit, Trap timing, Set-monster targeting, Main Phase 2 summons, Field Spells).
 
 - Turn 1: the first player does not draw (`first_player_skips_draw = true`), may Normal Summon or Set a monster, Set and activate Spells and Traps, but may not attack (`first_player_can_attack = false`).
-- Hand: no cap during a turn (Pot of Greed may push it past 6). After your Draw Phase, cards above 6 go to the Graveyard (`hand_limit_check = "after_draw"`; `"end_phase"` is the official timing).
+- Hand: no cap during a turn (Pot of Greed may push it past 6). At your End Phase, discard down to 6 (`hand_limit_check = "end_phase"`, modern; `"after_draw"` was the earlier house rule).
 - Spells and Traps per turn: no count. The only limit is the 5 zones (`spell_trap_zones`); the earlier `spell_trap_plays_per_turn` key was removed.
-- Traps may be activated in the turn they were Set (`trap_activation_turn_set = true`; `false` is official).
-- A monster Set face-down this turn cannot be the target of a Spell, such as an Equip, until the next turn (`spell_target_monster_set_this_turn = false`; `true` is official).
-- Field Spells: one on the whole field; a new one destroys the old whoever owns it (`field_spells_on_field = 1`).
+- A Trap cannot be activated in the turn it was Set (`trap_activation_turn_set = false`, modern; `true` was the earlier house rule).
+- Spells may target a monster Set this turn (`spell_target_monster_set_this_turn = true`, modern; `false` was the earlier house rule). Normal Summons and Sets are allowed in Main Phase 2 (`summon_in_main_phase_2 = true`).
+- Field Spells: one per player; a new one replaces only your own (`field_spells_on_field = 2`, modern; `1` was the earlier house rule).
 - Flip and Special Summons do not count toward a per-turn limit, but this may change, so both stay config keys.
 - Fusion and Ritual Summons are allowed (`fusion_summons`, `ritual_summons`).
 - Card text: support both modern and original 2002 text. `cards.json` holds only modern text; the original text needs a second data source, keyed by id, before `text_version = "original_2002"` can do anything. Effect scripts whose rulings differ by printing (Sangan, Witch of the Black Forest) must branch on this key.

@@ -197,9 +197,11 @@ fn legendary_sword_only_targets_warriors() {
 }
 
 #[test]
-fn umi_changes_stats_by_type_and_a_new_field_spell_replaces_it_under_the_owners_rule() {
+fn umi_changes_stats_by_type_and_a_new_field_spell_replaces_it_with_one_on_the_field() {
+    // With one Field Spell on the whole field (modern is one per player; see
+    // flip_field_spells_on_field_to_the_official_two).
     let mut g = Game::new(
-        shared(),
+        with_rules(&shared(), |r| r.field.field_spells_on_field = 1),
         &stacked(
             [&[SEVEN_COLORED_FISH, UMI], &[UMI, CELTIC_GUARDIAN]],
             MYSTICAL_ELF,
@@ -231,7 +233,7 @@ fn umi_changes_stats_by_type_and_a_new_field_spell_replaces_it_under_the_owners_
     assert_eq!(
         g.instance(umi).location,
         Location::Graveyard,
-        "owner: one Field Spell on the whole field"
+        "one Field Spell on the whole field"
     );
     assert_eq!(g.field_spell(P1), Some(umi2));
     assert_eq!(g.field_spell(P0), None);

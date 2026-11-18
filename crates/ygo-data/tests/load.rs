@@ -51,13 +51,15 @@ fn rules_match_the_committed_defaults() {
     assert_eq!(r.deck.default_copy_limit, 3);
     assert_eq!(r.hand.opening_size, 5);
     assert_eq!(r.hand.max_size, 6);
-    assert_eq!(r.hand.hand_limit_check, HandLimitCheck::AfterDraw);
+    // Owner, 2026-11-18: modern official rules throughout.
+    assert_eq!(r.hand.hand_limit_check, HandLimitCheck::EndPhase);
     assert!(r.turn.first_player_skips_draw && !r.turn.first_player_can_attack);
-    assert!(r.turn.trap_activation_turn_set);
-    assert!(!r.turn.spell_target_monster_set_this_turn);
+    assert!(!r.turn.trap_activation_turn_set);
+    assert!(r.turn.spell_target_monster_set_this_turn);
     assert_eq!(r.life.starting_lp, 8000);
     assert_eq!(r.summon.normal_or_tribute_per_turn, 1);
-    assert!(!r.summon.summon_in_main_phase_2);
+    assert!(r.summon.summon_in_main_phase_2);
+    assert_eq!(r.field.field_spells_on_field, 2);
     assert_eq!(r.summon.max_monsters_entering_per_turn, 0);
     assert!(r.summon.fusion_summons && r.summon.ritual_summons);
     assert_eq!(r.cards.text_version, TextVersion::Modern);

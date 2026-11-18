@@ -124,10 +124,13 @@ fn flip_deck_out_loses_then_the_turn_cap_draws_the_game() {
 }
 
 #[test]
-fn hand_limit_after_draw_is_the_owners_rule() {
+fn hand_limit_after_draw_when_the_rules_say_so() {
     // Max hand 4: the opening 5 cards already exceed it at turn 1, and the
     // check happens in the Draw Phase before any Main Phase action.
-    let shared = shared_with(|r| r.hand.max_size = 4);
+    let shared = shared_with(|r| {
+        r.hand.max_size = 4;
+        r.hand.hand_limit_check = HandLimitCheck::AfterDraw;
+    });
     let mut g = Game::new(shared, &setup(1)).unwrap();
     assert_eq!(g.phase(), Phase::Draw);
     let d = g.pending_decision().unwrap();
