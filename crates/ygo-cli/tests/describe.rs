@@ -84,6 +84,53 @@ fn the_board_and_actions_read_as_sentences() {
         ),
         "Attack directly with Celtic Guardian"
     );
+    // Attacker first, then the target, so the attacker is read first.
+    assert_eq!(
+        describe::action(
+            &obs,
+            pool,
+            &Action::Attack {
+                attacker: celtic,
+                target: Some(celtic)
+            }
+        ),
+        "Attack with Celtic Guardian → Celtic Guardian"
+    );
+}
+
+#[test]
+fn two_copies_on_the_field_are_told_apart_by_zone() {
+    let mut g = Game::new(
+        shared(),
+        &stacked([&[CELTIC_GUARDIAN, CELTIC_GUARDIAN], &[]], MYSTICAL_ELF),
+    )
+    .unwrap();
+    let pool = &g.shared().pool.clone();
+    let first = in_hand(&g, P0, CELTIC_GUARDIAN);
+    play(&mut g, summon(first));
+    pass_all(&mut g);
+    assert_eq!(
+        describe::card(&g.observe(P0), pool, first),
+        "Celtic Guardian"
+    );
+    next_turn(&mut g);
+    next_turn(&mut g);
+    let second = in_hand(&g, P0, CELTIC_GUARDIAN);
+    play(&mut g, summon(second));
+    pass_all(&mut g);
+    let mine = g.observe(P0);
+    let (a, b) = (
+        describe::card(&mine, pool, first),
+        describe::card(&mine, pool, second),
+    );
+    assert!(a.starts_with("Celtic Guardian in your zone "), "{a}");
+    assert!(b.starts_with("Celtic Guardian in your zone "), "{b}");
+    assert_ne!(a, b);
+    let theirs = describe::card(&g.observe(P1), pool, first);
+    assert!(
+        theirs.starts_with("Celtic Guardian in your opponent's zone "),
+        "{theirs}"
+    );
 }
 
 #[test]

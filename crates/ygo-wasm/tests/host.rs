@@ -122,6 +122,17 @@ fn whole_games_through_json_commands_replay_from_their_record() {
             let n = view["actions"].as_array().unwrap().len();
             assert!(n > 0, "the human has a choice until the game ends");
             assert!(view["prompt"].is_string());
+            for a in view["actions"].as_array().unwrap() {
+                if a["kind"] == "attack" {
+                    assert!(a["card"].is_u64(), "an attack names its attacker: {a}");
+                    let direct = a["text"].as_str().unwrap().starts_with("Attack directly");
+                    assert_eq!(
+                        a["targets"].as_array().unwrap().len(),
+                        usize::from(!direct),
+                        "{a}"
+                    );
+                }
+            }
             view = ok(
                 &mut host,
                 json!({ "cmd": "play", "index": lcg(&mut rng) % n }),

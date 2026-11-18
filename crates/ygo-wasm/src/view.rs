@@ -72,8 +72,12 @@ struct ChainView {
 struct ActionView {
     index: usize,
     text: String,
-    /// The card it is about, to offer it when that card is picked.
+    /// The card it is about (the attacker for an attack), to offer it when
+    /// that card is picked.
     card: Option<u8>,
+    /// The cards it aims at: an attack's target, an activation's targets.
+    /// Empty for a direct attack.
+    targets: Vec<u8>,
     kind: &'static str,
 }
 
@@ -218,6 +222,13 @@ pub fn build(session: &PlaySession) -> View {
             index,
             text,
             card: PlaySession::subject(a).map(|i| i.0),
+            targets: match a {
+                Action::Attack {
+                    target: Some(t), ..
+                } => vec![t.0],
+                Action::Activate { targets, .. } => targets.iter().map(|t| t.0).collect(),
+                _ => Vec::new(),
+            },
             kind: action_kind(a),
         })
         .collect();

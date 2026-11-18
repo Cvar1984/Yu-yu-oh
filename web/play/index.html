@@ -110,6 +110,8 @@ select, input[type="text"] { font: inherit; padding: 8px 10px; border-radius: va
 .card.back { background: repeating-linear-gradient(135deg, var(--back) 0 6px, var(--back-2) 6px 12px); border-top-color: var(--back-2); color: #f2f5f9; }
 .card.back .cname, .card.back .cstats { color: #f2f5f9; }
 .card.can { box-shadow: 0 0 0 2px var(--accent); }
+.card.target { box-shadow: 0 0 0 3px var(--them); }
+.hint { font-weight: 600; color: var(--them); }
 .card.sel { outline: 3px solid var(--accent); outline-offset: 1px; }
 .mid { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 6px 2px; border-block: 1px solid var(--line); }
 .chain { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
@@ -360,6 +362,30 @@ function cardOnTable(inst) {
 }
 function zonesOf(side) { return [...side.monsters, ...side.spells, side.field, ...side.graveyard, ...side.banished]; }
 
+// Every move about a card: as its subject (attacker, card played) or its target.
+function movesFor(inst) { return state.view.actions.filter((a) => a.card === inst || a.targets.includes(inst)); }
+function attacksBy(inst) { return state.view.actions.filter((a) => a.kind === "attack" && a.card === inst); }
+function attackOn(attacker, target) {
+  return state.view.actions.find((a) => a.kind === "attack" && a.card === attacker && a.targets.includes(target));
+}
+// Where a card is on the table, for naming cards the human cannot see.
+function locate(inst) {
+  const v = state.view;
+  for (const [side, who] of [[v.you, "Your"], [v.opponent, "Opponent's"]]) {
+    const m = side.monsters.findIndex((c) => c && c.instance === inst);
+    if (m >= 0) return { card: side.monsters[m], label: `${who} face-down monster, zone ${m + 1}` };
+    const st = side.spells.findIndex((c) => c && c.instance === inst);
+    if (st >= 0) return { card: side.spells[st], label: `${who} Set card, zone ${st + 1}` };
+  }
+  return null;
+}
+
+function tapCard(inst) {
+  const attack = state.selected !== null ? attackOn(state.selected, inst) : null;
+  if (attack) { state.selected = null; state.cardText = null; play(attack.index); return; }
+  select(inst);
+}
+
 function select(inst) {
   state.selected = state.selected === inst ? null : inst;
   state.cardText = null;
@@ -373,7 +399,8 @@ function cardHtml(c, opts = {}) {
   if (!c) return `<div class="zone" aria-label="Empty zone"></div>`;
   const can = state.view.actions.some((a) => a.card === c.instance);
   const sel = state.selected === c.instance;
-  const cls = ["card", c.name ? "k-" + c.kind : "back", "pos-" + c.position, can ? "can" : "", sel ? "sel" : ""].join(" ");
+  const target = state.selected !== null && attackOn(state.selected, c.instance);
+  const cls = ["card", c.name ? "k-" + c.kind : "back", "pos-" + c.position, can ? "can" : "", sel ? "sel" : "", target ? "target" : ""].join(" ");
   const name = c.name ?? (opts.monster ? "Face-down monster" : "Set card");
   const pos = opts.hand ? "" : c.position === "attack" ? "ATK" : c.position === "defense" ? "DEF" : c.position === "set" ? "SET" : "";
   const stats = c.atk !== null && c.atk !== undefined ? `${c.atk} / ${c.def}` : (c.detail ?? "");
@@ -402,8 +429,12 @@ function sideHtml(side, who, mine) {
 
 function renderGame() {
   const v = state.view;
-  const forCard = state.selected !== null ? v.actions.filter((a) => a.card === state.selected) : [];
-  const moves = v.actions.map((a) => `<button class="move k-${a.kind}${a.card !== null && a.card === state.selected ? " for-card" : ""}" data-move="${a.index}">
+  const forCard = state.selected !== null ? movesFor(state.selected) : [];
+  const attacking = state.selected !== null ? attacksBy(state.selected) : [];
+  const hint = attacking.some((a) => a.targets.length)
+    ? `<span class="hint">Tap a monster outlined in red to attack it${attacking.some((a) => !a.targets.length) ? ", or attack directly from the card panel" : ""}.</span>`
+    : attacking.length ? `<span class="hint">This monster can attack directly: see the card panel.</span>` : "";
+  const moves = v.actions.map((a) => `<button class="move k-${a.kind}${state.selected !== null && forCard.includes(a) ? " for-card" : ""}" data-move="${a.index}">
       <span class="n">${a.index < 9 ? a.index + 1 : ""}</span><span>${esc(a.text)}</span></button>`).join("");
   const chain = v.chain.length
     ? v.chain.map((l, i) => `<span class="chip ${l.yours ? "you" : "them"}">${i + 1}. ${esc(l.name)}</span>`).join("")
@@ -417,7 +448,7 @@ function renderGame() {
 
   let detail = "";
   if (state.selected !== null) {
-    const text = state.cardText ?? "You cannot see this card.";
+    const text = state.cardText ?? (locate(state.selected)?.label ?? "A card you cannot see");
     const [head, ...rest] = text.split("\n\n");
     const [name, ...meta] = head.split("\n");
     detail = `<section class="panel detail" aria-label="Card">
@@ -433,7 +464,7 @@ function renderGame() {
     <div class="table">
       <div class="status"><span class="turn">Turn ${v.turn}</span><span>${v.your_turn ? "Your turn" : "Opponent's turn"}</span><span class="sub">${esc(v.phase)}</span><span class="sub">vs ${esc(botName(state.game.bot))}</span></div>
       ${sideHtml(v.opponent, "Opponent", false)}
-      <div class="mid"><div class="chain" aria-label="Chain">${chain}</div></div>
+      <div class="mid"><div class="chain" aria-label="Chain">${chain}</div>${hint}</div>
       ${sideHtml(v.you, "You", true)}
       <div class="label">Your hand</div>
       <div class="hand">${v.hand.map((c) => cardHtml(c, { hand: true })).join("") || `<span class="sub">Empty</span>`}</div>
@@ -454,7 +485,7 @@ function renderGame() {
   </div>`;
 
   main.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", () => play(Number(b.dataset.move))));
-  main.querySelectorAll("[data-inst]").forEach((b) => b.addEventListener("click", () => select(Number(b.dataset.inst))));
+  main.querySelectorAll("[data-inst]").forEach((b) => b.addEventListener("click", () => tapCard(Number(b.dataset.inst))));
   document.getElementById("close-card")?.addEventListener("click", () => select(state.selected));
   document.getElementById("copy-record").addEventListener("click", () => copy(Engine.call({ cmd: "record" })));
   const ng = document.getElementById("new-game");
