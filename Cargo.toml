@@ -26,3 +26,11 @@ clap = { version = "4", features = ["derive"] }
 
 [profile.release]
 debug = 1
+
+# The WebAssembly build for the browser: small download, no debug info.
+[profile.web]
+inherits = "release"
+debug = false
+strip = true
+lto = true
+codegen-units = 1

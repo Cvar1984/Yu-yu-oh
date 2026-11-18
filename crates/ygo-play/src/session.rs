@@ -177,16 +177,17 @@ impl PlaySession {
             _ => obs.chain.iter().find(|l| l.instance == id).map(|l| l.card),
         }?;
         let c = self.cards.get(known)?;
-        let mut head = format!("{} ({:?})", c.name, c.card_type);
-        if let (Some(level), Some(atk), Some(def)) = (c.level, c.atk, c.def) {
-            head.push_str(&format!(
-                ", Level {level}, {atk}/{def}, {} {}",
+        // Name, then a line such as "Normal Monster · Level 4 · WATER
+        // Spellcaster · 1200/2000" or "Trap Card · Counter", then the text.
+        let kind = c.card_type.label();
+        let line = match (c.level, c.atk, c.def) {
+            (Some(level), Some(atk), Some(def)) => format!(
+                "{kind} · Level {level} · {} {} · {atk}/{def}",
                 c.attribute.as_deref().unwrap_or(""),
                 c.race
-            ));
-        } else {
-            head.push_str(&format!(", {}", c.race));
-        }
-        Some(format!("{head}\n\n{}", c.text))
+            ),
+            _ => format!("{kind} · {}", c.race),
+        };
+        Some(format!("{}\n{line}\n\n{}", c.name, c.text))
     }
 }

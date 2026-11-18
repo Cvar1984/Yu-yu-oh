@@ -28,3 +28,6 @@ rustc-ice-*.txt
 
 # Game records written by ygo play and ygo sim
 /records/
+
+# Built browser game (scripts/build-web.sh)
+/web/play/dist/

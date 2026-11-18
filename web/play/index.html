@@ -1,0 +1,490 @@
+<title>Yu-yu-oh Duel Table</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: a duel table. Opponent's rows on top, yours below, hand at the
+   bottom; the move list and log sit beside the table on wide screens and
+   below it on phones. Card stripes use the card's real frame type. */
+:root {
+  --bg: #e9edf2;
+  --table: #f7f9fb;
+  --zone: #dde3ea;
+  --line: #c3ccd7;
+  --fg: #17202b;
+  --muted: #5a6879;
+  --accent: #2f5fd0;
+  --accent-ink: #ffffff;
+  --you: #2f5fd0;
+  --them: #b23b4e;
+  --good: #23824f;
+  --back: #3b4a5e;
+  --back-2: #52637a;
+  --f-normal: #b98f3e;
+  --f-effect: #cf6a2c;
+  --f-fusion: #7c4fae;
+  --f-ritual: #3c6fb8;
+  --f-spell: #178a78;
+  --f-trap: #a63f79;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141a; --table: #161d25; --zone: #1f2832; --line: #2e3a47;
+    --fg: #e4eaf1; --muted: #93a1b2; --accent: #6f97f2; --accent-ink: #0c1320;
+    --you: #6f97f2; --them: #ec6f83; --good: #4cc489; --back: #2a3646; --back-2: #3a4a5f;
+    --f-normal: #d2aa59; --f-effect: #ec8a4c; --f-fusion: #a57ad6; --f-ritual: #6b9be0;
+    --f-spell: #35b7a1; --f-trap: #d466a3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141a; --table: #161d25; --zone: #1f2832; --line: #2e3a47;
+  --fg: #e4eaf1; --muted: #93a1b2; --accent: #6f97f2; --accent-ink: #0c1320;
+  --you: #6f97f2; --them: #ec6f83; --good: #4cc489; --back: #2a3646; --back-2: #3a4a5f;
+  --f-normal: #d2aa59; --f-effect: #ec8a4c; --f-fusion: #a57ad6; --f-ritual: #6b9be0;
+  --f-spell: #35b7a1; --f-trap: #d466a3;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 24px;
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+button { font: inherit; color: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app { max-width: 1280px; margin: 0 auto; display: grid; gap: 16px; }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+header.top h1 { font-size: 22px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); font-size: 13px; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+
+/* Setup */
+.setup { background: var(--table); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 16px; max-width: 720px; }
+.setup .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 16px; }
+.field { display: grid; gap: 6px; }
+select, input[type="text"] { font: inherit; padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg); color: var(--fg); min-width: 0; width: 100%; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 7px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.btn { border: 1px solid var(--line); background: var(--table); padding: 8px 14px; border-radius: var(--radius); cursor: pointer; font-weight: 600; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.actions-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.note { color: var(--muted); font-size: 13px; max-width: 65ch; }
+.problem { color: var(--them); font-size: 13px; white-space: pre-wrap; }
+
+/* Game layout */
+.game { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); align-items: start; }
+@media (max-width: 900px) { .game { grid-template-columns: minmax(0, 1fr); } }
+.table { background: var(--table); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.status { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.status .turn { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.side { display: grid; gap: 6px; }
+.sidehead { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sidehead .who { font-weight: 700; color: var(--fg); font-family: var(--font-display); }
+.lp { font-weight: 700; font-size: 18px; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.side.you .lp { color: var(--you); } .side.them .lp { color: var(--them); }
+.rowz { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 0.9fr); gap: 6px; }
+.zone { min-height: 74px; border-radius: var(--radius); background: var(--zone); border: 1px dashed var(--line); position: relative; min-width: 0; }
+.pile { min-height: 74px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--zone); padding: 6px; font-size: 11px; color: var(--muted); display: grid; align-content: start; gap: 4px; min-width: 0; }
+.pile > div { display: grid; min-width: 0; }
+.pile b { color: var(--fg); font-weight: 600; font-size: 12px; overflow-wrap: anywhere; }
+.pile.tag { align-content: center; }
+
+.card { width: 100%; min-height: 74px; height: 100%; text-align: left; border-radius: var(--radius); border: 1px solid var(--line); border-top: 4px solid var(--f-normal); background: var(--table); padding: 5px 6px; display: grid; align-content: space-between; gap: 2px; cursor: pointer; min-width: 0; }
+.card .cname { font-weight: 600; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card .cstats { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; gap: 4px; }
+.card .cpos { font-weight: 700; letter-spacing: 0.04em; }
+.card.k-monster { border-top-color: var(--f-normal); } .card.k-effect { border-top-color: var(--f-effect); }
+.card.k-fusion { border-top-color: var(--f-fusion); } .card.k-ritual { border-top-color: var(--f-ritual); }
+.card.k-spell { border-top-color: var(--f-spell); } .card.k-trap { border-top-color: var(--f-trap); }
+.card.pos-defense { background: color-mix(in srgb, var(--zone) 55%, var(--table)); }
+.card.back { background: repeating-linear-gradient(135deg, var(--back) 0 6px, var(--back-2) 6px 12px); border-top-color: var(--back-2); color: #f2f5f9; }
+.card.back .cname, .card.back .cstats { color: #f2f5f9; }
+.card.can { box-shadow: 0 0 0 2px var(--accent); }
+.card.sel { outline: 3px solid var(--accent); outline-offset: 1px; }
+.mid { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 6px 2px; border-block: 1px solid var(--line); }
+.chain { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.chip { border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); background: var(--zone); }
+.chip.you { border-color: var(--you); } .chip.them { border-color: var(--them); }
+.hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.opp-hand { display: flex; gap: 4px; flex-wrap: wrap; }
+.opp-hand span { width: 16px; height: 22px; border-radius: 3px; background: repeating-linear-gradient(135deg, var(--back) 0 4px, var(--back-2) 4px 8px); }
+
+/* Right column */
+.panel { background: var(--table); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.prompt { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.result { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--good); }
+.moves { display: grid; gap: 6px; max-height: 46vh; overflow-y: auto; padding-right: 2px; }
+.move { display: grid; grid-template-columns: 1.7em minmax(0, 1fr); gap: 6px; align-items: baseline; text-align: left; padding: 7px 9px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
+.move:hover { border-color: var(--accent); }
+.move .n { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+.move.for-card { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg)); }
+.move.k-end_turn, .move.k-pass, .move.k-end_battle { color: var(--muted); }
+.detail { display: grid; gap: 6px; }
+.detail .dname { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.detail .dtext { white-space: pre-wrap; font-size: 13px; max-width: 65ch; }
+.log { font-family: var(--font-mono); font-size: 12px; max-height: 34vh; overflow-y: auto; display: grid; gap: 1px; }
+.log div { overflow-wrap: anywhere; }
+.log .opp { color: var(--them); } .log .me { color: var(--you); } .log .fx { color: var(--muted); padding-left: 1em; }
+.log .new { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.copybox { width: 100%; min-height: 100px; font-family: var(--font-mono); font-size: 11px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+footer { color: var(--muted); font-size: 12px; }
+@media (max-width: 560px) {
+  .rowz { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .rowz .pile { grid-column: span 5; min-height: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rowz .pile.tag { display: none; }
+  .zone, .card { min-height: 64px; }
+  .card { padding: 4px; }
+  .card .cname { font-size: 11px; }
+  .card .cstats { flex-direction: column; gap: 0; font-size: 10px; }
+}
+@media (prefers-reduced-motion: no-preference) { .move, .card { transition: border-color 0.12s, box-shadow 0.12s; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1>Yu-yu-oh Duel Table</h1>
+    <span class="sub" id="sub">LOB, MRD and SRL card pool, house rules from the project's rules file</span>
+  </header>
+  <main id="main"><p class="note">Loading the rules engine…</p></main>
+  <footer>A fan-made rules engine for personal play. Not affiliated with or endorsed by Konami. Card images are not included.</footer>
+</div>
+
+<script>
+"use strict";
+const STORE_KEY = "duel-table-game";
+const main = document.getElementById("main");
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// ---- The engine: one JSON command in, one JSON answer out. ----
+const Engine = {
+  x: null, bytes: null,
+  async load() {
+    const res = await fetch("ygo.wasm");
+    if (!res.ok) throw new Error("Could not load the engine (ygo.wasm): HTTP " + res.status);
+    this.bytes = await res.arrayBuffer();
+    await this.instantiate();
+  },
+  async instantiate() {
+    const { instance } = await WebAssembly.instantiate(this.bytes, {});
+    this.x = instance.exports;
+  },
+  call(cmd) {
+    const x = this.x, enc = new TextEncoder(), dec = new TextDecoder();
+    const req = enc.encode(JSON.stringify(cmd));
+    const ptr = x.ygo_alloc(req.length);
+    new Uint8Array(x.memory.buffer, ptr, req.length).set(req);
+    let len;
+    try {
+      len = x.ygo_handle(ptr, req.length);
+    } catch (trap) {
+      let message = String(trap);
+      try {
+        const n = x.ygo_panic_message();
+        message = dec.decode(new Uint8Array(x.memory.buffer, x.ygo_response_ptr(), n)) || message;
+      } catch (_) { /* the module is gone */ }
+      throw new Error("The engine stopped: " + message);
+    }
+    const answer = JSON.parse(dec.decode(new Uint8Array(x.memory.buffer, x.ygo_response_ptr(), len)));
+    if ("error" in answer) throw new Error(answer.error);
+    return answer.ok;
+  },
+};
+
+// ---- App state ----
+const state = {
+  init: null,         // decks and bots on offer
+  initArgs: null,     // the init command, kept to rebuild the engine
+  game: null,         // { deck, bot_deck, bot, seed, first, choices }
+  view: null,
+  selected: null,     // instance id of the card shown in detail
+  cardText: null,
+  seenLog: 0,         // log lines already seen before the last move
+  error: null,
+  copyText: null,
+};
+
+function save() {
+  try {
+    if (state.game) localStorage.setItem(STORE_KEY, JSON.stringify(state.game));
+    else localStorage.removeItem(STORE_KEY);
+  } catch (_) { /* storage may be blocked */ }
+}
+function loadSaved() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (_) { return null; }
+}
+window.claude?.hot?.snapshot?.(() => ({ game: state.game }));
+
+async function fetchText(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error("Could not load " + path + ": HTTP " + r.status);
+  return r.text();
+}
+
+async function boot(data) {
+  try {
+    const [rules, cards, banlist, styles, values, deckIndex] = await Promise.all([
+      fetchText("data/rules.toml"), fetchText("data/cards.json"), fetchText("data/banlist.json"),
+      fetchText("data/styles.toml"), fetchText("data/card_values.toml"), fetchText("data/decks.json"),
+      Engine.load(),
+    ]);
+    const files = JSON.parse(deckIndex);
+    const decks = await Promise.all(files.map(async (file) => ({ file, text: await fetchText("data/decks/" + file) })));
+    state.initArgs = { cmd: "init", rules, cards, banlist, styles, card_values: values, decks };
+    state.init = Engine.call(state.initArgs);
+    const resume = data?.game ?? loadSaved();
+    if (resume && resume.choices) {
+      try { startGame(resume); return; } catch (e) { state.error = "Could not resume the saved game: " + e.message; state.game = null; save(); }
+    }
+    renderSetup();
+  } catch (e) {
+    main.innerHTML = `<p class="problem">${esc(e.message)}</p>`;
+  }
+}
+
+function legalDecks() { return state.init.decks.filter((d) => d.legal); }
+
+// ---- Setup ----
+const SETUP_KEY = "duel-table-setup";
+const setup = (() => {
+  try { return { deck: null, bot_deck: null, bot: null, first: "random", ...JSON.parse(localStorage.getItem(SETUP_KEY) || "{}") }; }
+  catch (_) { return { deck: null, bot_deck: null, bot: null, first: "random" }; }
+})();
+function renderSetup() {
+  const decks = legalDecks();
+  const offered = (f) => decks.some((d) => d.file === f);
+  if (!offered(setup.deck)) setup.deck = decks[0]?.file;
+  if (!offered(setup.bot_deck)) setup.bot_deck = decks[1]?.file ?? decks[0]?.file;
+  if (!state.init.bots.includes(setup.bot)) setup.bot = state.init.default_bot;
+  const opts = (list, sel) => list.map((d) => `<option value="${esc(d.file)}"${d.file === sel ? " selected" : ""}>${esc(d.name)}</option>`).join("");
+  const bots = state.init.bots.map((b) => `<option value="${esc(b)}"${b === setup.bot ? " selected" : ""}>${esc(botName(b))}</option>`).join("");
+  const illegal = state.init.decks.filter((d) => !d.legal)
+    .map((d) => `<p class="problem">${esc(d.problem)}</p>`).join("");
+  const firstBtn = (v, label) => `<button type="button" data-first="${v}" aria-pressed="${setup.first === v}">${label}</button>`;
+  main.innerHTML = `
+  <form class="setup" id="setup">
+    <h2>New duel</h2>
+    ${state.error ? `<p class="problem">${esc(state.error)}</p>` : ""}
+    <div class="row">
+      <label class="field"><span class="label">Your deck</span><select id="deck">${opts(decks, setup.deck)}</select></label>
+      <label class="field"><span class="label">Opponent's deck</span><select id="bot_deck">${opts(decks, setup.bot_deck)}</select></label>
+      <label class="field"><span class="label">Opponent</span><select id="bot">${bots}</select></label>
+    </div>
+    <div class="field"><span class="label">Who goes first</span>
+      <div class="seg" role="group" aria-label="Who goes first">${firstBtn("random", "Coin toss")}${firstBtn("me", "You")}${firstBtn("bot", "Opponent")}</div>
+    </div>
+    <p class="note">Decks are checked against the ban list (Pot of Greed, Change of Heart and Raigeki at one copy) and the deck rules. The opponent's style comes from the bot styles file; Beatdown is the default.</p>
+    ${illegal}
+    <div class="actions-row"><button class="btn primary" type="submit">Start duel</button></div>
+  </form>`;
+  document.getElementById("setup").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    setup.deck = document.getElementById("deck").value;
+    setup.bot_deck = document.getElementById("bot_deck").value;
+    setup.bot = document.getElementById("bot").value;
+    try { localStorage.setItem(SETUP_KEY, JSON.stringify(setup)); } catch (_) { /* storage may be blocked */ }
+    const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+    state.error = null;
+    try { startGame({ deck: setup.deck, bot_deck: setup.bot_deck, bot: setup.bot, seed, first: setup.first, choices: [] }); }
+    catch (e) { state.error = e.message; renderSetup(); }
+  });
+  main.querySelectorAll("[data-first]").forEach((b) => b.addEventListener("click", () => { setup.first = b.dataset.first; renderSetup(); }));
+}
+
+function botName(b) {
+  if (b === "random") return "Random (plays any legal move)";
+  const style = b.replace("heuristic:", "");
+  return style.charAt(0).toUpperCase() + style.slice(1) + " bot";
+}
+
+// ---- Playing ----
+function startGame(game) {
+  const answer = Engine.call({ cmd: "start", ...game });
+  state.game = { ...game, choices: answer.choices };
+  state.view = answer.view;
+  state.selected = null; state.cardText = null; state.copyText = null;
+  state.seenLog = 0;
+  save();
+  renderGame();
+}
+
+function play(index) {
+  state.seenLog = state.view.log_total;
+  try {
+    const answer = Engine.call({ cmd: "play", index });
+    state.view = answer.view;
+    state.game.choices = answer.choices;
+  } catch (e) {
+    state.error = e.message;
+    recover();
+    return;
+  }
+  save();
+  if (state.selected !== null && !cardOnTable(state.selected)) { state.selected = null; state.cardText = null; }
+  renderGame();
+}
+
+// After a failure the module is rebuilt and the game can be replayed from
+// its saved choices, without the move that failed.
+async function recover() {
+  try {
+    await Engine.instantiate();
+    Engine.call(state.initArgs);
+  } catch (e) {
+    main.innerHTML = `<p class="problem">${esc(e.message)}</p>`;
+    return;
+  }
+  main.innerHTML = `<div class="panel"><p class="problem">${esc(state.error)}</p>
+    <p class="note">Your game is saved up to your last move. Go back to it, or start a new duel.</p>
+    <div class="actions-row"><button class="btn primary" id="back">Back to my last move</button><button class="btn" id="restart">New duel</button></div></div>`;
+  document.getElementById("back").onclick = () => {
+    state.error = null;
+    try { startGame(state.game); } catch (e) { state.error = e.message; state.game = null; save(); renderSetup(); }
+  };
+  document.getElementById("restart").onclick = () => { state.error = null; state.game = null; save(); renderSetup(); };
+}
+
+function cardOnTable(inst) {
+  const v = state.view;
+  const all = [...v.hand, ...zonesOf(v.you), ...zonesOf(v.opponent)];
+  return all.some((c) => c && c.instance === inst);
+}
+function zonesOf(side) { return [...side.monsters, ...side.spells, side.field, ...side.graveyard, ...side.banished]; }
+
+function select(inst) {
+  state.selected = state.selected === inst ? null : inst;
+  state.cardText = null;
+  if (state.selected !== null) {
+    try { state.cardText = Engine.call({ cmd: "card", instance: inst }); } catch (_) { state.cardText = null; }
+  }
+  renderGame();
+}
+
+function cardHtml(c, opts = {}) {
+  if (!c) return `<div class="zone" aria-label="Empty zone"></div>`;
+  const can = state.view.actions.some((a) => a.card === c.instance);
+  const sel = state.selected === c.instance;
+  const cls = ["card", c.name ? "k-" + c.kind : "back", "pos-" + c.position, can ? "can" : "", sel ? "sel" : ""].join(" ");
+  const name = c.name ?? (opts.monster ? "Face-down monster" : "Set card");
+  const pos = opts.hand ? "" : c.position === "attack" ? "ATK" : c.position === "defense" ? "DEF" : c.position === "set" ? "SET" : "";
+  const stats = c.atk !== null && c.atk !== undefined ? `${c.atk} / ${c.def}` : (c.detail ?? "");
+  return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" title="${esc(name)}">
+    <span class="cname">${esc(name)}</span>
+    <span class="cstats"><span>${esc(stats)}</span><span class="cpos">${pos}</span></span></button>`;
+}
+
+function pileHtml(side, mine) {
+  const top = side.graveyard[side.graveyard.length - 1];
+  const field = side.field;
+  return `<div class="pile">
+    <div><span>Field</span><b>${field ? (field.name ? esc(field.name) : "Set card") : "–"}</b></div>
+    <div><span>Graveyard ${side.graveyard.length}</span><b>${top ? esc(top.name ?? "?") : "–"}</b></div>
+    <div><span>Deck</span><b>${side.deck}${side.extra ? ` · Extra ${side.extra}` : ""}${side.banished.length ? ` · Banished ${side.banished.length}` : ""}</b></div>
+  </div>`;
+}
+
+function sideHtml(side, who, mine) {
+  const head = `<div class="sidehead"><span class="who">${who}</span><span class="lp">${side.lp.toLocaleString()} LP</span>
+    <span>Hand ${side.hand}</span>${!mine ? `<span class="opp-hand" aria-hidden="true">${"<span></span>".repeat(Math.min(side.hand, 12))}</span>` : ""}</div>`;
+  const monsters = `<div class="rowz">${side.monsters.map((c) => cardHtml(c, { monster: true })).join("")}${pileHtml(side, mine)}</div>`;
+  const spells = `<div class="rowz">${side.spells.map((c) => cardHtml(c)).join("")}<div class="pile tag" aria-hidden="true"><span>Spells and Traps</span></div></div>`;
+  return `<section class="side ${mine ? "you" : "them"}" aria-label="${who}">${mine ? head + monsters + spells : head + spells + monsters}</section>`;
+}
+
+function renderGame() {
+  const v = state.view;
+  const forCard = state.selected !== null ? v.actions.filter((a) => a.card === state.selected) : [];
+  const moves = v.actions.map((a) => `<button class="move k-${a.kind}${a.card !== null && a.card === state.selected ? " for-card" : ""}" data-move="${a.index}">
+      <span class="n">${a.index < 9 ? a.index + 1 : ""}</span><span>${esc(a.text)}</span></button>`).join("");
+  const chain = v.chain.length
+    ? v.chain.map((l, i) => `<span class="chip ${l.yours ? "you" : "them"}">${i + 1}. ${esc(l.name)}</span>`).join("")
+    : `<span class="sub">No chain</span>`;
+  const firstLog = v.log_total - v.log.length;
+  const log = v.log.map((line, i) => {
+    const n = firstLog + i;
+    const cls = [line.startsWith("Opponent:") ? "opp" : line.startsWith("You:") ? "me" : line.startsWith("  ") ? "fx" : "", n >= state.seenLog && state.seenLog > 0 ? "new" : ""].join(" ");
+    return `<div class="${cls}">${esc(line.trim())}</div>`;
+  }).join("");
+
+  let detail = "";
+  if (state.selected !== null) {
+    const text = state.cardText ?? "You cannot see this card.";
+    const [head, ...rest] = text.split("\n\n");
+    const [name, ...meta] = head.split("\n");
+    detail = `<section class="panel detail" aria-label="Card">
+      <div class="dname">${esc(name)}</div>
+      ${meta.length ? `<div class="sub">${esc(meta.join(" "))}</div>` : ""}
+      ${rest.length ? `<div class="dtext">${esc(rest.join("\n\n"))}</div>` : ""}
+      ${forCard.length ? `<div class="label">Moves with this card</div>` + forCard.map((a) => `<button class="move for-card k-${a.kind}" data-move="${a.index}"><span class="n"></span><span>${esc(a.text)}</span></button>`).join("") : ""}
+      <div class="actions-row"><button class="btn" id="close-card">Close</button></div></section>`;
+  }
+
+  const over = v.result !== null;
+  main.innerHTML = `<div class="game">
+    <div class="table">
+      <div class="status"><span class="turn">Turn ${v.turn}</span><span>${v.your_turn ? "Your turn" : "Opponent's turn"}</span><span class="sub">${esc(v.phase)}</span><span class="sub">vs ${esc(botName(state.game.bot))}</span></div>
+      ${sideHtml(v.opponent, "Opponent", false)}
+      <div class="mid"><div class="chain" aria-label="Chain">${chain}</div></div>
+      ${sideHtml(v.you, "You", true)}
+      <div class="label">Your hand</div>
+      <div class="hand">${v.hand.map((c) => cardHtml(c, { hand: true })).join("") || `<span class="sub">Empty</span>`}</div>
+    </div>
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="panel" aria-live="polite">
+        ${over ? `<div class="result">${esc(v.result)}</div>` : `<div class="prompt">${esc(v.prompt ?? "Waiting")}</div>`}
+        ${over ? "" : `<div class="moves">${moves}</div>`}
+        <div class="actions-row">
+          <button class="btn" id="copy-record">Copy game record</button>
+          <button class="btn${over ? " primary" : ""}" id="new-game">${over ? "New duel" : "Give up"}</button>
+        </div>
+        ${state.copyText !== null ? `<textarea class="copybox" id="copybox" readonly>${esc(state.copyText)}</textarea><span class="sub">Copying is blocked here: select the text above and copy it.</span>` : ""}
+      </section>
+      ${detail}
+      <section class="panel"><div class="label">Log</div><div class="log" id="log">${log}</div></section>
+    </div>
+  </div>`;
+
+  main.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", () => play(Number(b.dataset.move))));
+  main.querySelectorAll("[data-inst]").forEach((b) => b.addEventListener("click", () => select(Number(b.dataset.inst))));
+  document.getElementById("close-card")?.addEventListener("click", () => select(state.selected));
+  document.getElementById("copy-record").addEventListener("click", () => copy(Engine.call({ cmd: "record" })));
+  const ng = document.getElementById("new-game");
+  let confirming = false;
+  ng.addEventListener("click", () => {
+    if (!over && !confirming) { confirming = true; ng.textContent = "Tap again to give up"; return; }
+    state.game = null; state.view = null; save(); renderSetup();
+  });
+  const box = document.getElementById("copybox"); if (box) box.select();
+  const logEl = document.getElementById("log"); logEl.scrollTop = logEl.scrollHeight;
+}
+
+function copy(text) {
+  const done = () => { state.copyText = null; };
+  const fail = () => { state.copyText = text; renderGame(); };
+  try {
+    navigator.clipboard.writeText(text).then(() => {
+      const b = document.getElementById("copy-record");
+      if (b) { b.textContent = "Copied"; setTimeout(() => { if (b.isConnected) b.textContent = "Copy game record"; }, 1500); }
+      done();
+    }, fail);
+  } catch (_) { fail(); }
+}
+
+document.addEventListener("keydown", (ev) => {
+  if (!state.view || state.view.result !== null || ev.target.closest?.("select, input, textarea")) return;
+  const n = Number(ev.key);
+  if (n >= 1 && n <= 9 && state.view.actions[n - 1]) play(n - 1);
+  if (ev.key === "Escape" && state.selected !== null) select(state.selected);
+});
+
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
