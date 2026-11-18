@@ -40,10 +40,24 @@ pub fn card(obs: &Observation, pool: &CardPool, id: InstanceId) -> String {
         (
             Some(Found {
                 card: VisibleCard::Known { card, .. },
-                ..
+                owner,
+                place,
             }),
             _,
-        ) => card_name(pool, *card).to_string(),
+        ) => {
+            let name = card_name(pool, *card);
+            // Two face-up copies on the field: say which zone.
+            let zone = match place {
+                Place::Monster(i) | Place::SpellTrap(i) if copies_on_field(obs, *card) > 1 => {
+                    Some(i)
+                }
+                _ => None,
+            };
+            match (zone, owner) {
+                (Some(i), Some(p)) => format!("{name} in {} zone {}", whose(obs, p), i + 1),
+                _ => name.to_string(),
+            }
+        }
         (_, Some(link)) => card_name(pool, link.card).to_string(),
         (Some(Found { owner, place, .. }), _) => {
             let owner = owner.map_or("a", |p| whose(obs, p));
@@ -57,6 +71,17 @@ pub fn card(obs: &Observation, pool: &CardPool, id: InstanceId) -> String {
         }
         (None, None) => "a card".to_string(),
     }
+}
+
+/// Face-up cards with this id in the monster and Spell/Trap zones of both
+/// players.
+fn copies_on_field(obs: &Observation, id: CardId) -> usize {
+    obs.sides
+        .iter()
+        .flat_map(|s| s.monster_zones.iter().chain(&s.spell_trap_zones))
+        .flatten()
+        .filter(|c| c.card() == Some(id))
+        .count()
 }
 
 fn list(obs: &Observation, pool: &CardPool, ids: &[InstanceId]) -> String {
@@ -143,7 +168,7 @@ pub fn action(obs: &Observation, pool: &CardPool, a: &Action) -> String {
         Action::Attack {
             attacker,
             target: Some(t),
-        } => format!("Attack {} with {}", c(*t), c(*attacker)),
+        } => format!("Attack with {} → {}", c(*attacker), c(*t)),
         Action::EndBattlePhase => "End the Battle Phase".to_string(),
         Action::EndTurn => "End the turn".to_string(),
     }
