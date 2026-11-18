@@ -284,7 +284,10 @@ fn takes_the_opponents_best_card() {
 
 #[test]
 fn discards_the_lowest_value_card_for_the_hand_limit() {
-    let shared = with_rules(&shared(), |r| r.hand.max_size = 5);
+    let shared = with_rules(&shared(), |r| {
+        r.hand.max_size = 5;
+        r.hand.hand_limit_check = ygo_data::HandLimitCheck::AfterDraw;
+    });
     let setup = stacked(
         [
             &[
@@ -318,7 +321,9 @@ fn discards_the_lowest_value_card_for_the_hand_limit() {
 
 #[test]
 fn keeps_a_trap_for_a_window_the_opponent_opens() {
-    let mut g = game(&[CELTIC_GUARDIAN, SNAKE_FANG], &[]);
+    // Traps usable the turn they are Set, so the choice comes up at once.
+    let rules = with_rules(&shared(), |r| r.turn.trap_activation_turn_set = true);
+    let mut g = Game::new(rules, &stacked([&[CELTIC_GUARDIAN, SNAKE_FANG], &[]], PAD)).unwrap();
     summon_now(&mut g, P0, CELTIC_GUARDIAN);
     let fang = in_hand(&g, P0, SNAKE_FANG);
     play(&mut g, Action::SetSpellTrap { card: fang });

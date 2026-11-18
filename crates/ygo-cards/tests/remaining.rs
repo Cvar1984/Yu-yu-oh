@@ -279,6 +279,9 @@ fn robbin_goblin_makes_the_opponent_discard_on_battle_damage() {
     let mut g = game([&[ROBBIN_GOBLIN, CELTIC_GUARDIAN], &[]]);
     set_card(&mut g, P0, ROBBIN_GOBLIN);
     let celtic = put(&mut g, P0, CELTIC_GUARDIAN);
+    // Modern rule: a Trap waits a turn after being Set.
+    next_turn(&mut g);
+    next_turn(&mut g);
     activate(&mut g, ROBBIN_GOBLIN);
     next_turn(&mut g);
     next_turn(&mut g);

@@ -158,7 +158,10 @@ fn hane_hane_returns_a_monster_to_its_owners_hand() {
 #[test]
 fn mask_of_darkness_returns_a_trap_from_the_graveyard() {
     let base = shared();
-    let tight = with_rules(&base, |r| r.hand.max_size = 4);
+    let tight = with_rules(&base, |r| {
+        r.hand.max_size = 4;
+        r.hand.hand_limit_check = ygo_data::HandLimitCheck::AfterDraw;
+    });
     let mut g = Game::new(
         tight,
         &stacked([&[MIRROR_FORCE, MASK_OF_DARKNESS], &[]], MYSTICAL_ELF),

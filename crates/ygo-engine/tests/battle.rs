@@ -256,8 +256,10 @@ fn direct_attacks_only_when_the_opponent_controls_no_monsters() {
 
 #[test]
 fn main_phase_two_follows_the_battle_phase() {
+    // With summons in Main Phase 2 switched off (modern allows them; see
+    // flip_summon_in_main_phase_2).
     let (mut g, fish, _) = board(
-        shared(),
+        shared_with(|r| r.summon.summon_in_main_phase_2 = false),
         SEVEN_COLORED_FISH,
         CELTIC_GUARDIAN,
         Position::FaceUpAttack,
@@ -279,7 +281,7 @@ fn main_phase_two_follows_the_battle_phase() {
     let actions = g.legal_actions();
     assert!(
         summons_offered(&g).is_empty(),
-        "owner: no summons in Main Phase 2"
+        "no summons in Main Phase 2 when switched off"
     );
     assert!(
         actions.contains(&Action::ChangePosition { card: fish }),

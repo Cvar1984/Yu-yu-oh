@@ -361,8 +361,9 @@ fn solemn_judgment_negates_a_tribute_summon_and_the_tributes_stay_paid() {
 
 #[test]
 fn solemn_judgment_negates_a_spell_activation() {
+    // Traps usable the turn they are Set, to keep the scenario in one turn.
     let mut g = Game::new(
-        shared(),
+        with_rules(&shared(), |r| r.turn.trap_activation_turn_set = true),
         &stacked(
             [&[SOLEMN_JUDGMENT, SEVEN_COLORED_FISH], &[RAIGEKI]],
             MYSTICAL_ELF,
