@@ -44,15 +44,16 @@ fn turtle_oath_tributes_levels_totalling_eight_from_hand_or_field() {
         ),
     )
     .unwrap();
-    // Hand: Skull (6), Elf (4), Elf (4). Sets reaching 8: Skull+Elf x2,
-    // Elf+Elf, Skull+Elf+Elf.
+    // Hand: Skull (6), Elf (4), Elf (4). Sets reaching 8: Skull+Elf x2 and
+    // Elf+Elf. Skull+Elf+Elf is not offered: a monster beyond the ones
+    // needed may not be Tributed (Skull+Elf already reach 8).
     let offered = activations(&g, TURTLE_OATH);
-    assert_eq!(offered.len(), 4, "{offered:?}");
+    assert_eq!(offered.len(), 3, "{offered:?}");
     let elf = in_hand(&g, P0, MYSTICAL_ELF);
     play(&mut g, summon(elf));
-    // Now one Elf is on the field: the same four sets, one tribute from the field.
+    // Now one Elf is on the field: the same three sets.
     let offered = activations(&g, TURTLE_OATH);
-    assert_eq!(offered.len(), 4);
+    assert_eq!(offered.len(), 3);
     let skull = in_hand(&g, P0, SUMMONED_SKULL);
     let turtle = in_hand(&g, P0, CRAB_TURTLE);
     let skull_and_field_elf = offered
@@ -134,8 +135,9 @@ fn relinquished_absorbs_a_monster_and_fights_with_its_stats() {
     )
     .unwrap();
     let offered = activations(&g, BLACK_ILLUSION_RITUAL);
-    // Three Elves: 3 singles, 3 pairs and 1 triple; excess tributes are legal.
-    assert_eq!(offered.len(), 7, "{offered:?}");
+    // Three Elves: one Elf alone reaches Level 1, so only the 3 singles; a
+    // second Elf would be an excess Tribute.
+    assert_eq!(offered.len(), 3, "{offered:?}");
     let one_elf = offered
         .iter()
         .find(|a| matches!(a, Action::Activate { targets, .. } if targets.len() == 2))

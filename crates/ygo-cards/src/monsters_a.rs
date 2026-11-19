@@ -256,11 +256,13 @@ pub fn register(r: &mut Registry) {
         MAHA_VAILO,
         single(Effect {
             modify: Some(|g, s, t| {
+                // Every Equip Card equipped to it, whoever controls it.
                 self_mod(g, s, t, |g, s| StatMod {
                     atk: 500
-                        * g.spells_traps_controlled(s.controller)
-                            .iter()
-                            .filter(|&&e| g.equip_target(e) == Some(s.card))
+                        * PlayerId::BOTH
+                            .into_iter()
+                            .flat_map(|p| g.spells_traps_controlled(p))
+                            .filter(|&e| g.equip_target(e) == Some(s.card))
                             .count() as i32,
                     def: 0,
                 })
@@ -273,11 +275,18 @@ pub fn register(r: &mut Registry) {
         single(Effect {
             modify: Some(|g, s, t| {
                 self_mod(g, s, t, |g, s| {
-                    let attacking_wind = g.current_attack().is_some_and(|(attacker, target)| {
-                        attacker == s.card
-                            && target
-                                .is_some_and(|t| g.stats(t).attribute.as_deref() == Some("WIND"))
-                    });
+                    // During the Damage Step only.
+                    let damage_step = matches!(
+                        g.phase(),
+                        ygo_engine::Phase::Battle(ygo_engine::BattleStep::Damage)
+                    );
+                    let attacking_wind = damage_step
+                        && g.current_attack().is_some_and(|(attacker, target)| {
+                            attacker == s.card
+                                && target.is_some_and(|t| {
+                                    g.stats(t).attribute.as_deref() == Some("WIND")
+                                })
+                        });
                     StatMod {
                         atk: if attacking_wind { 1000 } else { 0 },
                         def: 0,
@@ -445,6 +454,3 @@ pub fn register(r: &mut Registry) {
         }),
     );
 }
-
-#[allow(dead_code)]
-fn _unused(_: PlayerId) {}

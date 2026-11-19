@@ -192,20 +192,17 @@ pub fn register(r: &mut Registry) {
     );
 }
 
-/// Fissure: the opponent's face-up monsters with the lowest ATK.
+/// Fissure: the opponent's face-up monsters with the lowest current ATK.
 fn fissure_candidates(g: &Game, s: Source) -> Vec<InstanceId> {
     let face_up: Vec<InstanceId> = g
         .monsters_controlled(s.controller.opponent())
         .into_iter()
         .filter(|&m| g.instance(m).position.is_face_up())
         .collect();
-    let Some(min) = face_up.iter().map(|&m| g.stats(m).atk).min() else {
+    let Some(min) = face_up.iter().map(|&m| g.atk(m)).min() else {
         return Vec::new();
     };
-    face_up
-        .into_iter()
-        .filter(|&m| g.stats(m).atk == min)
-        .collect()
+    face_up.into_iter().filter(|&m| g.atk(m) == min).collect()
 }
 
 /// Tribute to the Doomed: any monster on the field a Spell may target.

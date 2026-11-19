@@ -26,6 +26,8 @@ pub struct ChainLink {
     pub controller: PlayerId,
     pub targets: Vec<InstanceId>,
     pub cost: Vec<InstanceId>,
+    /// A number the cost recorded for the resolution (`EffectCtx::value`).
+    pub value: i32,
     pub negated: bool,
 }
 
@@ -444,7 +446,15 @@ impl Game {
             controller: player,
         };
         let uses = self.instances[card.index()].effect_uses;
+        // A name locked for this player cannot be activated this turn (but a
+        // summon procedure is not an activation).
+        let locked = self.players[player.index()]
+            .names_locked
+            .contains(&self.stats(card).id);
         for (i, effect) in script.effects.iter().enumerate() {
+            if locked && effect.kind != EffectKind::Procedure {
+                continue;
+            }
             if effect.kind == EffectKind::Continuous {
                 continue;
             }
@@ -677,6 +687,7 @@ impl Game {
             targets,
             cost,
             event: None,
+            value: 0,
         };
         if let Some(pay) = eff.cost {
             self.resolving = Some(player);
@@ -691,6 +702,7 @@ impl Game {
             controller: player,
             targets: ctx.targets,
             cost: ctx.cost,
+            value: ctx.value,
             negated: false,
         });
         self.emit(Event::Activated {
@@ -763,6 +775,7 @@ impl Game {
             targets: link.targets.clone(),
             cost: link.cost.clone(),
             event: None,
+            value: link.value,
         };
         self.resolving = Some(link.controller);
         let flow = (self.effect(link.card, link.effect).resolve)(self, &mut ctx);

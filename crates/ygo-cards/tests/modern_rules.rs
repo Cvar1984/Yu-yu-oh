@@ -167,10 +167,7 @@ fn a_bounced_fusion_monster_goes_back_to_the_extra_deck() {
     setup.shuffle = false;
     let mut g = Game::new(shared(), &setup).unwrap();
     let hane = set_monster(&mut g, P0, HANE_HANE);
-    let poly = activations(&g, POLYMERIZATION);
-    play(&mut g, poly[0].clone());
-    pass_all(&mut g);
-    answer(&mut g, 0);
+    fuse_first(&mut g);
     let karbonala = g
         .player(P0)
         .monsters()
@@ -220,6 +217,17 @@ fn a_monster_turned_face_down_loses_its_equip_cards() {
     pass_all(&mut g);
     assert_eq!(g.instance(celtic).position, Position::FaceDownDefense);
     assert_eq!(g.instance(sword).location, Location::Graveyard);
+}
+
+/// Activates Polymerization and takes the first option at every choice.
+fn fuse_first(g: &mut Game) {
+    let a = activations(g, POLYMERIZATION);
+    play(g, a[0].clone());
+    pass_all(g);
+    while let Some(Action::Choose { card }) = g.legal_actions().first().cloned() {
+        play(g, Action::Choose { card });
+    }
+    answer(g, 0);
 }
 
 /// Player 0's game with Karbonala Warrior's materials and Polymerization
@@ -276,10 +284,7 @@ fn only_a_properly_summoned_monster_can_be_revived() {
 
     // Karbonala Warrior, Fusion Summoned and then destroyed, can come back.
     let mut g = fusion_game(&[DARK_HOLE, MONSTER_REBORN]);
-    let poly = activations(&g, POLYMERIZATION);
-    play(&mut g, poly[0].clone());
-    pass_all(&mut g);
-    answer(&mut g, 0);
+    fuse_first(&mut g);
     let karbonala = g.player(P0).monsters().next().unwrap();
     let hole = activations(&g, DARK_HOLE);
     play(&mut g, hole[0].clone());

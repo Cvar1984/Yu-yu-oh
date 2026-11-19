@@ -34,8 +34,8 @@ fn ritual_row(g: &Game, s: Source) -> (CardId, u8) {
 }
 
 /// Every legal summon: the Ritual Monster from the hand first, then a set
-/// of up to three tributes from the hand or field whose Levels reach the
-/// requirement.
+/// of tributes from the hand or field whose Levels reach the requirement
+/// with none to spare (removing any one tribute falls short).
 fn ritual_targets(g: &Game, s: Source) -> TargetSets {
     let (monster_id, levels) = ritual_row(g, s);
     let player = s.controller;
@@ -55,10 +55,12 @@ fn ritual_targets(g: &Game, s: Source) -> TargetSets {
     let mut sets = Vec::new();
     for &monster in &monsters {
         let candidates: Vec<InstanceId> = pool.iter().copied().filter(|&c| c != monster).collect();
-        for k in 1..=3.min(candidates.len()) {
+        for k in 1..=candidates.len() {
             for tributes in subsets(&candidates, k) {
-                let total: u32 = tributes.iter().map(|&t| u32::from(g.stats(t).level)).sum();
-                if total >= u32::from(levels) {
+                let level = |t: &InstanceId| u32::from(g.stats(*t).level);
+                let total: u32 = tributes.iter().map(level).sum();
+                let smallest = tributes.iter().map(level).min().unwrap_or(0);
+                if total >= u32::from(levels) && total - smallest < u32::from(levels) {
                     let mut set = vec![monster];
                     set.extend(tributes);
                     sets.push(set);

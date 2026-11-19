@@ -178,14 +178,52 @@ fn hand_without_self(g: &Game, s: Source) -> Vec<InstanceId> {
         .collect()
 }
 
-fn cheerful_coffin_targets(g: &Game, s: Source) -> TargetSets {
-    let monsters: Vec<InstanceId> = hand_without_self(g, s)
-        .into_iter()
+/// The Cheerful Coffin: up to three Monster Cards from the hand, the count
+/// so far kept in `ctx.targets`.
+fn coffin_pick(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
+    let options: Vec<InstanceId> = g
+        .hand(ctx.controller)
+        .iter()
+        .copied()
         .filter(|&c| g.stats(c).is_monster())
         .collect();
-    (1..=3.min(monsters.len()))
-        .flat_map(|k| subsets(&monsters, k))
-        .collect()
+    if options.is_empty() || ctx.targets.len() >= 3 {
+        return Flow::Done;
+    }
+    let pick = Flow::Choose {
+        options,
+        then: |g, ctx, picked| {
+            g.discard(picked);
+            ctx.targets.push(picked);
+            coffin_pick(g, ctx)
+        },
+    };
+    if ctx.targets.is_empty() {
+        return pick;
+    }
+    Flow::Ask {
+        options: vec!["Discard another", "Done"],
+        then: |g, ctx, option| {
+            if option == 0 {
+                let options: Vec<InstanceId> = g
+                    .hand(ctx.controller)
+                    .iter()
+                    .copied()
+                    .filter(|&c| g.stats(c).is_monster())
+                    .collect();
+                Flow::Choose {
+                    options,
+                    then: |g, ctx, picked| {
+                        g.discard(picked);
+                        ctx.targets.push(picked);
+                        coffin_pick(g, ctx)
+                    },
+                }
+            } else {
+                Flow::Done
+            }
+        },
+    }
 }
 
 /// Banish picks one at a time, up to `max`, through Choose and Ask.
@@ -441,6 +479,10 @@ pub fn register(r: &mut Registry) {
             })
         }),
     );
+    // All Attack Position monsters to Defense Position and vice versa; a
+    // face-down Defense Position monster is a Defense Position monster, so
+    // it becomes face-up Attack Position. Positions are then locked for
+    // the turn except by card effects.
     r.register(
         CURSE_OF_FIEND,
         single(Effect {
@@ -448,13 +490,15 @@ pub fn register(r: &mut Registry) {
             timing: |g, _, w| {
                 w.kind == WindowKind::Open
                     && g.phase() == Phase::Standby
-                    && !face_up_monsters(g).is_empty()
+                    && !all_monsters(g).is_empty()
             },
             ..Effect::activate(1, |g, _ctx| {
-                for m in face_up_monsters(g) {
+                for m in all_monsters(g) {
                     let next = match g.instance(m).position {
                         Position::FaceUpAttack => Position::FaceUpDefense,
-                        Position::FaceUpDefense => Position::FaceUpAttack,
+                        Position::FaceUpDefense | Position::FaceDownDefense => {
+                            Position::FaceUpAttack
+                        }
                         other => other,
                     };
                     g.set_position(m, next);
@@ -481,17 +525,16 @@ pub fn register(r: &mut Registry) {
             })
         }),
     );
+    // Discard up to 3 Monster Cards: chosen on resolution, one at a time.
     r.register(
         THE_CHEERFUL_COFFIN,
         single(Effect {
-            timing: |g, s, _| !cheerful_coffin_targets(g, s).is_empty(),
-            targets: Some(cheerful_coffin_targets),
-            ..Effect::activate(1, |g, ctx| {
-                for &c in &ctx.targets.clone() {
-                    g.discard(c);
-                }
-                Flow::Done
-            })
+            timing: |g, s, _| {
+                hand_without_self(g, s)
+                    .iter()
+                    .any(|&c| g.stats(c).is_monster())
+            },
+            ..Effect::activate(1, coffin_pick)
         }),
     );
     r.register(
