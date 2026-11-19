@@ -97,6 +97,44 @@ impl Game {
         self.open_window(WindowKind::SummonDeclared, self.turn_player);
     }
 
+    /// A summon procedure from the hand: pays its cost (the tributes),
+    /// then opens the summon-negation window like a Normal Summon. It is
+    /// not an effect, so it starts no chain.
+    pub(crate) fn declare_procedure_summon(
+        &mut self,
+        player: PlayerId,
+        card: InstanceId,
+        effect: u8,
+        cost: Vec<InstanceId>,
+        position: Position,
+    ) {
+        if let Some(pay) = self.effect(card, effect).cost {
+            let mut ctx = crate::EffectCtx {
+                source: card,
+                controller: player,
+                targets: Vec::new(),
+                cost,
+                event: None,
+            };
+            self.resolving = Some(player);
+            pay(self, &mut ctx);
+            self.resolving = None;
+        }
+        self.emit(Event::SummonDeclared {
+            player,
+            card,
+            face_down: false,
+        });
+        self.pending.push(Pending::CompleteSummon(PendingSummon {
+            player,
+            card,
+            kind: SummonKind::Procedure { position },
+            face_down: false,
+            negated: false,
+        }));
+        self.open_window(WindowKind::SummonDeclared, self.turn_player);
+    }
+
     pub(crate) fn declare_flip_summon(&mut self, player: PlayerId, card: InstanceId) {
         if self.shared.rules.summon.flip_summon_counts_toward_limit {
             self.players[player.index()].summons_used += 1;
@@ -161,6 +199,9 @@ impl Game {
                     card,
                     position,
                 });
+            }
+            SummonKind::Procedure { position } => {
+                self.special_summon_properly(card, player, position);
             }
             SummonKind::Flip => {
                 let inst = &mut self.instances[card.index()];

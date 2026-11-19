@@ -5,7 +5,7 @@ use ygo_data::{CardId, CardKind};
 use crate::positions;
 use ygo_engine::{
     CardScript, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Location, Phase,
-    PlayerId, Position, Registry, Source, StatMod, Tag, TargetSets, Window, WindowKind,
+    PlayerId, Position, Registry, Source, StatMod, TargetSets, Window, WindowKind,
 };
 
 pub const REAPER_OF_THE_CARDS: CardId = CardId(33066139);
@@ -114,7 +114,7 @@ fn cyber_jar_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
                     && g.instance(c).location == Location::Deck
                     && st.is_monster()
                     && st.level <= 4
-                    && !g.script(c).is_some_and(|s| s.has(Tag::CannotNormalSummon))
+                    && g.special_summonable(c)
             })
             .collect();
         if !options.is_empty() && g.can_special_summon(player) {
@@ -188,7 +188,7 @@ fn cretin_step(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
         .graveyard(player)
         .iter()
         .copied()
-        .filter(|&c| g.stats(c).is_monster() && !g.stats(c).is_extra_deck())
+        .filter(|&c| g.special_summonable(c))
         .collect();
     if options.is_empty() {
         return cretin_step(g, ctx);

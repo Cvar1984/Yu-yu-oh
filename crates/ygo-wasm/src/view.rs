@@ -181,6 +181,7 @@ fn action_kind(a: &Action) -> &'static str {
             face_down: true, ..
         } => "set",
         Action::Summon { .. } => "summon",
+        Action::ProcedureSummon { .. } => "summon",
         Action::FlipSummon { .. } => "flip",
         Action::ChangePosition { .. } => "position",
         Action::SetSpellTrap { .. } => "set",

@@ -47,10 +47,17 @@ fn put(g: &mut Game, player: PlayerId, id: CardId) -> InstanceId {
     card
 }
 
+/// Activations of card `id`, and its summon procedure in Attack Position.
 fn activations(g: &Game, id: CardId) -> Vec<Action> {
     g.legal_actions()
         .into_iter()
-        .filter(|a| matches!(a, Action::Activate { card, .. } if g.stats(*card).id == id))
+        .filter(|a| match a {
+            Action::Activate { card, .. } => g.stats(*card).id == id,
+            Action::ProcedureSummon { card, position, .. } => {
+                g.stats(*card).id == id && *position == Position::FaceUpAttack
+            }
+            _ => false,
+        })
         .collect()
 }
 

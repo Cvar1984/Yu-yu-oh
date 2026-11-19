@@ -2,8 +2,7 @@
 
 use ygo_data::CardId;
 use ygo_engine::{
-    CardScript, Effect, Event, Flow, Game, InstanceId, Location, Position, Registry, Source, Tag,
-    TargetSets,
+    CardScript, Effect, Event, Flow, Game, InstanceId, Location, Registry, Source, Tag, TargetSets,
 };
 
 pub const TOON_WORLD: CardId = CardId(15259703);
@@ -63,10 +62,7 @@ fn toon() -> CardScript {
                         g.tribute(t);
                     }
                 }),
-                ..Effect::ignition(|g, ctx| {
-                    g.special_summon(ctx.source, ctx.controller, Position::FaceUpAttack);
-                    Flow::Done
-                })
+                ..Effect::procedure()
             },
             // No attack the turn it arrives; 500 LP to declare an attack.
             Effect {

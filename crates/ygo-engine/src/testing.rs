@@ -250,7 +250,11 @@ pub fn check_invariants(g: &Game) {
             assert_eq!(inst.location, Location::FieldZone);
             assert_eq!(inst.controller, p);
             assert_eq!(g.stats(id).subtype, crate::SpellTrapType::Field);
-            assert_eq!(inst.position, Position::FaceUp);
+            // Activated, or Set (modern: a Field Spell may be Set).
+            assert!(matches!(
+                inst.position,
+                Position::FaceUp | Position::FaceDown
+            ));
         }
         for id in s.spell_trap_zones.iter().flatten() {
             if let Some(to) = g.equip_target(*id) {

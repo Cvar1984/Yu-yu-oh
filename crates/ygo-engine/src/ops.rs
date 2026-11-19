@@ -3,6 +3,8 @@
 
 use rand_core::Rng;
 
+use ygo_data::CardKind;
+
 use crate::{
     Effect, EffectKind, Event, Game, GameResult, InstanceId, Lingering, LingeringKind, Location,
     PlayerId, Position, Source, StatMod, Tag, WinReason,
@@ -124,13 +126,13 @@ impl Game {
         materials: &[InstanceId],
         position: Position,
     ) -> bool {
-        if !self.can_special_summon(player) || materials.is_empty() {
+        if materials.is_empty() || !self.room_after_leaving(player, materials) {
             return false;
         }
         for &m in materials {
             self.send_to_graveyard(m);
         }
-        if !self.special_summon(fusion, player, position) {
+        if !self.special_summon_properly(fusion, player, position) {
             return false;
         }
         self.emit(Event::FusionSummoned {
@@ -139,6 +141,23 @@ impl Game {
             materials: materials.to_vec(),
         });
         true
+    }
+
+    /// Whether `player` could Special Summon once `leaving` (materials or
+    /// tributes) have left: a material on the field frees its zone.
+    pub fn room_after_leaving(&self, player: PlayerId, leaving: &[InstanceId]) -> bool {
+        self.can_special_summon(player)
+            || (leaving.iter().any(|&c| {
+                matches!(self.instances[c.index()].location, Location::MonsterZone(_))
+                    && self.instances[c.index()].controller == player
+            }) && {
+                let rules = &self.shared.rules.summon;
+                let state = &self.players[player.index()];
+                let cap = rules.max_monsters_entering_per_turn;
+                (cap == 0 || usize::from(state.monsters_entered) < cap)
+                    && (!rules.special_summon_counts_toward_limit
+                        || usize::from(state.summons_used) < rules.normal_or_tribute_per_turn)
+            })
     }
 
     /// Ritual Summons `monster` from the hand, tributing `tributes` from
@@ -150,14 +169,14 @@ impl Game {
         tributes: &[InstanceId],
         position: Position,
     ) -> bool {
-        if !self.can_special_summon(player) {
+        if !self.room_after_leaving(player, tributes) {
             return false;
         }
         for &t in tributes {
             self.send_to_graveyard(t);
             self.emit(Event::Tributed { player, card: t });
         }
-        if !self.special_summon(monster, player, position) {
+        if !self.special_summon_properly(monster, player, position) {
             return false;
         }
         self.emit(Event::RitualSummoned {
@@ -333,6 +352,7 @@ impl Game {
         inst.position = Position::FaceDown;
         inst.controller = owner;
         inst.turn_set = None;
+        inst.properly_summoned = false;
         inst.turn_entered_field = None;
         self.players[owner.index()].hand.push(card);
         self.emit(Event::AddedToHand {
@@ -399,9 +419,59 @@ impl Game {
                 || usize::from(state.summons_used) < rules.normal_or_tribute_per_turn)
     }
 
+    /// A monster that must first be summoned a certain way: a Fusion or
+    /// Ritual Monster, or one whose script says it cannot be Normal Summoned.
+    pub fn needs_proper_summon(&self, card: InstanceId) -> bool {
+        let stats = self.stats(card);
+        matches!(stats.kind, CardKind::Fusion | CardKind::Ritual)
+            || self
+                .script(card)
+                .is_some_and(|s| s.has(crate::Tag::CannotNormalSummon))
+    }
+
+    /// Whether a card effect may Special Summon `card` from where it is: any
+    /// monster that needs no proper summon, or one that was properly summoned
+    /// and is now in the Graveyard or banished.
+    pub fn special_summonable(&self, card: InstanceId) -> bool {
+        let inst = &self.instances[card.index()];
+        self.stats(card).is_monster()
+            && (!self.needs_proper_summon(card)
+                || (inst.properly_summoned
+                    && matches!(inst.location, Location::Graveyard | Location::Banished)))
+    }
+
     /// Special Summons `card` from wherever it is to `player`'s field.
-    /// Returns `false` and does nothing if `can_special_summon` is false.
+    /// Returns `false` and does nothing if `can_special_summon` is false or
+    /// `card` may not be Special Summoned by an effect (`special_summonable`).
     pub fn special_summon(
+        &mut self,
+        card: InstanceId,
+        player: PlayerId,
+        position: Position,
+    ) -> bool {
+        if !self.special_summonable(card) {
+            return false;
+        }
+        self.special_summon_unchecked(card, player, position)
+    }
+
+    /// The summon a card's own text names (Fusion, Ritual, a procedure,
+    /// Elegant Egotist for Harpie Lady Sisters): allowed from the hand or
+    /// Deck, and it marks the monster as properly summoned.
+    pub fn special_summon_properly(
+        &mut self,
+        card: InstanceId,
+        player: PlayerId,
+        position: Position,
+    ) -> bool {
+        let done = self.special_summon_unchecked(card, player, position);
+        if done {
+            self.instances[card.index()].properly_summoned = true;
+        }
+        done
+    }
+
+    fn special_summon_unchecked(
         &mut self,
         card: InstanceId,
         player: PlayerId,
@@ -879,6 +949,7 @@ impl Game {
         inst.position = Position::FaceDown;
         inst.controller = owner;
         inst.turn_set = None;
+        inst.properly_summoned = false;
         inst.turn_entered_field = None;
         inst.equipped_to = None;
         inst.counter = 0;
@@ -906,6 +977,7 @@ impl Game {
         inst.position = Position::FaceDown;
         inst.controller = owner;
         inst.turn_set = None;
+        inst.properly_summoned = false;
         inst.turn_entered_field = None;
         inst.equipped_to = None;
         inst.counter = 0;
@@ -949,32 +1021,47 @@ impl Game {
         });
     }
 
-    /// Activates a Field Spell from the hand: it takes `player`'s Field
-    /// Zone, and `field.field_spells_on_field` says how many may stay on
-    /// the whole field, oldest and the opponent's going first.
-    pub(crate) fn place_field_spell(&mut self, player: PlayerId, card: InstanceId) {
-        let limit = self.shared.rules.field.field_spells_on_field.max(1);
+    /// Puts a Field Spell from the hand into `player`'s Field Zone, face-up
+    /// (activated) or face-down (Set). A Field Spell `player` already has
+    /// goes to the Graveyard. A face-up one also obeys
+    /// `field.field_spells_on_field` (`field_spell_turns_face_up`).
+    pub(crate) fn place_field_spell(
+        &mut self,
+        player: PlayerId,
+        card: InstanceId,
+        position: Position,
+    ) {
         if let Some(old) = self.players[player.index()].field_zone {
             self.send_to_graveyard(old);
         }
-        let mut on_field: Vec<InstanceId> = PlayerId::BOTH
-            .into_iter()
-            .filter_map(|p| self.players[p.index()].field_zone)
-            .collect();
-        while on_field.len() + 1 > limit {
-            let victim = on_field.remove(0);
-            self.send_to_graveyard(victim);
+        if position == Position::FaceUp {
+            self.field_spell_turns_face_up(card);
         }
         self.remove_from_current_place(card);
         self.players[player.index()].field_zone = Some(card);
         let turn = self.turn;
         let inst = &mut self.instances[card.index()];
         inst.location = Location::FieldZone;
-        inst.position = Position::FaceUp;
+        inst.position = position;
         inst.controller = player;
-        inst.turn_set = None;
+        inst.turn_set = (position == Position::FaceDown).then_some(turn);
         inst.turn_entered_field = Some(turn);
         inst.counter = 0;
+    }
+
+    /// A Field Spell becomes active: with `field_spells_on_field` at 1, the
+    /// other face-up Field Spell, whoever owns it, goes to the Graveyard.
+    pub(crate) fn field_spell_turns_face_up(&mut self, card: InstanceId) {
+        let limit = self.shared.rules.field.field_spells_on_field.max(1);
+        let mut active: Vec<InstanceId> = PlayerId::BOTH
+            .into_iter()
+            .filter_map(|p| self.players[p.index()].field_zone)
+            .filter(|&c| c != card && self.instances[c.index()].position == Position::FaceUp)
+            .collect();
+        while active.len() + 1 > limit {
+            let victim = active.remove(0);
+            self.send_to_graveyard(victim);
+        }
     }
 
     /// Housekeeping when a card leaves the field: its equips go to the
@@ -1016,6 +1103,7 @@ impl Game {
         inst.position = Position::FaceDown;
         inst.controller = owner;
         inst.turn_set = None;
+        inst.properly_summoned = false;
         inst.turn_entered_field = None;
         self.players[owner.index()].extra.push(card);
         self.emit(Event::ReturnedToExtraDeck {

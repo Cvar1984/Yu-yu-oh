@@ -52,6 +52,10 @@ pub enum EffectKind {
     Quick,
     /// Always on while the card is face-up on the field; never chains.
     Continuous,
+    /// A summon procedure from the hand (Gate Guardian, the Moths, the
+    /// Toons): not an effect. It never chains; its summon can be negated
+    /// like a Normal Summon, and it counts as the monster's proper summon.
+    Procedure,
 }
 
 /// Spell speed 1, 2 or 3.
@@ -125,6 +129,7 @@ impl Effect {
             on_battle_damage: None,
             replace_battle_destruction: None,
             lock_position: None,
+            misses_timing: false,
         }
     }
 
@@ -133,6 +138,15 @@ impl Effect {
         Self {
             kind: EffectKind::Ignition,
             ..Self::activate(1, resolve)
+        }
+    }
+
+    /// A summon procedure: `timing` says when it is allowed and `cost` pays
+    /// the tributes; the engine offers it in each face-up position.
+    pub const fn procedure() -> Self {
+        Self {
+            kind: EffectKind::Procedure,
+            ..Self::activate(1, nothing)
         }
     }
 
@@ -279,6 +293,11 @@ pub struct Effect {
     /// Continuous: `target` cannot change its battle position by its
     /// controller's choice (Dragon Capture Jar).
     pub lock_position: Option<fn(&Game, Source, InstanceId) -> bool>,
+    /// An optional "When ... you can" trigger: it misses the timing when its
+    /// event was not the last thing to happen, that is when a summon or a
+    /// card activation came after it in the same window (an equipped
+    /// monster Tributed for a Tribute Summon).
+    pub misses_timing: bool,
 }
 
 impl std::fmt::Debug for Effect {

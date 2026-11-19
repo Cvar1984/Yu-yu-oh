@@ -163,6 +163,13 @@ impl HeuristicPlayer {
                 tributes,
                 face_down,
             } => self.summon_score(obs, b, *card, tributes, *face_down),
+            // A summon procedure costs its tributes; Defense is scored like a Set.
+            Action::ProcedureSummon {
+                card,
+                cost,
+                position,
+                ..
+            } => self.summon_score(obs, b, *card, cost, *position == Position::FaceUpDefense),
             Action::FlipSummon { card } => {
                 let (atk, _) = self.atk_def(obs, *card).unwrap_or((0, 0));
                 let effect = self.value(obs, *card) * 0.1;

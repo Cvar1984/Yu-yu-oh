@@ -9,7 +9,7 @@ use ygo_engine::testing::{
     CELTIC_GUARDIAN, MYSTICAL_ELF, in_hand, next_turn, pass_all, play, shared_from, stacked,
     summon, summons_offered, with_rules,
 };
-use ygo_engine::{Action, Game, InstanceId, Location, PlayerId, Shared};
+use ygo_engine::{Action, Game, InstanceId, Location, PlayerId, Position, Shared};
 
 const P0: PlayerId = PlayerId(0);
 const P1: PlayerId = PlayerId(1);
@@ -22,10 +22,17 @@ fn shared() -> Arc<Shared> {
     })
 }
 
+/// Activations of card `id`, and its summon procedure in Attack Position.
 fn activations(g: &Game, id: CardId) -> Vec<Action> {
     g.legal_actions()
         .into_iter()
-        .filter(|a| matches!(a, Action::Activate { card, .. } if g.stats(*card).id == id))
+        .filter(|a| match a {
+            Action::Activate { card, .. } => g.stats(*card).id == id,
+            Action::ProcedureSummon { card, position, .. } => {
+                g.stats(*card).id == id && *position == Position::FaceUpAttack
+            }
+            _ => false,
+        })
         .collect()
 }
 
@@ -150,9 +157,9 @@ fn bigger_toons_tribute_by_level() {
         put(&mut g, P0, MYSTICAL_ELF);
         let offered = activations(&g, toon);
         assert!(
-            offered
-                .iter()
-                .all(|a| matches!(a, Action::Activate { cost, .. } if cost.len() == tributes)),
+            offered.iter().all(
+                |a| matches!(a, Action::ProcedureSummon { cost, .. } if cost.len() == tributes)
+            ),
             "{toon}: {offered:?}"
         );
         play(&mut g, offered[0].clone());

@@ -48,13 +48,13 @@ fn solemn_target(g: &Game, _s: Source, w: &Window) -> Option<InstanceId> {
         return g.pending_summon().map(|ps| ps.card);
     }
     g.last_link()
-        .filter(|l| !g.stats(l.card).is_monster())
+        .filter(|l| l.card_activation && !g.stats(l.card).is_monster())
         .map(|l| l.card)
 }
 
 fn last_link_of_kind(g: &Game, kind: CardKind) -> Option<InstanceId> {
     g.last_link()
-        .filter(|l| g.stats(l.card).kind == kind && !l.negated)
+        .filter(|l| l.card_activation && g.stats(l.card).kind == kind && !l.negated)
         .map(|l| l.card)
 }
 

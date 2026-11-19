@@ -119,6 +119,27 @@ pub fn action(obs: &Observation, pool: &CardPool, a: &Action) -> String {
                 )
             }
         }
+        Action::ProcedureSummon {
+            card,
+            cost,
+            position,
+            ..
+        } => {
+            let pos = if *position == Position::FaceUpDefense {
+                "Defense"
+            } else {
+                "Attack"
+            };
+            if cost.is_empty() {
+                format!("Special Summon {} in {pos} Position", c(*card))
+            } else {
+                format!(
+                    "Special Summon {} in {pos} Position, tributing {}",
+                    c(*card),
+                    list(obs, pool, cost)
+                )
+            }
+        }
         Action::FlipSummon { card } => format!("Flip Summon {}", c(*card)),
         Action::ChangePosition { card } => {
             let to = match obs.find(*card).map(|f| f.card) {

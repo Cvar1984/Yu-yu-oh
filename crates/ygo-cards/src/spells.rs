@@ -112,7 +112,7 @@ pub fn register(r: &mut Registry) {
                 let mut sets: TargetSets = Vec::new();
                 for p in [s.controller, s.controller.opponent()] {
                     for &c in g.graveyard(p) {
-                        if g.stats(c).is_monster() {
+                        if g.special_summonable(c) {
                             sets.push(vec![c]);
                         }
                     }

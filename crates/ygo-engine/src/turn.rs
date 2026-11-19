@@ -112,6 +112,12 @@ impl Game {
                 targets,
                 cost,
             } => self.activate(player, *card, *effect, targets.clone(), cost.clone()),
+            Action::ProcedureSummon {
+                card,
+                effect,
+                cost,
+                position,
+            } => self.declare_procedure_summon(player, *card, *effect, cost.clone(), *position),
             Action::Choose { card } => self.choose(*card),
             Action::Answer { option } => self.answer(usize::from(*option)),
             Action::Pass => match decision.kind {
@@ -331,29 +337,36 @@ impl Game {
     }
 
     /// Spells and Traps in the hand that may be Set now.
+    /// Sets from the hand: a Spell or Trap into a free Spell/Trap Zone, or a
+    /// Field Spell into the Field Zone (replacing the player's own).
     fn set_spell_trap_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
-        if !matches!(self.phase, Phase::Main1 | Phase::Main2)
-            || self.free_spell_trap_zone(player).is_none()
-        {
+        if !matches!(self.phase, Phase::Main1 | Phase::Main2) {
             return;
         }
+        let has_zone = self.free_spell_trap_zone(player).is_some();
         for &card in &self.players[player.index()].hand {
             let stats = self.stats(card);
-            if matches!(
+            if !matches!(
                 stats.kind,
                 ygo_data::CardKind::Spell | ygo_data::CardKind::Trap
-            ) && stats.subtype != crate::SpellTrapType::Field
-            {
+            ) {
+                continue;
+            }
+            if stats.subtype == crate::SpellTrapType::Field || has_zone {
                 actions.push(Action::SetSpellTrap { card });
             }
         }
     }
 
     fn set_spell_trap(&mut self, player: PlayerId, card: InstanceId) {
-        let zone = self
-            .free_spell_trap_zone(player)
-            .expect("checked when the action was offered");
-        self.place_spell_trap(player, card, zone, crate::Position::FaceDown);
+        if self.stats(card).subtype == crate::SpellTrapType::Field {
+            self.place_field_spell(player, card, crate::Position::FaceDown);
+        } else {
+            let zone = self
+                .free_spell_trap_zone(player)
+                .expect("checked when the action was offered");
+            self.place_spell_trap(player, card, zone, crate::Position::FaceDown);
+        }
         self.emit(Event::SetCard { player, card });
     }
 
