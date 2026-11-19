@@ -84,7 +84,7 @@ fn toon() -> CardScript {
                     g.on_field(s.card)
                         && w.events.iter().any(|e| {
                             matches!(e,
-                            Event::SentToGraveyard { card, from: Location::SpellTrapZone(_) }
+                            Event::DestroyedByEffect { card, .. }
                                 if g.stats(*card).id == TOON_WORLD)
                         })
                 },

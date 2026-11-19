@@ -98,6 +98,9 @@ pub fn register(r: &mut Registry) {
             },
         );
     }
+    // Fusion Summon 1 Fusion Monster from the Extra Deck, using monsters
+    // from the hand or field: the Fusion Monster, then each material, are
+    // chosen on resolution; then its position.
     r.register(
         POLYMERIZATION,
         CardScript {
@@ -105,33 +108,106 @@ pub fn register(r: &mut Registry) {
             effects: vec![Effect {
                 timing: |g, s, _| {
                     g.fusion_summons_allowed()
-                        && g.can_special_summon(s.controller)
-                        && !polymerization_targets(g, s).is_empty()
+                        && polymerization_targets(g, s)
+                            .iter()
+                            .any(|set| g.room_after_leaving(s.controller, &set[1..]))
                 },
-                targets: Some(polymerization_targets),
                 ..Effect::activate(1, |g, ctx| {
-                    let materials: Vec<InstanceId> = ctx.targets[1..].to_vec();
-                    let still_there = materials.iter().all(|&m| {
-                        g.instance(m).location == ygo_engine::Location::Hand || g.on_field(m)
-                    });
-                    if !still_there {
-                        return Flow::Done;
-                    }
-                    Flow::Ask {
-                        options: positions::FACE_UP.to_vec(),
-                        then: |g, ctx, option| {
-                            let (fusion, materials) = (ctx.targets[0], ctx.targets[1..].to_vec());
-                            g.fusion_summon(
-                                ctx.controller,
-                                fusion,
-                                &materials,
-                                positions::face_up(option),
-                            );
-                            Flow::Done
-                        },
-                    }
+                    ctx.targets.clear();
+                    poly_step(g, ctx)
                 })
             }],
         },
     );
+}
+
+/// Monsters in the hand or on the field that may serve as materials.
+fn material_pool(g: &Game, player: ygo_engine::PlayerId, poly: InstanceId) -> Vec<InstanceId> {
+    g.hand(player)
+        .iter()
+        .copied()
+        .filter(|&c| c != poly)
+        .chain(g.monsters_controlled(player))
+        .collect()
+}
+
+/// Whether `chosen` (the Fusion Monster, then the materials so far) can be
+/// completed from `pool`.
+fn completes(g: &Game, pool: &[InstanceId], chosen: &[InstanceId]) -> bool {
+    let Some(required) = materials_of(g.stats(chosen[0]).id) else {
+        return false;
+    };
+    let mut out = Vec::new();
+    assign(
+        g,
+        pool,
+        &required[chosen.len() - 1..],
+        &mut chosen.to_vec(),
+        &mut out,
+    );
+    out.iter()
+        .any(|set| g.room_after_leaving(g.instance(chosen[0]).owner, &set[1..]))
+}
+
+/// One step of Polymerization's resolution; `ctx.targets` holds the Fusion
+/// Monster and the materials picked so far.
+fn poly_step(g: &mut Game, ctx: &mut ygo_engine::EffectCtx) -> Flow {
+    let pool = material_pool(g, ctx.controller, ctx.source);
+    if ctx.targets.is_empty() {
+        let fusions: Vec<InstanceId> = g
+            .player(ctx.controller)
+            .extra
+            .iter()
+            .copied()
+            .filter(|&f| completes(g, &pool, &[f]))
+            .collect();
+        if fusions.is_empty() {
+            return Flow::Done;
+        }
+        return Flow::Choose {
+            options: fusions,
+            then: |g, ctx, picked| {
+                ctx.targets.push(picked);
+                poly_step(g, ctx)
+            },
+        };
+    }
+    let required = materials_of(g.stats(ctx.targets[0]).id).unwrap_or(&[]);
+    let picked = ctx.targets.len() - 1;
+    if picked == required.len() {
+        return Flow::Ask {
+            options: positions::FACE_UP.to_vec(),
+            then: |g, ctx, option| {
+                let (fusion, materials) = (ctx.targets[0], ctx.targets[1..].to_vec());
+                g.fusion_summon(
+                    ctx.controller,
+                    fusion,
+                    &materials,
+                    positions::face_up(option),
+                );
+                Flow::Done
+            },
+        };
+    }
+    let need = required[picked];
+    let options: Vec<InstanceId> = pool
+        .iter()
+        .copied()
+        .filter(|&c| g.stats(c).id == need && !ctx.targets.contains(&c))
+        .filter(|&c| {
+            let mut next = ctx.targets.clone();
+            next.push(c);
+            completes(g, &pool, &next)
+        })
+        .collect();
+    if options.is_empty() {
+        return Flow::Done;
+    }
+    Flow::Choose {
+        options,
+        then: |g, ctx, picked| {
+            ctx.targets.push(picked);
+            poly_step(g, ctx)
+        },
+    }
 }

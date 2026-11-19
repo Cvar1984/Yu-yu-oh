@@ -10,7 +10,7 @@ use ygo_cards::ritual::{CRAB_TURTLE, TURTLE_OATH};
 use ygo_cards::spells::CHANGE_OF_HEART;
 use ygo_data::CardId;
 use ygo_engine::testing::{
-    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, in_hand, next_turn, pass_all, play,
+    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, answer, in_hand, next_turn, pass_all, play,
     shared_from, stacked, summon, with_rules,
 };
 use ygo_engine::{Action, DecisionKind, Game, Location, PlayerId, Position, Shared};
@@ -147,12 +147,21 @@ fn shadow_ghoul_counts_monsters_in_the_graveyard() {
     )
     .unwrap();
     let ghoul = in_hand(&g, P0, SHADOW_GHOUL);
-    let a = activations(&g, THE_CHEERFUL_COFFIN)
-        .into_iter()
-        .find(|a| matches!(a, Action::Activate { targets, .. } if targets.len() == 3 && !targets.contains(&ghoul)))
-        .unwrap();
-    play(&mut g, a);
+    let a = activations(&g, THE_CHEERFUL_COFFIN);
+    play(&mut g, a[0].clone());
     pass_all(&mut g);
+    let elves: Vec<_> = g
+        .hand(P0)
+        .iter()
+        .copied()
+        .filter(|&c| g.stats(c).id == MYSTICAL_ELF)
+        .collect();
+    for (i, &elf) in elves.iter().enumerate() {
+        if i > 0 {
+            answer(&mut g, 0); // Discard another
+        }
+        play(&mut g, Action::Choose { card: elf });
+    }
     assert_eq!(
         g.graveyard(P0)
             .iter()

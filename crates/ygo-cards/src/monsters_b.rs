@@ -232,11 +232,14 @@ pub fn register(r: &mut Registry) {
                 on_field_face_up(g, s) && !g.monsters_controlled(s.controller).is_empty()
             },
             cost_choices: Some(|g, s| singles(g.monsters_controlled(s.controller))),
-            cost: Some(|g, ctx| g.tribute(ctx.cost[0])),
+            // "half the Tributed monster's ATK on the field": read as it is
+            // Tributed and kept for the resolution.
+            cost: Some(|g, ctx| {
+                ctx.value = g.atk(ctx.cost[0]);
+                g.tribute(ctx.cost[0]);
+            }),
             ..Effect::ignition(|g, ctx| {
-                // The tributed monster's printed ATK stands in for its ATK on
-                // the field, which the Graveyard no longer shows.
-                let half = (g.stats(ctx.cost[0]).atk / 2).max(0) as u32;
+                let half = (ctx.value / 2).max(0) as u32;
                 g.take_damage(ctx.controller.opponent(), half);
                 Flow::Done
             })
@@ -511,9 +514,10 @@ pub fn register(r: &mut Registry) {
                     Flow::Done
                 })
             },
+            // The gains reset as soon as Castle of Dark Illusions is gone.
             Effect {
-                timing: |g, s, w| {
-                    own_standby(g, s, w) && !castle_on_field(g) && g.counter(s.card) > 0
+                timing: |g, s, _| {
+                    on_field_face_up(g, s) && !castle_on_field(g) && g.counter(s.card) > 0
                 },
                 ..Effect::trigger(true, |g, ctx| {
                     g.set_counter(ctx.source, 0);
@@ -670,10 +674,13 @@ pub fn register(r: &mut Registry) {
     r.register(
         THE_UNHAPPY_MAIDEN,
         single(Effect {
-            timing: |_, s, w| {
+            // "sent to the Graveyard as a result of battle": destroyed by
+            // battle and in the Graveyard (not banished instead).
+            timing: |g, s, w| {
                 w.events
                     .iter()
                     .any(|e| matches!(e, Event::DestroyedByBattle { card } if *card == s.card))
+                    && g.instance(s.card).location == Location::Graveyard
             },
             ..Effect::trigger(true, |g, _ctx| {
                 g.end_battle_phase();

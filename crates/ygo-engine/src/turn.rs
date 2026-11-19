@@ -304,6 +304,8 @@ impl Game {
         for p in self.players.iter_mut() {
             p.summons_used = 0;
             p.monsters_entered = 0;
+            p.names_used.clear();
+            p.names_locked.clear();
         }
         for card in self.instances.iter_mut() {
             card.position_changed_this_turn = false;

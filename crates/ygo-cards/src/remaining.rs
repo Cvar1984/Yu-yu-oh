@@ -33,6 +33,7 @@ pub const HOUSE_OF_ADHESIVE_TAPE: CardId = CardId(15083728);
 pub const EATGABOON: CardId = CardId(42578427);
 const HEAVY_STORM: CardId = CardId(19613556);
 const FINAL_DESTINY: CardId = CardId(18591904);
+use crate::flips::{DRAGON_CAPTURE_JAR, DRAGON_PIPER};
 
 fn script(effects: Vec<Effect>) -> CardScript {
     CardScript {
@@ -99,13 +100,12 @@ fn equip(
     equip_with(targets, equip_resolve, continuous, rest)
 }
 
-/// Snatch Steal: equip and take control. The stolen monster's id is kept
-/// in the counter (plus one) so control can go back when it leaves.
+/// Snatch Steal: equip and take control.
 fn snatch_resolve(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
     let target = ctx.targets[0];
-    if g.equip(ctx.source, target) && g.change_control(target, ctx.controller) {
-        g.set_counter(ctx.source, target.0.wrapping_add(1));
-    } else if g.on_field(ctx.source) {
+    if !(g.equip(ctx.source, target) && g.change_control(target, ctx.controller))
+        && g.on_field(ctx.source)
+    {
         g.destroy(ctx.source, ctx.source);
     }
     Flow::Done
@@ -191,7 +191,14 @@ fn fake_trap_needed(g: &Game, s: Source) -> bool {
             && g.on_field(*c)
             && g.stats(*c).kind == CardKind::Trap
     };
-    let mass = matches!(g.stats(link.card).id, HEAVY_STORM | FINAL_DESTINY);
+    // Effects that destroy Traps without targeting: Heavy Storm and Final
+    // Destiny, and Dragon Piper when a face-up Dragon Capture Jar is ours.
+    let jar_at_risk = g
+        .spells_traps_controlled(s.controller)
+        .into_iter()
+        .any(|c| g.stats(c).id == DRAGON_CAPTURE_JAR && g.instance(c).position.is_face_up());
+    let mass = matches!(g.stats(link.card).id, HEAVY_STORM | FINAL_DESTINY)
+        || (g.stats(link.card).id == DRAGON_PIPER && jar_at_risk);
     let traps_at_risk = g
         .spells_traps_controlled(s.controller)
         .into_iter()
@@ -451,9 +458,10 @@ pub fn register(r: &mut Registry) {
             Vec::new(),
         ),
     );
-    r.register(
-        SNATCH_STEAL,
-        equip_with(
+    // Control returns however Snatch Steal leaves the field (the engine
+    // does it for Tag::ControlWhileEquipped).
+    r.register(SNATCH_STEAL, {
+        let mut script = equip_with(
             |g, s| {
                 face_up_monsters(g, |g, m| {
                     g.instance(m).controller != s.controller && g.spell_targetable(m)
@@ -461,47 +469,61 @@ pub fn register(r: &mut Registry) {
             },
             snatch_resolve,
             Effect::continuous(),
-            vec![
+            vec![Effect {
+                timing: |g, s, w| active(g, s) && standby_of(g, s.controller.opponent(), w),
+                ..Effect::trigger(true, |g, ctx| {
+                    g.gain_lp(ctx.controller.opponent(), 1000);
+                    Flow::Done
+                })
+            }],
+        );
+        script.tags = vec![Tag::ControlWhileEquipped];
+        script
+    });
+    // Activate by targeting 1 monster your opponent controls; it cannot
+    // attack or change its battle position. When that monster is
+    // destroyed, destroy this card. Its monster is kept in the counter
+    // (plus one), since the card stays if the monster leaves another way.
+    r.register(
+        SPELLBINDING_CIRCLE,
+        CardScript {
+            tags: vec![Tag::StaysWithoutTarget],
+            effects: vec![
                 Effect {
-                    timing: |g, s, w| active(g, s) && standby_of(g, s.controller.opponent(), w),
-                    ..Effect::trigger(true, |g, ctx| {
-                        g.gain_lp(ctx.controller.opponent(), 1000);
-                        Flow::Done
-                    })
-                },
-                Effect {
-                    timing: |g, s, w| sent_from_spell_trap_zone(s, w) && g.counter(s.card) > 0,
-                    ..Effect::trigger(true, |g, ctx| {
-                        let stolen = InstanceId(g.counter(ctx.source) - 1);
-                        let owner = g.instance(stolen).owner;
-                        if g.on_field(stolen) && g.instance(stolen).controller != owner {
-                            g.change_control(stolen, owner);
+                    targets: Some(|g, s| singles(g.monsters_controlled(s.controller.opponent()))),
+                    timing: |g, s, _| !g.monsters_controlled(s.controller.opponent()).is_empty(),
+                    ..Effect::activate(2, |g, ctx| {
+                        if g.attach(ctx.source, ctx.targets[0]) {
+                            g.set_counter(ctx.source, ctx.targets[0].0.wrapping_add(1));
+                        } else {
+                            g.destroy(ctx.source, ctx.source);
                         }
                         Flow::Done
                     })
                 },
-            ],
-        ),
-    );
-    r.register(
-        SPELLBINDING_CIRCLE,
-        script(vec![
-            Effect {
-                targets: Some(|g, s| singles(g.monsters_controlled(s.controller.opponent()))),
-                timing: |g, s, _| !g.monsters_controlled(s.controller.opponent()).is_empty(),
-                ..Effect::activate(2, |g, ctx| {
-                    if !g.attach(ctx.source, ctx.targets[0]) {
+                Effect {
+                    restrict: Some(|g, s, t| g.equip_target(s.card) == Some(t)),
+                    lock_position: Some(|g, s, t| g.equip_target(s.card) == Some(t)),
+                    ..Effect::continuous()
+                },
+                Effect {
+                    timing: |g, s, w| {
+                        let n = g.counter(s.card);
+                        active(g, s)
+                            && n > 0
+                            && w.events.iter().any(|e| {
+                                matches!(e,
+                                Event::DestroyedByEffect { card, .. } | Event::DestroyedByBattle { card }
+                                    if card.0.wrapping_add(1) == n)
+                            })
+                    },
+                    ..Effect::trigger(true, |g, ctx| {
                         g.destroy(ctx.source, ctx.source);
-                    }
-                    Flow::Done
-                })
-            },
-            Effect {
-                restrict: Some(|g, s, t| g.equip_target(s.card) == Some(t)),
-                lock_position: Some(|g, s, t| g.equip_target(s.card) == Some(t)),
-                ..Effect::continuous()
-            },
-        ]),
+                        Flow::Done
+                    })
+                },
+            ],
+        },
     );
     r.register(
         ROBBIN_GOBLIN,

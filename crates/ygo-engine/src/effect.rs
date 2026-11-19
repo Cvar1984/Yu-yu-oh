@@ -36,6 +36,12 @@ pub enum Tag {
     /// While face-up on the field, playing a card from the hand costs its
     /// player 500 LP (Chain Energy).
     HandPlayToll,
+    /// An Equip that takes control: control returns to the owner however the
+    /// Equip leaves the field (Snatch Steal).
+    ControlWhileEquipped,
+    /// Attached like an Equip, but stays on the field when its monster leaves
+    /// (Spellbinding Circle, destroyed only with its monster's destruction).
+    StaysWithoutTarget,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -209,6 +215,9 @@ pub struct EffectCtx {
     pub cost: Vec<InstanceId>,
     /// The event that triggered the effect, if any.
     pub event: Option<Event>,
+    /// A number the cost leaves for the resolution (Catapult Turtle: the
+    /// Tributed monster's ATK on the field).
+    pub value: i32,
 }
 
 /// What a resolution step asks the engine to do next.

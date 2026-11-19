@@ -2,6 +2,8 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+use ygo_data::CardId;
+
 use crate::CardIndex;
 
 /// Player 0 or 1.
@@ -101,6 +103,9 @@ pub enum LingeringKind {
         atk: i32,
         def: i32,
     },
+    /// The source remembers `card` (Castle of Dark Illusions' Zombies);
+    /// no effect of its own.
+    Marked { card: InstanceId },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.
@@ -212,6 +217,12 @@ pub struct PlayerState {
     pub summons_used: u8,
     /// Monsters that entered the field this turn, for `max_monsters_entering_per_turn`.
     pub monsters_entered: u8,
+    /// Card names whose "only once per turn" effect this player used this
+    /// turn (Sangan, Witch of the Black Forest).
+    pub names_used: Vec<CardId>,
+    /// Card names this player may not activate, as cards or effects, for the
+    /// rest of the turn (the card Sangan or Witch added).
+    pub names_locked: Vec<CardId>,
 }
 
 impl PlayerState {
@@ -228,6 +239,8 @@ impl PlayerState {
             field_zone: None,
             summons_used: 0,
             monsters_entered: 0,
+            names_used: Vec::new(),
+            names_locked: Vec::new(),
         }
     }
 

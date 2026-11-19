@@ -115,6 +115,7 @@ impl Game {
                 targets: Vec::new(),
                 cost,
                 event: None,
+                value: 0,
             };
             self.resolving = Some(player);
             pay(self, &mut ctx);

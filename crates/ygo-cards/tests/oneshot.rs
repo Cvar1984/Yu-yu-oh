@@ -7,7 +7,7 @@ use ygo_cards::oneshot::*;
 use ygo_cards::traps::MIRROR_FORCE;
 use ygo_data::CardId;
 use ygo_engine::testing::{
-    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, in_hand, next_turn, pass_all, play,
+    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, answer, in_hand, next_turn, pass_all, play,
     shared_from, stacked, summon, with_rules,
 };
 use ygo_engine::{Action, DecisionKind, Game, Location, Phase, PlayerId, Position, Shared};
@@ -438,17 +438,29 @@ fn the_cheerful_coffin_discards_up_to_three_monsters() {
     )
     .unwrap();
     let offered = activations(&g, THE_CHEERFUL_COFFIN);
-    assert_eq!(
-        offered.len(),
-        3,
-        "one Elf, the other Elf, or both; Spells are not monsters"
-    );
-    let both = offered
+    assert_eq!(offered.len(), 1, "the discards are picked on resolution");
+    play(&mut g, offered[0].clone());
+    pass_all(&mut g);
+    let elves: Vec<_> = g
+        .hand(P0)
+        .iter()
+        .copied()
+        .filter(|&c| g.stats(c).id == MYSTICAL_ELF)
+        .collect();
+    let picks: Vec<_> = g
+        .legal_actions()
         .into_iter()
-        .find(|a| matches!(a, Action::Activate { targets, .. } if targets.len() == 2))
-        .unwrap();
-    play(&mut g, both);
-    assert_eq!(g.graveyard(P0).len(), 3);
+        .filter_map(|a| match a {
+            Action::Choose { card } => Some(card),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(picks, elves, "only the Monster Cards; Sparks is a Spell");
+    play(&mut g, Action::Choose { card: elves[0] });
+    answer(&mut g, 0); // Discard another
+    play(&mut g, Action::Choose { card: elves[1] });
+    assert_eq!(g.graveyard(P0).len(), 3, "both Elves and the Coffin");
+    assert_eq!(g.hand(P0).len(), 2, "the two Sparks stay");
 }
 
 #[test]

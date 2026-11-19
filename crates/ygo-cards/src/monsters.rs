@@ -55,9 +55,13 @@ fn search_deck(
     Flow::Choose { options, then }
 }
 
-fn add_and_shuffle(g: &mut Game, ctx: &mut ygo_engine::EffectCtx, picked: InstanceId) -> Flow {
+/// Adds the pick to the hand, shuffles, and locks the pick's name for the
+/// rest of the turn.
+fn add_shuffle_and_lock(g: &mut Game, ctx: &mut ygo_engine::EffectCtx, picked: InstanceId) -> Flow {
+    let name = g.stats(picked).id;
     g.add_to_hand(picked);
     g.shuffle_deck(ctx.controller);
+    g.lock_name_this_turn(ctx.controller, name);
     Flow::Done
 }
 
@@ -82,16 +86,24 @@ pub fn register(r: &mut Registry) {
     // monster with 1500 or less ATK from your Deck to your hand." The
     // 2002 printing says "When"; as a mandatory effect it never misses
     // its timing either way, so both versions play the same.
+    // "If this card is sent from the field to the GY: Add 1 monster with
+    // 1500 or less ATK from your Deck to your hand, but you cannot activate
+    // cards, or the effects of cards, with that name for the rest of this
+    // turn. You can only use this effect of "Sangan" once per turn."
+    // Witch of the Black Forest is the same with DEF.
     r.register(
         SANGAN,
         single(Effect {
-            timing: sent_from_field_this_window,
+            timing: |g, s, w| {
+                sent_from_field_this_window(g, s, w) && !g.name_used(s.controller, SANGAN)
+            },
+            cost: Some(|g, ctx| g.use_name_once(ctx.controller, SANGAN)),
             ..Effect::trigger(true, |g, ctx| {
                 search_deck(
                     g,
                     ctx.controller,
                     |g, c| g.stats(c).atk <= 1500,
-                    add_and_shuffle,
+                    add_shuffle_and_lock,
                 )
             })
         }),
@@ -99,13 +111,17 @@ pub fn register(r: &mut Registry) {
     r.register(
         WITCH_OF_THE_BLACK_FOREST,
         single(Effect {
-            timing: sent_from_field_this_window,
+            timing: |g, s, w| {
+                sent_from_field_this_window(g, s, w)
+                    && !g.name_used(s.controller, WITCH_OF_THE_BLACK_FOREST)
+            },
+            cost: Some(|g, ctx| g.use_name_once(ctx.controller, WITCH_OF_THE_BLACK_FOREST)),
             ..Effect::trigger(true, |g, ctx| {
                 search_deck(
                     g,
                     ctx.controller,
                     |g, c| g.stats(c).def <= 1500,
-                    add_and_shuffle,
+                    add_shuffle_and_lock,
                 )
             })
         }),

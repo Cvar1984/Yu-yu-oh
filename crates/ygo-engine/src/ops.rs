@@ -208,6 +208,38 @@ impl Game {
         self.emit(Event::PositionChanged { card, position });
     }
 
+    /// Uses `player`'s "only once per turn" effect of the card named `id`.
+    pub fn use_name_once(&mut self, player: PlayerId, id: ygo_data::CardId) {
+        self.players[player.index()].names_used.push(id);
+    }
+
+    /// Whether `player` already used the once-per-turn effect named `id`.
+    pub fn name_used(&self, player: PlayerId, id: ygo_data::CardId) -> bool {
+        self.players[player.index()].names_used.contains(&id)
+    }
+
+    /// `player` may not activate cards or effects named `id` this turn.
+    pub fn lock_name_this_turn(&mut self, player: PlayerId, id: ygo_data::CardId) {
+        self.players[player.index()].names_locked.push(id);
+    }
+
+    /// Cards `source` has marked (`LingeringKind::Marked`).
+    pub fn marked_by(&self, source: InstanceId) -> Vec<InstanceId> {
+        self.lingering
+            .iter()
+            .filter_map(|l| match l.kind {
+                LingeringKind::Marked { card } if l.source == source => Some(card),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Forgets every mark of `source`.
+    pub fn clear_marks(&mut self, source: InstanceId) {
+        self.lingering
+            .retain(|l| !(l.source == source && matches!(l.kind, LingeringKind::Marked { .. })));
+    }
+
     /// Whether `player` can pay an LP cost of `amount`: paying all of their
     /// remaining LP is allowed (and then they lose).
     pub fn can_pay_lp(&self, player: PlayerId, amount: u32) -> bool {
@@ -581,7 +613,8 @@ impl Game {
                 }
                 LingeringKind::Stats { .. }
                 | LingeringKind::CannotAttack { .. }
-                | LingeringKind::DamageCalcStats { .. } => {}
+                | LingeringKind::DamageCalcStats { .. }
+                | LingeringKind::Marked { .. } => {}
             }
         }
     }
@@ -1069,6 +1102,24 @@ impl Game {
     /// flipped) and reset when it next enters the field. Lingering effects
     /// it created stay, since a resolved Spell's effect outlives the card.
     fn on_leave_field(&mut self, card: InstanceId) {
+        // An Equip that took control gives it back as it leaves.
+        if let Some(target) = self.instances[card.index()].equipped_to
+            && self
+                .script(card)
+                .is_some_and(|s| s.has(Tag::ControlWhileEquipped))
+        {
+            // Only if the monster is really still on the field: when the
+            // monster itself is leaving, its Equips are cleaned up after it
+            // left its zone.
+            let inst = &self.instances[target.index()];
+            let (owner, controller) = (inst.owner, inst.controller);
+            let still_there = self.players[controller.index()]
+                .monster_zones
+                .contains(&Some(target));
+            if controller != owner && still_there {
+                self.change_control(target, owner);
+            }
+        }
         self.send_equips_to_graveyard(card);
     }
 
@@ -1081,7 +1132,14 @@ impl Game {
             .map(|(i, _)| InstanceId(i as u8))
             .collect();
         for e in equips {
-            self.send_to_graveyard(e);
+            if self
+                .script(e)
+                .is_some_and(|s| s.has(Tag::StaysWithoutTarget))
+            {
+                self.instances[e.index()].equipped_to = None;
+            } else {
+                self.send_to_graveyard(e);
+            }
         }
         self.instances[card.index()].equipped_to = None;
     }

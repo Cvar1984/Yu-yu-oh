@@ -4,8 +4,9 @@ use ygo_data::{CardId, CardKind};
 
 use crate::positions;
 use ygo_engine::{
-    CardScript, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Location, Phase,
-    PlayerId, Position, Registry, Source, StatMod, TargetSets, Window, WindowKind,
+    CardScript, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Lingering,
+    LingeringKind, Location, Phase, PlayerId, Position, Registry, Source, StatMod, TargetSets,
+    Window, WindowKind,
 };
 
 pub const REAPER_OF_THE_CARDS: CardId = CardId(33066139);
@@ -303,14 +304,27 @@ pub fn register(r: &mut Registry) {
     r.register(
         CASTLE_OF_DARK_ILLUSIONS,
         script(vec![
+            // FLIP: the Zombies on the field now gain 200 ATK/DEF, and 200
+            // more in each of the next 4 Standby Phases; "those" Zombies only,
+            // so they are marked at the flip.
             Effect::flip(|g, ctx| {
+                g.clear_marks(ctx.source);
+                for z in all_monsters(g) {
+                    if g.stats(z).race == "Zombie" {
+                        g.add_lingering(Lingering {
+                            source: ctx.source,
+                            kind: LingeringKind::Marked { card: z },
+                            expires_turn: u32::MAX,
+                        });
+                    }
+                }
                 g.set_counter(ctx.source, 1);
                 Flow::Done
             }),
             Effect {
                 modify: Some(|g, s, t| {
                     let n = i32::from(g.counter(s.card));
-                    if n > 0 && g.stats(t).race == "Zombie" {
+                    if n > 0 && g.marked_by(s.card).contains(&t) {
                         StatMod {
                             atk: 200 * n,
                             def: 200 * n,

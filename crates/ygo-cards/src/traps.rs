@@ -33,7 +33,7 @@ fn trap_hole_target(g: &Game, s: Source, w: &Window) -> Option<InstanceId> {
             position: Position::FaceUpAttack,
         }
         | Event::FlipSummoned { player, card }
-            if *player != s.controller && g.stats(*card).atk >= 1000 && g.on_field(*card) =>
+            if *player != s.controller && g.on_field(*card) && g.atk(*card) >= 1000 =>
         {
             Some(*card)
         }
@@ -171,18 +171,11 @@ pub fn register(r: &mut Registry) {
     );
 }
 
-/// Any Spell or Trap on the field other than itself.
+/// Any Spell or Trap on the field other than itself, Field Spells included.
 fn mst_targets(g: &Game, s: Source) -> TargetSets {
     [s.controller, s.controller.opponent()]
         .into_iter()
-        .flat_map(|p| {
-            g.player(p)
-                .spell_trap_zones
-                .iter()
-                .flatten()
-                .copied()
-                .collect::<Vec<_>>()
-        })
+        .flat_map(|p| g.spells_traps_controlled(p))
         .filter(|&c| c != s.card)
         .map(|c| vec![c])
         .collect()

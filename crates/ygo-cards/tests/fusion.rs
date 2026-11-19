@@ -8,7 +8,7 @@ use ygo_engine::testing::{
     MYSTICAL_ELF, SUMMONED_SKULL, answer, bundle, in_hand, next_turn, pass_all, play, shared_from,
     stacked, summon, with_rules,
 };
-use ygo_engine::{Action, Game, GameSetup, Location, PlayerId, Shared};
+use ygo_engine::{Action, Game, GameSetup, InstanceId, Location, PlayerId, Shared};
 
 const P0: PlayerId = PlayerId(0);
 const GAIA: CardId = CardId(6368038);
@@ -35,6 +35,30 @@ fn activations(g: &Game, id: CardId) -> Vec<Action> {
         .into_iter()
         .filter(|a| matches!(a, Action::Activate { card, .. } if g.stats(*card).id == id))
         .collect()
+}
+
+/// Activates Polymerization, then makes its choices on resolution: the
+/// Fusion Monster, its materials in order, and Attack Position.
+fn fuse(g: &mut Game, fusion: InstanceId, materials: &[InstanceId]) {
+    let a = activations(g, POLYMERIZATION);
+    play(g, a[0].clone());
+    pass_all(g);
+    play(g, Action::Choose { card: fusion });
+    for &m in materials {
+        play(g, Action::Choose { card: m });
+    }
+    answer(g, 0);
+}
+
+/// Activates Polymerization and takes the first option at every choice.
+fn fuse_first(g: &mut Game) {
+    let a = activations(g, POLYMERIZATION);
+    play(g, a[0].clone());
+    pass_all(g);
+    while let Some(Action::Choose { card }) = g.legal_actions().first().cloned() {
+        play(g, Action::Choose { card });
+    }
+    answer(g, 0);
 }
 
 #[test]
@@ -95,14 +119,11 @@ fn polymerization_fuses_a_hand_card_and_a_field_card_from_the_extra_deck() {
         },
     );
     let gaia = in_hand(&g, P0, GAIA);
-    let offered = activations(&g, POLYMERIZATION);
-    assert_eq!(offered.len(), 1);
-    assert!(
-        matches!(&offered[0], Action::Activate { targets, .. } if targets[1..] == [gaia, curse])
-    );
-    play(&mut g, offered[0].clone());
-    pass_all(&mut g);
-    answer(&mut g, 0);
+    assert_eq!(activations(&g, POLYMERIZATION).len(), 1);
+    // On resolution: Gaia the Dragon Champion, then Gaia from the hand and
+    // Curse of Dragon from the field.
+    let champion_card = g.player(P0).extra[0];
+    fuse(&mut g, champion_card, &[gaia, curse]);
     let champion = g
         .player(P0)
         .monster_zones
@@ -129,11 +150,8 @@ fn two_copies_in_the_hand_fuse_and_a_face_down_material_counts() {
         ),
     )
     .unwrap();
-    let offered = activations(&g, POLYMERIZATION);
-    assert_eq!(offered.len(), 2, "the two Thunder Dragons in either order");
-    play(&mut g, offered[0].clone());
-    pass_all(&mut g);
-    answer(&mut g, 0);
+    assert_eq!(activations(&g, POLYMERIZATION).len(), 1);
+    fuse_first(&mut g);
     let twin = g.player(P0).monsters().next().unwrap();
     assert_eq!(g.stats(twin).id, TWIN_HEADED_THUNDER_DRAGON);
     assert_eq!(g.player(P0).monsters().count(), 1);
@@ -159,11 +177,8 @@ fn two_copies_in_the_hand_fuse_and_a_face_down_material_counts() {
             face_down: true,
         },
     );
-    let offered = activations(&g, POLYMERIZATION);
-    assert_eq!(offered.len(), 1);
-    play(&mut g, offered[0].clone());
-    pass_all(&mut g);
-    answer(&mut g, 0);
+    assert_eq!(activations(&g, POLYMERIZATION).len(), 1);
+    fuse_first(&mut g);
     let k = g.player(P0).monsters().next().unwrap();
     assert_eq!(g.stats(k).id, KARBONALA_WARRIOR);
     assert_eq!(g.instance(m1).location, Location::Graveyard);
@@ -215,11 +230,11 @@ fn every_fusion_monster_with_materials_in_the_pool_can_be_fusion_summoned() {
         }
         let top: Vec<CardId> = materials.iter().copied().chain([POLYMERIZATION]).collect();
         let mut g = Game::new(shared(), &setup(&top, &[fusion])).unwrap();
-        let offered = activations(&g, POLYMERIZATION);
-        assert!(!offered.is_empty(), "{fusion}: Polymerization not offered");
-        play(&mut g, offered[0].clone());
-        pass_all(&mut g);
-        answer(&mut g, 0);
+        assert!(
+            !activations(&g, POLYMERIZATION).is_empty(),
+            "{fusion}: Polymerization not offered"
+        );
+        fuse_first(&mut g);
         assert!(
             g.player(P0).monsters().any(|m| g.stats(m).id == fusion),
             "{fusion} not on the field"
