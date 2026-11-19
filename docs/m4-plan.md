@@ -174,3 +174,20 @@ first guess, and tuning them is now a config change measured with
 heuristics read card values, not card effects, so a card whose worth
 depends on timing (Dark Hole with your own monsters out) is still
 played naively; search in M5 is the planned answer.
+
+### After the modern-rules work (2026-11-19)
+
+Rerun after the three batches in `docs/card-audit.md`, same commands
+(`--seed 1`, 2,000 games, same deck both sides, against the random bot).
+The Exodia stall deck was removed by the owner on 2026-11-18.
+
+| Deck | beatdown | control | stall | burn | exodia | patient |
+| --- | --- | --- | --- | --- | --- | --- |
+| Owner's main 45 | 96.7 ±0.8 | 95.9 ±0.9 | 96.7 ±0.8 | 96.5 ±0.8 | 96.0 ±0.9 | 96.5 ±0.8 |
+| Umiiruka WATER 40 | 95.0 ±1.0 | 94.3 ±1.0 | 92.0 ±1.2 | 94.8 ±1.0 | 90.5 ±1.3 | 91.7 ±1.2 |
+| Defense-tuned 45 | 97.9 ±0.6 | 98.9 ±0.5 | 99.1 ±0.4 | 98.8 ±0.5 | 99.2 ±0.4 | 98.7 ±0.5 |
+
+Every style still wins over 90% against random play; the numbers moved
+within about two intervals of the M4 ones. Beatdown against itself on
+the owner's deck: 48.1% ±2.2. Speed: 1,215 to 1,812 random games/s
+(265,000 to 320,000 actions/s), Beatdown mirror 2,860 games/s, one core.
