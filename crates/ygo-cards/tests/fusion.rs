@@ -5,8 +5,8 @@ use std::sync::Arc;
 use ygo_cards::fusion::*;
 use ygo_data::CardId;
 use ygo_engine::testing::{
-    MYSTICAL_ELF, SUMMONED_SKULL, bundle, in_hand, next_turn, pass_all, play, shared_from, stacked,
-    summon, with_rules,
+    MYSTICAL_ELF, SUMMONED_SKULL, answer, bundle, in_hand, next_turn, pass_all, play, shared_from,
+    stacked, summon, with_rules,
 };
 use ygo_engine::{Action, Game, GameSetup, Location, PlayerId, Shared};
 
@@ -102,6 +102,7 @@ fn polymerization_fuses_a_hand_card_and_a_field_card_from_the_extra_deck() {
     );
     play(&mut g, offered[0].clone());
     pass_all(&mut g);
+    answer(&mut g, 0);
     let champion = g
         .player(P0)
         .monster_zones
@@ -132,6 +133,7 @@ fn two_copies_in_the_hand_fuse_and_a_face_down_material_counts() {
     assert_eq!(offered.len(), 2, "the two Thunder Dragons in either order");
     play(&mut g, offered[0].clone());
     pass_all(&mut g);
+    answer(&mut g, 0);
     let twin = g.player(P0).monsters().next().unwrap();
     assert_eq!(g.stats(twin).id, TWIN_HEADED_THUNDER_DRAGON);
     assert_eq!(g.player(P0).monsters().count(), 1);
@@ -161,6 +163,7 @@ fn two_copies_in_the_hand_fuse_and_a_face_down_material_counts() {
     assert_eq!(offered.len(), 1);
     play(&mut g, offered[0].clone());
     pass_all(&mut g);
+    answer(&mut g, 0);
     let k = g.player(P0).monsters().next().unwrap();
     assert_eq!(g.stats(k).id, KARBONALA_WARRIOR);
     assert_eq!(g.instance(m1).location, Location::Graveyard);
@@ -216,6 +219,7 @@ fn every_fusion_monster_with_materials_in_the_pool_can_be_fusion_summoned() {
         assert!(!offered.is_empty(), "{fusion}: Polymerization not offered");
         play(&mut g, offered[0].clone());
         pass_all(&mut g);
+        answer(&mut g, 0);
         assert!(
             g.player(P0).monsters().any(|m| g.stats(m).id == fusion),
             "{fusion} not on the field"

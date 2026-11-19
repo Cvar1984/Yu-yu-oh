@@ -1,9 +1,10 @@
 //! The four Ritual Spells, their Ritual Monsters, and Relinquished.
 
 use ygo_data::CardId;
+
+use crate::positions;
 use ygo_engine::{
-    CardScript, Effect, Flow, Game, InstanceId, Location, Position, Registry, Source, StatMod,
-    TargetSets,
+    CardScript, Effect, Flow, Game, InstanceId, Location, Registry, Source, StatMod, TargetSets,
 };
 
 pub const BLACK_ILLUSION_RITUAL: CardId = CardId(41426869);
@@ -119,15 +120,23 @@ pub fn register(r: &mut Registry) {
                             && tributes.iter().all(|&t| {
                                 g.instance(t).location == Location::Hand || g.on_field(t)
                             });
-                        if still_there {
-                            g.ritual_summon(
-                                ctx.controller,
-                                monster,
-                                &tributes,
-                                Position::FaceUpAttack,
-                            );
+                        if !still_there {
+                            return Flow::Done;
                         }
-                        Flow::Done
+                        Flow::Ask {
+                            options: positions::FACE_UP.to_vec(),
+                            then: |g, ctx, option| {
+                                let (monster, tributes) =
+                                    (ctx.targets[0], ctx.targets[1..].to_vec());
+                                g.ritual_summon(
+                                    ctx.controller,
+                                    monster,
+                                    &tributes,
+                                    positions::face_up(option),
+                                );
+                                Flow::Done
+                            },
+                        }
                     })
                 }],
             },

@@ -4,8 +4,8 @@ use std::sync::Arc;
 use ygo_cards::spells::*;
 use ygo_data::CardId;
 use ygo_engine::testing::{
-    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, SUMMONED_SKULL, in_hand, next_turn, play,
-    shared_from, stacked, summon, with_rules,
+    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, SUMMONED_SKULL, answer, in_hand, next_turn,
+    play, shared_from, stacked, summon, with_rules,
 };
 use ygo_engine::{Action, Event, Game, Location, Phase, PlayerId, Position, Shared};
 
@@ -318,13 +318,19 @@ fn monster_reborn_special_summons_from_either_graveyard() {
         "two copies x one target (Celtic Guardian in the opponent's Graveyard)"
     );
     play(&mut g, offered[0].clone());
+    // No position in the text: the player picks; Defense here.
+    assert_eq!(
+        g.pending_decision().map(|d| (d.player, d.kind)),
+        Some((P0, ygo_engine::DecisionKind::Choose))
+    );
+    answer(&mut g, 1);
     assert_eq!(
         g.instance(celtic).location,
         Location::MonsterZone(1),
         "zone 0 holds the Fish"
     );
     assert_eq!(g.instance(celtic).controller, P0);
-    assert_eq!(g.instance(celtic).position, Position::FaceUpAttack);
+    assert_eq!(g.instance(celtic).position, Position::FaceUpDefense);
     assert_eq!(g.player(P0).monsters_entered, 1);
     assert_eq!(
         g.player(P0).summons_used,
@@ -362,6 +368,7 @@ fn flip_special_summon_counts_toward_limit() {
     next_turn(&mut g);
     next_turn(&mut g);
     activate(&mut g, MONSTER_REBORN);
+    answer(&mut g, 0);
     assert!(g.on_field(fish));
     assert_eq!(g.player(P0).summons_used, 1);
     assert!(ygo_engine::testing::summons_offered(&g).is_empty());

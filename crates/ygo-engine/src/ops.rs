@@ -175,13 +175,30 @@ impl Game {
         if !matches!(inst.location, Location::MonsterZone(_)) || inst.position == position {
             return;
         }
+        // A change by an effect does not use the monster's own once-per-turn
+        // position change; cards that forbid changes say so explicitly.
         let was_face_down = inst.position == Position::FaceDownDefense;
         inst.position = position;
-        inst.position_changed_this_turn = true;
         if was_face_down && position.is_face_up() {
             self.emit(Event::Flipped { card });
         }
+        if position == Position::FaceDownDefense {
+            // Equip Cards are destroyed when their monster turns face-down.
+            self.send_equips_to_graveyard(card);
+        }
         self.emit(Event::PositionChanged { card, position });
+    }
+
+    /// Whether `player` can pay an LP cost of `amount`: paying all of their
+    /// remaining LP is allowed (and then they lose).
+    pub fn can_pay_lp(&self, player: PlayerId, amount: u32) -> bool {
+        self.players[player.index()].lp >= amount
+    }
+
+    /// Its controller may not change `card`'s position by hand for the rest
+    /// of the turn (Curse of Fiend, Dark Zebra).
+    pub fn forbid_position_change_this_turn(&mut self, card: InstanceId) {
+        self.instances[card.index()].position_changed_this_turn = true;
     }
 
     /// Tributes a monster for a card's cost or effect.
@@ -303,7 +320,7 @@ impl Game {
     /// Moves a card from anywhere (Deck, Graveyard, field) to its owner's hand.
     pub fn add_to_hand(&mut self, card: InstanceId) {
         let from = self.instances[card.index()].location;
-        if from == Location::Hand {
+        if from == Location::Hand || self.send_to_extra_deck_instead(card) {
             return;
         }
         self.remove_from_current_place(card);
@@ -852,6 +869,9 @@ impl Game {
 
     /// Places a card from anywhere on top of its owner's Deck.
     pub fn place_on_top_of_deck(&mut self, card: InstanceId) {
+        if self.send_to_extra_deck_instead(card) {
+            return;
+        }
         self.remove_from_current_place(card);
         let owner = self.instances[card.index()].owner;
         let inst = &mut self.instances[card.index()];
@@ -873,7 +893,7 @@ impl Game {
     /// the caller shuffles if the card says so.
     pub fn return_to_deck(&mut self, card: InstanceId) {
         let from = self.instances[card.index()].location;
-        if from == Location::Deck {
+        if from == Location::Deck || self.send_to_extra_deck_instead(card) {
             return;
         }
         self.remove_from_current_place(card);
@@ -962,6 +982,10 @@ impl Game {
     /// flipped) and reset when it next enters the field. Lingering effects
     /// it created stay, since a resolved Spell's effect outlives the card.
     fn on_leave_field(&mut self, card: InstanceId) {
+        self.send_equips_to_graveyard(card);
+    }
+
+    fn send_equips_to_graveyard(&mut self, card: InstanceId) {
         let equips: Vec<InstanceId> = self
             .instances
             .iter()
@@ -973,6 +997,32 @@ impl Game {
             self.send_to_graveyard(e);
         }
         self.instances[card.index()].equipped_to = None;
+    }
+
+    /// An Extra Deck monster that would go to the hand or the Deck goes
+    /// back to its owner's Extra Deck instead. Returns whether it did.
+    fn send_to_extra_deck_instead(&mut self, card: InstanceId) -> bool {
+        let from = self.instances[card.index()].location;
+        if !self.stats(card).is_extra_deck() || from == Location::Extra {
+            return false;
+        }
+        self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
+        let owner = self.instances[card.index()].owner;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Extra;
+        inst.position = Position::FaceDown;
+        inst.controller = owner;
+        inst.turn_set = None;
+        inst.turn_entered_field = None;
+        self.players[owner.index()].extra.push(card);
+        self.emit(Event::ReturnedToExtraDeck {
+            player: owner,
+            card,
+        });
+        true
     }
 
     // ----- queries scripts use -----

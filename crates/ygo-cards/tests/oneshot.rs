@@ -157,7 +157,10 @@ fn stop_defense_and_block_attack_change_the_opponents_positions() {
         .unwrap();
     play(&mut g, on_celtic);
     assert_eq!(g.instance(celtic).position, Position::FaceUpDefense);
-    assert!(g.instance(celtic).position_changed_this_turn);
+    assert!(
+        !g.instance(celtic).position_changed_this_turn,
+        "a change by an effect leaves the monster's own change unused"
+    );
 }
 
 #[test]

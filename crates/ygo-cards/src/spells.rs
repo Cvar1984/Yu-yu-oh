@@ -1,9 +1,11 @@
 //! Spell Card scripts.
 
 use ygo_data::CardId;
+
+use crate::positions;
 use ygo_engine::{
-    CardScript, Effect, EffectCtx, Flow, Game, InstanceId, Lingering, LingeringKind, Position,
-    Registry, Source, TargetSets, Window,
+    CardScript, Effect, EffectCtx, Flow, Game, InstanceId, Lingering, LingeringKind, Registry,
+    Source, TargetSets, Window,
 };
 
 pub const POT_OF_GREED: CardId = CardId(55144522);
@@ -119,10 +121,21 @@ pub fn register(r: &mut Registry) {
             }),
             ..Effect::activate(1, |g, ctx| {
                 let target = ctx.targets[0];
-                if g.instance(target).location == ygo_engine::Location::Graveyard {
-                    g.special_summon(target, ctx.controller, Position::FaceUpAttack);
+                if g.instance(target).location != ygo_engine::Location::Graveyard
+                    || !g.can_special_summon(ctx.controller)
+                {
+                    return Flow::Done;
                 }
-                Flow::Done
+                Flow::Ask {
+                    options: positions::FACE_UP.to_vec(),
+                    then: |g, ctx, option| {
+                        let target = ctx.targets[0];
+                        if g.instance(target).location == ygo_engine::Location::Graveyard {
+                            g.special_summon(target, ctx.controller, positions::face_up(option));
+                        }
+                        Flow::Done
+                    },
+                }
             })
         }),
     );

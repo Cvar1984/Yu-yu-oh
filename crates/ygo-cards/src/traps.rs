@@ -101,7 +101,7 @@ pub fn register(r: &mut Registry) {
     r.register(
         SOLEMN_JUDGMENT,
         single(Effect {
-            timing: |g, s, w| g.player(s.controller).lp >= 2 && solemn_target(g, s, w).is_some(),
+            timing: |g, s, w| solemn_target(g, s, w).is_some(),
             targets: Some(|g, s| {
                 let w = g.window().map(|(kind, events)| Window { kind, events });
                 one(w.and_then(|w| solemn_target(g, s, &w)))
@@ -148,7 +148,7 @@ pub fn register(r: &mut Registry) {
         SEVEN_TOOLS_OF_THE_BANDIT,
         single(Effect {
             timing: |g, s, _| {
-                last_link_of_kind(g, CardKind::Trap).is_some() && g.player(s.controller).lp > 1000
+                last_link_of_kind(g, CardKind::Trap).is_some() && g.can_pay_lp(s.controller, 1000)
             },
             targets: Some(|g, _| one(last_link_of_kind(g, CardKind::Trap))),
             cost: Some(|g, ctx| g.pay_lp(ctx.controller, 1000)),

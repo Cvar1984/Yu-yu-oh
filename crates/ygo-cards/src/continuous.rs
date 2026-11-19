@@ -74,7 +74,7 @@ pub fn register(r: &mut Registry) {
                 },
                 Effect {
                     timing: |g, s, w| {
-                        g.player(s.controller).lp > 500
+                        g.can_pay_lp(s.controller, 500)
                             && w.events.iter().any(|e| {
                                 matches!(e,
                                 Event::SentToGraveyard { card, from: Location::SpellTrapZone(_) }
@@ -158,7 +158,7 @@ pub fn register(r: &mut Registry) {
                             })
                     },
                     ..Effect::trigger(true, |g, ctx| {
-                        if g.player(ctx.controller).lp <= 100 {
+                        if !g.can_pay_lp(ctx.controller, 100) {
                             g.destroy(ctx.source, ctx.source);
                             return Flow::Done;
                         }

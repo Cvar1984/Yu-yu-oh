@@ -2,9 +2,9 @@
 //! is its material list; Polymerization reads it to find legal summons.
 
 use ygo_data::CardId;
-use ygo_engine::{
-    CardScript, Effect, Flow, Game, InstanceId, Position, Registry, Source, TargetSets,
-};
+
+use crate::positions;
+use ygo_engine::{CardScript, Effect, Flow, Game, InstanceId, Registry, Source, TargetSets};
 
 pub const POLYMERIZATION: CardId = CardId(24094653);
 
@@ -110,15 +110,26 @@ pub fn register(r: &mut Registry) {
                 },
                 targets: Some(polymerization_targets),
                 ..Effect::activate(1, |g, ctx| {
-                    let fusion = ctx.targets[0];
                     let materials: Vec<InstanceId> = ctx.targets[1..].to_vec();
                     let still_there = materials.iter().all(|&m| {
                         g.instance(m).location == ygo_engine::Location::Hand || g.on_field(m)
                     });
-                    if still_there {
-                        g.fusion_summon(ctx.controller, fusion, &materials, Position::FaceUpAttack);
+                    if !still_there {
+                        return Flow::Done;
                     }
-                    Flow::Done
+                    Flow::Ask {
+                        options: positions::FACE_UP.to_vec(),
+                        then: |g, ctx, option| {
+                            let (fusion, materials) = (ctx.targets[0], ctx.targets[1..].to_vec());
+                            g.fusion_summon(
+                                ctx.controller,
+                                fusion,
+                                &materials,
+                                positions::face_up(option),
+                            );
+                            Flow::Done
+                        },
+                    }
                 })
             }],
         },
