@@ -3,8 +3,8 @@
 The owner's standard, 2026-11-18: the basic rules and every card follow
 the modern official rules and the modern card text in `data/cards.json`.
 This audit compares each of the 228 card scripts, and the engine rules
-they rely on, against that standard. Nothing is fixed here; each finding
-lists the fix, and fixes start once the owner has reviewed the report.
+they rely on, against that standard. Each finding lists its fix; the
+fixes were made in three batches, and their status is under Fix status.
 
 Verdicts: **OK** matches modern text and rulings. **Wrong** plays
 differently from the text. **Partial** right in the common case, wrong in
@@ -53,6 +53,49 @@ the bot evaluation rerun with `ygo sim`, and the web game rebuilt.
    (missing the timing).
 3. **Card-specific fixes**: every Wrong and Partial row below that the
    core batches do not already settle, module by module.
+
+## Fix status (2026-11-19)
+
+All three batches are done: every Wrong and Partial row in this report
+is fixed, apart from the three exceptions below. `scripts/check.sh`
+passes with 323 tests.
+
+| Batch | Commit | Rows | Tests |
+| --- | --- | --- | --- |
+| 1. Everyday core rules | `2629a0b` | C2, C4, C6, C9, C10, C11, C12 | `tests/modern_rules.rs` |
+| 2. Core rules with new engine state | `1badb9d` | C1, C3, C5, C7, C8, C13 | `tests/modern_rules.rs` |
+| 3. Card-specific fixes | `19b47b9` | every remaining Wrong and Partial card row | `tests/card_fixes.rs`, and the module tests moved to the modern text |
+
+What changed in the engine for these fixes: a Set completes with no
+negation window; summon procedures (`Action::ProcedureSummon`, with a
+summon-negation window) for Gate Guardian, the Moths and the Toons;
+"properly summoned" per instance (`special_summonable`,
+`special_summon_properly`); a chain link records whether a card was
+activated (`card_activation`) and a number its cost left for the
+resolution (`value`, Catapult Turtle); Set Field Spells; optional "When"
+triggers miss the timing (`misses_timing`); once-per-turn names and name
+locks (`use_name_once`, `lock_name_this_turn`); `can_pay_lp`; Extra Deck
+monsters return to the Extra Deck; a monster turned face-down loses its
+Equips; position questions (`positions.rs`); battle-damage triggers on
+`Event::BattleDamageDealt`; marks (`LingeringKind::Marked`, Castle of Dark
+Illusions); tags `ControlWhileEquipped` (Snatch Steal) and
+`StaysWithoutTarget` (Spellbinding Circle).
+
+Exceptions, left as they are on purpose:
+
+- **Soul Release and Gravedigger Ghoul** still pick their cards on
+  resolution. Targeting on activation would offer every subset of up to
+  five (or two) Graveyard cards as a separate action, which floods the
+  action list for players and bots alike. The cards still end up where
+  the text says; only the opponent's chance to respond to the chosen
+  targets is missing.
+- **Jirai Gumo and Time Wizard** toss the coin without asking for a call.
+  A call does not change the odds, so the result is the same.
+- **Fake Trap** knows the effects that destroy several Traps at once by a
+  list (Heavy Storm, Final Destiny, and now Dragon Piper's FLIP when its
+  controller has a face-up Dragon Capture Jar), not by asking each
+  effect what it would destroy. Every such card in this pool is on the
+  list.
 
 ## Core rules
 
