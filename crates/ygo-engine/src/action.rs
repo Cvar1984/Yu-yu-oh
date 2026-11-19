@@ -29,6 +29,14 @@ pub enum Action {
         targets: Vec<InstanceId>,
         cost: Vec<InstanceId>,
     },
+    /// Special Summon `card` from the hand by its own summon procedure
+    /// (script effect `effect`), paying `cost`, in `position`.
+    ProcedureSummon {
+        card: InstanceId,
+        effect: u8,
+        cost: Vec<InstanceId>,
+        position: Position,
+    },
     /// Answer a `Choose` decision during an effect's resolution.
     Choose { card: InstanceId },
     /// Answer an `Ask` question during an effect's resolution.
@@ -189,6 +197,13 @@ pub enum Event {
     },
     AttackCancelled {
         attacker: InstanceId,
+    },
+    /// Battle damage from the battle of `attacker` (and `target`, if any).
+    BattleDamageDealt {
+        attacker: InstanceId,
+        target: Option<InstanceId>,
+        damaged: PlayerId,
+        amount: u32,
     },
     BattleDamagePrevented {
         player: PlayerId,

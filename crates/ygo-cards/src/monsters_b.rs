@@ -195,50 +195,31 @@ fn evolved_moth(g: &Game, s: Source, turns: u32) -> Option<InstanceId> {
     })
 }
 
-fn moth_script(turns_needed: u32) -> CardScript {
+/// Turns a Petit Moth must have spent under Cocoon of Evolution before
+/// this Moth may be summoned: 2 of its controller's turns for Larvae Moth,
+/// 4 for Great Moth (counted in game turns).
+fn moth_turns(g: &Game, s: Source) -> u32 {
+    if g.stats(s.card).id == LARVAE_MOTH {
+        4
+    } else {
+        8
+    }
+}
+
+/// Larvae Moth and Great Moth: a summon procedure from the hand that
+/// Tributes the evolved Petit Moth.
+fn moth_script() -> CardScript {
     CardScript {
         tags: vec![Tag::CannotNormalSummon],
         effects: vec![Effect {
             timing: |g, s, _| {
-                let turns = if g.stats(s.card).id == LARVAE_MOTH {
-                    4
-                } else {
-                    8
-                };
                 g.instance(s.card).location == Location::Hand
-                    && g.can_special_summon(s.controller)
-                    && evolved_moth(g, s, turns).is_some()
+                    && evolved_moth(g, s, moth_turns(g, s)).is_some()
             },
-            ..Effect::ignition(|g, ctx| {
-                let turns = if g.stats(ctx.source).id == LARVAE_MOTH {
-                    4
-                } else {
-                    8
-                };
-                let s = Source {
-                    card: ctx.source,
-                    controller: ctx.controller,
-                };
-                if let Some(petit) = evolved_moth(g, s, turns) {
-                    g.tribute(petit);
-                    g.special_summon(ctx.source, ctx.controller, Position::FaceUpAttack);
-                }
-                Flow::Done
-            })
+            cost_choices: Some(|g, s| singles(evolved_moth(g, s, moth_turns(g, s)))),
+            cost: Some(|g, ctx| g.tribute(ctx.cost[0])),
+            ..Effect::procedure()
         }],
-    }
-    .with_turns(turns_needed)
-}
-
-trait WithTurns {
-    fn with_turns(self, _turns: u32) -> Self;
-}
-
-impl WithTurns for CardScript {
-    /// The turn count is read back from the card id in the effect; this
-    /// exists only to keep the two Moths' rows readable.
-    fn with_turns(self, _turns: u32) -> Self {
-        self
     }
 }
 
@@ -412,14 +393,22 @@ pub fn register(r: &mut Registry) {
     );
     r.register(
         JIRAI_GUMO,
+        // When this card declares an attack: toss a coin (the call is a
+        // 50/50 either way); if wrong, lose half your LP.
         single(Effect {
-            on_attack: Some(|g, s, attacker| {
-                if attacker == s.card && !g.coin(s.controller) {
-                    let half = g.player(s.controller).lp / 2;
-                    g.pay_lp(s.controller, half);
+            timing: |_, s, w| {
+                w.kind == WindowKind::AttackDeclared
+                    && w.events.iter().any(|e| {
+                        matches!(e, Event::AttackDeclared { attacker, .. } if *attacker == s.card)
+                    })
+            },
+            ..Effect::trigger(true, |g, ctx| {
+                if !g.coin(ctx.controller) {
+                    let half = g.player(ctx.controller).lp / 2;
+                    g.pay_lp(ctx.controller, half);
                 }
-            }),
-            ..Effect::continuous()
+                Flow::Done
+            })
         }),
     );
     r.register(
@@ -485,6 +474,7 @@ pub fn register(r: &mut Registry) {
                 position_changed_to(s, w, Position::FaceUpDefense)
                     && !g.hand(s.controller).is_empty()
             },
+            misses_timing: true,
             ..Effect::trigger(false, yado_loop)
         }),
     );
@@ -705,31 +695,20 @@ pub fn register(r: &mut Registry) {
             effects: vec![Effect {
                 timing: |g, s, _| {
                     g.instance(s.card).location == Location::Hand
-                        && g.can_special_summon(s.controller)
-                        && [SANGA_OF_THE_THUNDER, KAZEJIN, SUIJIN].iter().all(|id| {
-                            g.monsters_controlled(s.controller)
-                                .iter()
-                                .any(|&m| g.stats(m).id == *id)
-                        })
+                        && !gate_guardian_tributes(g, s).is_empty()
                 },
-                ..Effect::ignition(|g, ctx| {
-                    for id in [SANGA_OF_THE_THUNDER, KAZEJIN, SUIJIN] {
-                        if let Some(m) = g
-                            .monsters_controlled(ctx.controller)
-                            .into_iter()
-                            .find(|&m| g.stats(m).id == id)
-                        {
-                            g.tribute(m);
-                        }
+                cost_choices: Some(gate_guardian_tributes),
+                cost: Some(|g, ctx| {
+                    for &t in &ctx.cost.clone() {
+                        g.tribute(t);
                     }
-                    g.special_summon(ctx.source, ctx.controller, Position::FaceUpAttack);
-                    Flow::Done
-                })
+                }),
+                ..Effect::procedure()
             }],
         },
     );
-    r.register(LARVAE_MOTH, moth_script(4));
-    r.register(GREAT_MOTH, moth_script(8));
+    r.register(LARVAE_MOTH, moth_script());
+    r.register(GREAT_MOTH, moth_script());
     r.register(
         COCOON_OF_EVOLUTION,
         script(vec![
@@ -805,7 +784,7 @@ pub fn register(r: &mut Registry) {
                             then: |g, ctx, option| {
                                 let picked = ctx.cost[0];
                                 let from_deck = g.instance(picked).location == Location::Deck;
-                                g.special_summon(
+                                g.special_summon_properly(
                                     picked,
                                     ctx.controller,
                                     positions::face_up(option),
@@ -862,7 +841,7 @@ pub fn register(r: &mut Registry) {
                     Flow::Ask {
                         options: positions::FACE_UP.to_vec(),
                         then: |g, ctx, option| {
-                            g.special_summon(
+                            g.special_summon_properly(
                                 ctx.cost[0],
                                 ctx.controller,
                                 positions::face_up(option),
@@ -875,6 +854,26 @@ pub fn register(r: &mut Registry) {
             },
         ]),
     );
+}
+
+/// One Sanga of the Thunder, one Kazejin and one Suijin its controller
+/// controls, every way to pick them.
+fn gate_guardian_tributes(g: &Game, s: Source) -> TargetSets {
+    let of = |id| -> Vec<InstanceId> {
+        g.monsters_controlled(s.controller)
+            .into_iter()
+            .filter(|&m| g.stats(m).id == id)
+            .collect()
+    };
+    let mut sets = Vec::new();
+    for a in of(SANGA_OF_THE_THUNDER) {
+        for b in of(KAZEJIN) {
+            for c in of(SUIJIN) {
+                sets.push(vec![a, b, c]);
+            }
+        }
+    }
+    sets
 }
 
 fn same_name_elsewhere(g: &Game, card: InstanceId) -> bool {

@@ -159,6 +159,7 @@ impl PlaySession {
         match action {
             Action::Discard { card }
             | Action::Summon { card, .. }
+            | Action::ProcedureSummon { card, .. }
             | Action::FlipSummon { card }
             | Action::ChangePosition { card }
             | Action::SetSpellTrap { card }

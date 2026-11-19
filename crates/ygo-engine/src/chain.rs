@@ -19,6 +19,9 @@ use crate::{
 pub struct ChainLink {
     pub card: InstanceId,
     pub effect: u8,
+    /// A Spell or Trap Card activated from the hand or from face-down, as
+    /// opposed to the effect of a card already face-up.
+    pub card_activation: bool,
     pub speed: u8,
     pub controller: PlayerId,
     pub targets: Vec<InstanceId>,
@@ -51,6 +54,10 @@ pub enum WindowKind {
 pub enum SummonKind {
     Normal,
     Flip,
+    /// A summon procedure from the hand, in this position.
+    Procedure {
+        position: Position,
+    },
 }
 
 /// A summon between its declaration and its completion.
@@ -167,7 +174,7 @@ impl std::fmt::Debug for PendingChoice {
 }
 
 impl Game {
-    fn effect(&self, card: InstanceId, index: u8) -> Effect {
+    pub(crate) fn effect(&self, card: InstanceId, index: u8) -> Effect {
         self.script(card)
             .and_then(|s| s.effects.get(usize::from(index)))
             .copied()
@@ -234,6 +241,17 @@ impl Game {
     /// every Graveyard trigger in these sets triggers on.
     fn collect_triggers(&self, kind: WindowKind, events: &[Event]) -> Vec<TriggerRef> {
         let window = Window { kind, events };
+        // What happened last: the events from the last summon declaration or
+        // card activation on. A trigger that can miss the timing must find
+        // its event there.
+        let last_start = events
+            .iter()
+            .rposition(|e| matches!(e, Event::SummonDeclared { .. } | Event::Activated { .. }))
+            .unwrap_or(0);
+        let last = Window {
+            kind,
+            events: &events[last_start..],
+        };
         let mut found = Vec::new();
         let moved: Vec<InstanceId> = events
             .iter()
@@ -270,7 +288,12 @@ impl Game {
                         _ => continue,
                     };
                     let source = Source { card, controller };
-                    if (effect.timing)(self, source, &window) {
+                    let seen = if effect.misses_timing && !mandatory {
+                        &last
+                    } else {
+                        &window
+                    };
+                    if (effect.timing)(self, source, seen) {
                         found.push(TriggerRef {
                             card,
                             effect: i as u8,
@@ -437,6 +460,19 @@ impl Game {
             let targets: TargetSets = effect
                 .targets
                 .map_or_else(|| vec![Vec::new()], |f| f(self, source));
+            if effect.kind == EffectKind::Procedure {
+                for cost in &costs {
+                    for position in [Position::FaceUpAttack, Position::FaceUpDefense] {
+                        actions.push(Action::ProcedureSummon {
+                            card,
+                            effect: i as u8,
+                            cost: cost.clone(),
+                            position,
+                        });
+                    }
+                }
+                continue;
+            }
             for cost in &costs {
                 for t in &targets {
                     actions.push(Action::Activate {
@@ -487,6 +523,12 @@ impl Game {
                 }
                 _ => {}
             }
+        }
+        // A Set Field Spell is activated from the Field Zone.
+        if let Some(field) = state.field_zone
+            && self.instances[field.index()].position == Position::FaceDown
+        {
+            self.push_activations(player, field, &window, |_, e| e.speed == 1, actions);
         }
         for card in state.spell_trap_zones.iter().flatten().copied() {
             let inst = &self.instances[card.index()];
@@ -551,7 +593,7 @@ impl Game {
                 player,
                 card,
                 &window,
-                |_, e| e.kind == EffectKind::Ignition,
+                |_, e| matches!(e.kind, EffectKind::Ignition | EffectKind::Procedure),
                 actions,
             );
         }
@@ -607,9 +649,16 @@ impl Game {
         if eff.once_per_turn {
             self.instances[card.index()].effect_uses |= 1 << effect;
         }
+        let inst = &self.instances[card.index()];
+        let card_activation = !self.stats(card).is_monster()
+            && (inst.location == Location::Hand || inst.position == Position::FaceDown);
         match self.instances[card.index()].location {
             Location::Hand if self.stats(card).subtype == SpellTrapType::Field => {
-                self.place_field_spell(player, card);
+                self.place_field_spell(player, card, Position::FaceUp);
+            }
+            Location::FieldZone if self.instances[card.index()].position == Position::FaceDown => {
+                self.field_spell_turns_face_up(card);
+                self.instances[card.index()].position = Position::FaceUp;
             }
             Location::Hand if !self.stats(card).is_monster() => {
                 let zone = self
@@ -637,6 +686,7 @@ impl Game {
         self.chain.push(ChainLink {
             card,
             effect,
+            card_activation,
             speed: eff.speed,
             controller: player,
             targets: ctx.targets,

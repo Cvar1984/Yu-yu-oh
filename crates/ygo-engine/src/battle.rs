@@ -179,6 +179,12 @@ impl Game {
         if let Some((damaged, amount)) = damage
             && let Some(amount) = self.battle_damage(damaged, amount)
         {
+            self.emit(Event::BattleDamageDealt {
+                attacker,
+                target,
+                damaged,
+                amount,
+            });
             self.run_battle_damage_hooks(BattleDamage {
                 attacker,
                 target,

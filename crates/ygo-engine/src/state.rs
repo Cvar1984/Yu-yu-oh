@@ -132,6 +132,10 @@ pub struct CardInstance {
     pub counter: u8,
     /// Bit `i` set: effect `i` was used this turn (once-per-turn effects).
     pub effect_uses: u8,
+    /// Summoned the way its text requires (Fusion, Ritual, a summon
+    /// procedure); kept in the Graveyard and banished, cleared when the card
+    /// goes back to the hand or a Deck.
+    pub properly_summoned: bool,
 }
 
 impl CardInstance {
@@ -148,6 +152,7 @@ impl CardInstance {
             attacked_this_turn: false,
             equipped_to: None,
             counter: 0,
+            properly_summoned: false,
             effect_uses: 0,
         }
     }

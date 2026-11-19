@@ -82,6 +82,7 @@ pub fn register(r: &mut Registry) {
                             })
                     },
                     cost: Some(|g, ctx| g.pay_lp(ctx.controller, 500)),
+                    misses_timing: true,
                     ..Effect::trigger(false, |g, ctx| {
                         if g.instance(ctx.source).location == Location::Graveyard {
                             g.place_on_top_of_deck(ctx.source);

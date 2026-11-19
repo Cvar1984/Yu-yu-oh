@@ -112,7 +112,10 @@ fn recruit_resolve(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
         .copied()
         .filter(|&c| {
             let st = g.stats(c);
-            st.is_monster() && st.atk <= 1500 && st.attribute.as_deref() == Some(attribute)
+            st.is_monster()
+                && st.atk <= 1500
+                && st.attribute.as_deref() == Some(attribute)
+                && g.special_summonable(c)
         })
         .collect();
     if options.is_empty() || !g.can_special_summon(ctx.controller) {
@@ -169,8 +172,14 @@ fn copies_loop(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
     }
 }
 
-fn inflicted_damage(s: Source, d: ygo_engine::BattleDamage) -> bool {
-    d.damaged != s.controller && (d.attacker == s.card || d.target == Some(s.card))
+/// This card's battle dealt battle damage to its controller's opponent in
+/// this window: "When this card inflicts Battle Damage to your opponent".
+fn inflicted_damage(_: &Game, s: Source, w: &Window) -> bool {
+    w.events.iter().any(|e| {
+        matches!(e,
+        Event::BattleDamageDealt { attacker, target, damaged, .. }
+            if *damaged != s.controller && (*attacker == s.card || *target == Some(s.card)))
+    })
 }
 
 fn search_deck(g: &mut Game, ctx: &mut EffectCtx, keep: fn(&Game, InstanceId) -> bool) -> Flow {
@@ -283,6 +292,7 @@ pub fn register(r: &mut Registry) {
             id,
             single(Effect {
                 timing: destroyed_by_battle,
+                misses_timing: true,
                 ..Effect::trigger(false, recruit_resolve)
             }),
         );
@@ -310,44 +320,42 @@ pub fn register(r: &mut Registry) {
     r.register(
         WHITE_MAGICAL_HAT,
         single(Effect {
-            on_battle_damage: Some(|g, s, d| {
-                if inflicted_damage(s, d) {
-                    let hand = g.hand(d.damaged).to_vec();
-                    if !hand.is_empty() {
-                        let pick = hand[g.random_index(hand.len())];
-                        g.discard(pick);
-                    }
+            timing: inflicted_damage,
+            ..Effect::trigger(true, |g, ctx| {
+                let hand = g.hand(ctx.controller.opponent()).to_vec();
+                if !hand.is_empty() {
+                    let pick = hand[g.random_index(hand.len())];
+                    g.discard(pick);
                 }
-            }),
-            ..Effect::continuous()
+                Flow::Done
+            })
         }),
     );
     r.register(
         MASKED_SORCERER,
         single(Effect {
-            on_battle_damage: Some(|g, s, d| {
-                if inflicted_damage(s, d) {
-                    g.draw(s.controller, 1);
-                }
-            }),
-            ..Effect::continuous()
+            timing: inflicted_damage,
+            ..Effect::trigger(true, |g, ctx| {
+                g.draw(ctx.controller, 1);
+                Flow::Done
+            })
         }),
     );
     r.register(
         THE_BISTRO_BUTCHER,
         single(Effect {
-            on_battle_damage: Some(|g, s, d| {
-                if inflicted_damage(s, d) {
-                    g.draw(d.damaged, 2);
-                }
-            }),
-            ..Effect::continuous()
+            timing: inflicted_damage,
+            ..Effect::trigger(true, |g, ctx| {
+                g.draw(ctx.controller.opponent(), 2);
+                Flow::Done
+            })
         }),
     );
     r.register(
         SENJU_OF_THE_THOUSAND_HANDS,
         single(Effect {
             timing: normal_or_flip_summoned,
+            misses_timing: true,
             ..Effect::trigger(false, |g, ctx| {
                 search_deck(g, ctx, |g, c| matches!(g.stats(c).kind, CardKind::Ritual))
             })
@@ -357,6 +365,7 @@ pub fn register(r: &mut Registry) {
         SONIC_BIRD,
         single(Effect {
             timing: normal_or_flip_summoned,
+            misses_timing: true,
             ..Effect::trigger(false, |g, ctx| {
                 search_deck(g, ctx, |g, c| {
                     g.stats(c).subtype == ygo_engine::SpellTrapType::Ritual

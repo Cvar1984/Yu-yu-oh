@@ -378,6 +378,7 @@ pub fn register(r: &mut Registry) {
                 },
                 cost_choices: Some(|g, s| singles(g.monsters_controlled(s.controller))),
                 cost: Some(|g, ctx| g.tribute(ctx.cost[0])),
+                misses_timing: true,
                 ..Effect::trigger(false, to_top_of_deck)
             }],
         ),
@@ -406,6 +407,7 @@ pub fn register(r: &mut Registry) {
                     sent_from_spell_trap_zone(s, w) && g.can_pay_lp(s.controller, 500)
                 },
                 cost: Some(|g, ctx| g.pay_lp(ctx.controller, 500)),
+                misses_timing: true,
                 ..Effect::trigger(false, to_top_of_deck)
             }],
         ),
@@ -505,19 +507,23 @@ pub fn register(r: &mut Registry) {
         ROBBIN_GOBLIN,
         script(vec![
             Effect::activate(2, ygo_engine::nothing),
+            // Each time a monster you control inflicts battle damage to your
+            // opponent: a trigger of this face-up Continuous Trap.
             Effect {
-                on_battle_damage: Some(|g, s, d| {
-                    if d.damaged != s.controller
-                        && g.instance(d.attacker).controller == s.controller
-                    {
-                        let hand = g.hand(d.damaged).to_vec();
-                        if !hand.is_empty() {
-                            let pick = hand[g.random_index(hand.len())];
-                            g.discard(pick);
-                        }
+                timing: |g, s, w| {
+                    active(g, s)
+                        && w.events.iter().any(|e| {
+                            matches!(e, Event::BattleDamageDealt { damaged, .. } if *damaged != s.controller)
+                        })
+                },
+                ..Effect::trigger(true, |g, ctx| {
+                    let hand = g.hand(ctx.controller.opponent()).to_vec();
+                    if !hand.is_empty() {
+                        let pick = hand[g.random_index(hand.len())];
+                        g.discard(pick);
                     }
-                }),
-                ..Effect::continuous()
+                    Flow::Done
+                })
             },
         ]),
     );
