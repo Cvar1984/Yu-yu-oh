@@ -7,7 +7,7 @@ use ygo_cards::oneshot::SPARKS;
 use ygo_cards::spells::MONSTER_REBORN;
 use ygo_data::CardId;
 use ygo_engine::testing::{
-    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, in_hand, next_turn, pass_all, play,
+    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, answer, in_hand, next_turn, pass_all, play,
     shared_from, stacked, summon, with_rules,
 };
 use ygo_engine::{
@@ -288,7 +288,18 @@ fn dark_elf_pays_1000_to_attack_and_cannot_without_it() {
     assert_eq!((g.player(P0).lp, g.player(P1).lp), (7000, 6000));
 
     let base = free();
-    let poor = with_rules(&base, |r| r.life.starting_lp = 1000);
+    // Exactly 1000 LP may pay the 1000 (and then loses); 900 may not.
+    let exact = with_rules(&base, |r| r.life.starting_lp = 1000);
+    let mut g = Game::new(exact, &stacked([&[DARK_ELF], &[]], MYSTICAL_ELF)).unwrap();
+    let elf = put(&mut g, P0, DARK_ELF);
+    next_turn(&mut g);
+    next_turn(&mut g);
+    play(&mut g, Action::EnterBattlePhase);
+    assert!(g.legal_actions().contains(&Action::Attack {
+        attacker: elf,
+        target: None
+    }));
+    let poor = with_rules(&base, |r| r.life.starting_lp = 900);
     let mut g = Game::new(poor, &stacked([&[DARK_ELF], &[]], MYSTICAL_ELF)).unwrap();
     put(&mut g, P0, DARK_ELF);
     next_turn(&mut g);
@@ -297,7 +308,7 @@ fn dark_elf_pays_1000_to_attack_and_cannot_without_it() {
     assert_eq!(
         g.legal_actions(),
         vec![Action::EndBattlePhase],
-        "1000 LP cannot pay 1000"
+        "900 LP cannot pay 1000"
     );
 }
 
@@ -561,6 +572,7 @@ fn boar_soldier_dies_when_normal_summoned_and_is_weaker_facing_monsters() {
     put(&mut g, P1, CELTIC_GUARDIAN);
     next_turn(&mut g);
     activate(&mut g, MONSTER_REBORN);
+    answer(&mut g, 0);
     assert!(g.on_field(boar), "a Special Summon is not a Normal Summon");
     assert_eq!(g.atk(boar), 1000);
 }
@@ -669,7 +681,7 @@ fn elegant_egotist_calls_harpie_lady_sisters_from_the_deck() {
         .find(|a| matches!(a, Action::Choose { card } if g.stats(*card).id == HARPIE_LADY_SISTERS))
         .unwrap();
     play(&mut g, sisters);
-    pass_all(&mut g);
+    answer(&mut g, 0);
     assert!(
         g.player(P0)
             .monsters()
@@ -697,6 +709,7 @@ fn magical_labyrinth_turns_labyrinth_wall_into_wall_shadow() {
     });
     assert_eq!(g.equip_target(labyrinth), Some(wall));
     activate(&mut g, MAGICAL_LABYRINTH);
+    answer(&mut g, 0);
     assert_eq!(g.instance(wall).location, Location::Graveyard);
     assert!(
         g.player(P0)

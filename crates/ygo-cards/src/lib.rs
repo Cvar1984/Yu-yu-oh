@@ -10,6 +10,7 @@ pub mod monsters;
 pub mod monsters_a;
 pub mod monsters_b;
 pub mod oneshot;
+mod positions;
 pub mod remaining;
 pub mod reveal;
 pub mod ritual;

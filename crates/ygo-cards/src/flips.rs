@@ -1,6 +1,8 @@
 //! FLIP monsters, and Dragon Capture Jar, which Dragon Piper answers.
 
 use ygo_data::{CardId, CardKind};
+
+use crate::positions;
 use ygo_engine::{
     CardScript, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Location, Phase,
     PlayerId, Position, Registry, Source, StatMod, Tag, TargetSets, Window, WindowKind,
@@ -155,10 +157,23 @@ fn cyber_jar_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
 fn cretin_step(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
     let stage = ctx.cost.len();
     if stage >= 2 {
-        for &c in &ctx.targets.clone() {
+        // Summon the picks one at a time; each owner picks the position
+        // ("face-up Attack Position or face-down Defense Position"). The
+        // card being asked about is the last entry of `ctx.cost`.
+        while let Some(c) = ctx.targets.pop() {
             let owner = g.instance(c).owner;
-            if g.instance(c).location == Location::Graveyard {
-                g.special_summon(c, owner, Position::FaceUpAttack);
+            if g.instance(c).location == Location::Graveyard && g.can_special_summon(owner) {
+                ctx.cost.push(c);
+                return Flow::AskBy {
+                    chooser: owner,
+                    options: positions::ATTACK_OR_SET.to_vec(),
+                    then: |g, ctx, option| {
+                        let c = *ctx.cost.last().expect("the card being summoned");
+                        let owner = g.instance(c).owner;
+                        g.special_summon(c, owner, positions::attack_or_set(option));
+                        cretin_step(g, ctx)
+                    },
+                };
             }
         }
         return Flow::Done;

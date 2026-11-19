@@ -9,8 +9,8 @@ use ygo_cards::spells::DARK_HOLE;
 use ygo_cards::traps::MIRROR_FORCE;
 use ygo_data::CardId;
 use ygo_engine::testing::{
-    CELTIC_GUARDIAN, MAMMOTH_GRAVEYARD, MYSTICAL_ELF, SEVEN_COLORED_FISH, SUMMONED_SKULL, in_hand,
-    next_turn, pass_all, play, shared_from, stacked, summon, with_rules,
+    CELTIC_GUARDIAN, MAMMOTH_GRAVEYARD, MYSTICAL_ELF, SEVEN_COLORED_FISH, SUMMONED_SKULL, answer,
+    in_hand, next_turn, pass_all, play, shared_from, stacked, summon, with_rules,
 };
 use ygo_engine::{
     Action, DecisionKind, Game, InstanceId, Location, Phase, PlayerId, Position, Shared,
@@ -479,7 +479,8 @@ fn spear_cretin_lets_each_player_revive_a_monster() {
         g.pending_decision()
     );
     play(&mut g, Action::Choose { card: cretin });
-    pass_all(&mut g);
+    // Its owner picks the position: face-up Attack here.
+    answer(&mut g, 0);
     assert!(g.on_field(cretin));
     assert_eq!(g.instance(cretin).position, Position::FaceUpAttack);
 }

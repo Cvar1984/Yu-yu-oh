@@ -204,6 +204,11 @@ pub enum Event {
         player: PlayerId,
         card: InstanceId,
     },
+    /// An Extra Deck monster that would have gone to the hand or Deck.
+    ReturnedToExtraDeck {
+        player: PlayerId,
+        card: InstanceId,
+    },
     Banished {
         card: InstanceId,
         from: Location,

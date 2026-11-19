@@ -60,7 +60,8 @@ impl Game {
     }
 
     /// Pays the tributes, uses the summon, and opens the negation window.
-    /// The card stays in the hand until the summon completes.
+    /// The card stays in the hand until the summon completes. A Set is not
+    /// a summon, so it has no negation window and completes at once.
     pub(crate) fn declare_summon(
         &mut self,
         player: PlayerId,
@@ -76,18 +77,23 @@ impl Game {
             });
         }
         self.players[player.index()].summons_used += 1;
-        self.emit(Event::SummonDeclared {
-            player,
-            card,
-            face_down,
-        });
-        self.pending.push(Pending::CompleteSummon(PendingSummon {
+        let pending = PendingSummon {
             player,
             card,
             kind: SummonKind::Normal,
             face_down,
             negated: false,
-        }));
+        };
+        if face_down {
+            self.complete_summon(pending);
+            return;
+        }
+        self.emit(Event::SummonDeclared {
+            player,
+            card,
+            face_down,
+        });
+        self.pending.push(Pending::CompleteSummon(pending));
         self.open_window(WindowKind::SummonDeclared, self.turn_player);
     }
 

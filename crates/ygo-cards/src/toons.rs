@@ -73,7 +73,7 @@ fn toon() -> CardScript {
                 restrict: Some(|g, s, t| {
                     t == s.card
                         && (g.instance(s.card).turn_entered_field == Some(g.turn())
-                            || g.player(s.controller).lp <= 500)
+                            || !g.can_pay_lp(s.controller, 500))
                 }),
                 on_attack: Some(|g, s, attacker| {
                     if attacker == s.card {
@@ -107,7 +107,7 @@ pub fn register(r: &mut Registry) {
         CardScript {
             tags: Vec::new(),
             effects: vec![Effect {
-                timing: |g, s, _| g.player(s.controller).lp > 1000,
+                timing: |g, s, _| g.can_pay_lp(s.controller, 1000),
                 cost: Some(|g, ctx| g.pay_lp(ctx.controller, 1000)),
                 ..Effect::activate(1, ygo_engine::nothing)
             }],

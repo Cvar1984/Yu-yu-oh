@@ -91,7 +91,7 @@ pub fn register(r: &mut Registry) {
         CONFISCATION,
         single(Effect {
             timing: |g, s, _| {
-                g.player(s.controller).lp > 1000 && !g.hand(s.controller.opponent()).is_empty()
+                g.can_pay_lp(s.controller, 1000) && !g.hand(s.controller.opponent()).is_empty()
             },
             cost: Some(|g, ctx| g.pay_lp(ctx.controller, 1000)),
             ..Effect::activate(1, |g, ctx| {
@@ -133,7 +133,7 @@ pub fn register(r: &mut Registry) {
         DELINQUENT_DUO,
         single(Effect {
             timing: |g, s, _| {
-                g.player(s.controller).lp > 1000 && !g.hand(s.controller.opponent()).is_empty()
+                g.can_pay_lp(s.controller, 1000) && !g.hand(s.controller.opponent()).is_empty()
             },
             cost: Some(|g, ctx| g.pay_lp(ctx.controller, 1000)),
             ..Effect::activate(1, |g, ctx| {

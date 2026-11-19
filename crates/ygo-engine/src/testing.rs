@@ -117,6 +117,13 @@ pub fn play(game: &mut Game, action: Action) -> Vec<Event> {
         .unwrap_or_else(|e| panic!("{action:?} on turn {} {:?}: {e}", game.turn(), game.phase()))
 }
 
+/// Answers a pending question (a position, "pay or destroy") with option
+/// number `option`, then declines responses.
+pub fn answer(game: &mut Game, option: u8) {
+    play(game, Action::Answer { option });
+    pass_all(game);
+}
+
 /// Declines every pending response until the next decision is not a
 /// response window.
 pub fn pass_all(game: &mut Game) {

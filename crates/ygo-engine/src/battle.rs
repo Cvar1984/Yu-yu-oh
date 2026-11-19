@@ -157,10 +157,12 @@ impl Game {
                             destroyed.push(attacker);
                             damage = Some((player, -diff));
                         }
-                        _ => {
+                        // Equal ATK destroys both, unless both are 0.
+                        _ if atk > 0 => {
                             destroyed.push(target);
                             destroyed.push(attacker);
                         }
+                        _ => {}
                     }
                 } else {
                     let diff = atk - target_def;

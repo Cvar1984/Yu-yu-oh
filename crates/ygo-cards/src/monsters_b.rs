@@ -3,6 +3,8 @@
 //! consequences, and the summon-restricted monsters with their enablers.
 
 use ygo_data::CardId;
+
+use crate::positions;
 use ygo_engine::{
     CardScript, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Location, Phase,
     Position, Registry, Source, StatMod, Tag, TargetSets, Window, WindowKind,
@@ -423,7 +425,7 @@ pub fn register(r: &mut Registry) {
     r.register(
         DARK_ELF,
         single(Effect {
-            restrict: Some(|g, s, t| t == s.card && g.player(s.controller).lp <= 1000),
+            restrict: Some(|g, s, t| t == s.card && !g.can_pay_lp(s.controller, 1000)),
             on_attack: Some(|g, s, attacker| {
                 if attacker == s.card {
                     g.pay_lp(s.controller, 1000);
@@ -543,7 +545,7 @@ pub fn register(r: &mut Registry) {
             Effect {
                 timing: |g, s, w| {
                     own_end_phase(g, s, w)
-                        && g.player(s.controller).lp > 500
+                        && g.can_pay_lp(s.controller, 500)
                         && g.free_monster_zone(s.controller.opponent()).is_some()
                 },
                 cost: Some(|g, ctx| g.pay_lp(ctx.controller, 500)),
@@ -564,6 +566,7 @@ pub fn register(r: &mut Registry) {
             },
             ..Effect::trigger(true, |g, ctx| {
                 g.set_position(ctx.source, Position::FaceUpDefense);
+                g.forbid_position_change_this_turn(ctx.source);
                 Flow::Done
             })
         }),
@@ -795,13 +798,24 @@ pub fn register(r: &mut Registry) {
                 }
                 Flow::Choose {
                     options,
-                    then: |g, ctx, picked| {
-                        let from_deck = g.instance(picked).location == Location::Deck;
-                        g.special_summon(picked, ctx.controller, Position::FaceUpAttack);
-                        if from_deck {
-                            g.shuffle_deck(ctx.controller);
+                    then: |_g, ctx, picked| {
+                        ctx.cost = vec![picked];
+                        Flow::Ask {
+                            options: positions::FACE_UP.to_vec(),
+                            then: |g, ctx, option| {
+                                let picked = ctx.cost[0];
+                                let from_deck = g.instance(picked).location == Location::Deck;
+                                g.special_summon(
+                                    picked,
+                                    ctx.controller,
+                                    positions::face_up(option),
+                                );
+                                if from_deck {
+                                    g.shuffle_deck(ctx.controller);
+                                }
+                                Flow::Done
+                            },
                         }
-                        Flow::Done
                     },
                 }
             })
@@ -832,19 +846,31 @@ pub fn register(r: &mut Registry) {
                             .any(|&c| g.stats(c).id == WALL_SHADOW)
                 },
                 ..Effect::ignition(|g, ctx| {
-                    if let Some(wall) = g.equip_target(ctx.source) {
-                        g.tribute(wall);
-                        if let Some(shadow) = g
-                            .deck(ctx.controller)
-                            .iter()
-                            .copied()
-                            .find(|&c| g.stats(c).id == WALL_SHADOW)
-                        {
-                            g.special_summon(shadow, ctx.controller, Position::FaceUpAttack);
+                    let Some(wall) = g.equip_target(ctx.source) else {
+                        return Flow::Done;
+                    };
+                    g.tribute(wall);
+                    let Some(shadow) = g
+                        .deck(ctx.controller)
+                        .iter()
+                        .copied()
+                        .find(|&c| g.stats(c).id == WALL_SHADOW)
+                    else {
+                        return Flow::Done;
+                    };
+                    ctx.cost = vec![shadow];
+                    Flow::Ask {
+                        options: positions::FACE_UP.to_vec(),
+                        then: |g, ctx, option| {
+                            g.special_summon(
+                                ctx.cost[0],
+                                ctx.controller,
+                                positions::face_up(option),
+                            );
                             g.shuffle_deck(ctx.controller);
-                        }
+                            Flow::Done
+                        },
                     }
-                    Flow::Done
                 })
             },
         ]),

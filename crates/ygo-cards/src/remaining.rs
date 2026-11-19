@@ -403,7 +403,7 @@ pub fn register(r: &mut Registry) {
             bonus(0, 800),
             vec![Effect {
                 timing: |g, s, w| {
-                    sent_from_spell_trap_zone(s, w) && g.player(s.controller).lp > 500
+                    sent_from_spell_trap_zone(s, w) && g.can_pay_lp(s.controller, 500)
                 },
                 cost: Some(|g, ctx| g.pay_lp(ctx.controller, 500)),
                 ..Effect::trigger(false, to_top_of_deck)
@@ -547,7 +547,7 @@ pub fn register(r: &mut Registry) {
         script(vec![
             Effect::activate(1, ygo_engine::nothing),
             Effect {
-                restrict: Some(|g, _, t| g.player(g.instance(t).controller).lp <= 500),
+                restrict: Some(|g, _, t| !g.can_pay_lp(g.instance(t).controller, 500)),
                 on_attack: Some(|g, _, attacker| {
                     let p = g.instance(attacker).controller;
                     g.pay_lp(p, 500);

@@ -458,6 +458,7 @@ pub fn register(r: &mut Registry) {
                         other => other,
                     };
                     g.set_position(m, next);
+                    g.forbid_position_change_this_turn(m);
                 }
                 Flow::Done
             })

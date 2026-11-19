@@ -5,7 +5,7 @@ use std::sync::Arc;
 use ygo_cards::ritual::*;
 use ygo_data::CardId;
 use ygo_engine::testing::{
-    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, SUMMONED_SKULL, in_hand, next_turn,
+    CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, SUMMONED_SKULL, answer, in_hand, next_turn,
     pass_all, play, shared_from, stacked, summon, with_rules,
 };
 use ygo_engine::{Action, Game, Location, PlayerId, Shared};
@@ -62,6 +62,7 @@ fn turtle_oath_tributes_levels_totalling_eight_from_hand_or_field() {
         .clone();
     play(&mut g, skull_and_field_elf);
     pass_all(&mut g);
+    answer(&mut g, 0);
     assert!(g.on_field(turtle));
     assert_eq!(g.atk(turtle), 2550);
     assert_eq!(g.instance(skull).location, Location::Graveyard);
@@ -142,6 +143,7 @@ fn relinquished_absorbs_a_monster_and_fights_with_its_stats() {
         .clone();
     play(&mut g, one_elf);
     pass_all(&mut g);
+    answer(&mut g, 0);
     let relinquished = g.player(P0).monsters().next().unwrap();
     assert_eq!(g.stats(relinquished).id, RELINQUISHED);
     assert_eq!((g.atk(relinquished), g.def(relinquished)), (0, 0));
@@ -213,6 +215,7 @@ fn relinquished_loses_its_absorbed_monster_when_it_leaves() {
     let a = activations(&g, BLACK_ILLUSION_RITUAL)[0].clone();
     play(&mut g, a);
     pass_all(&mut g);
+    answer(&mut g, 0);
     let relinquished = g.player(P0).monsters().next().unwrap();
     next_turn(&mut g);
     let celtic = in_hand(&g, P1, CELTIC_GUARDIAN);
@@ -250,6 +253,7 @@ fn every_ritual_spell_summons_its_monster() {
         assert!(!offered.is_empty(), "{spell}");
         play(&mut g, offered[0].clone());
         pass_all(&mut g);
+        answer(&mut g, 0);
         assert!(
             g.player(P0).monsters().any(|m| g.stats(m).id == monster),
             "{spell} summoned {monster}"
