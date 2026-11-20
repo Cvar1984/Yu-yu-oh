@@ -195,7 +195,10 @@ impl Game {
     /// opponent's hand and every face-down card are `Hidden`.
     pub fn observe(&self, viewer: PlayerId) -> Observation {
         let modifiers = self.modifiers();
-        let hands_revealed = self.hands_revealed();
+        let hand_revealed = [
+            self.hand_revealed(PlayerId(0)),
+            self.hand_revealed(PlayerId(1)),
+        ];
         // A monster being Normal, Tribute or Flip Summoned face-up is public
         // from its declaration, while the opponent decides on a response.
         let declared = self
@@ -208,7 +211,7 @@ impl Game {
             let see = |id: InstanceId, in_hand: bool| {
                 let inst = &self.instances[id.index()];
                 let revealed = match inst.location {
-                    Location::Hand => own || hands_revealed || declared == Some(id),
+                    Location::Hand => own || hand_revealed[player.index()] || declared == Some(id),
                     Location::Graveyard | Location::Banished => true,
                     _ => inst.position.is_face_up() || own,
                 };

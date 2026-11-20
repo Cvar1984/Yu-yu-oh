@@ -302,8 +302,9 @@ pub fn check_invariants(g: &Game) {
     for viewer in PlayerId::BOTH {
         let obs = g.observe(viewer);
         let opp = obs.opponent();
-        if !g.hands_revealed() {
-            // Only a monster being summoned face-up is shown from the hand.
+        if !g.hand_revealed(viewer.opponent()) {
+            // Only a monster being summoned face-up is shown from the hand,
+            // unless the hand is revealed (Ceremonial Bell, The Eye of Truth).
             let declared = g.pending_summon().filter(|p| !p.face_down).map(|p| p.card);
             assert!(
                 opp.hand

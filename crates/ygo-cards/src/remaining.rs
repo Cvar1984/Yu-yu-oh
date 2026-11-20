@@ -495,6 +495,8 @@ pub fn register(r: &mut Registry) {
                     ..Effect::activate(2, |g, ctx| {
                         if g.attach(ctx.source, ctx.targets[0]) {
                             g.set_counter(ctx.source, ctx.targets[0].0.wrapping_add(1));
+                            // "Cannot attack": an attack it declared stops.
+                            g.cancel_attack(ctx.targets[0]);
                         } else {
                             g.destroy(ctx.source, ctx.source);
                         }
