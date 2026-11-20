@@ -27,6 +27,7 @@ mod summon;
 #[cfg(feature = "test-support")]
 pub mod testing;
 mod turn;
+mod view;
 
 pub use action::{Action, Decision, DecisionKind, Event, RuleError};
 pub use chain::{ChainLink, PendingSummon, SummonKind, TriggerRef, WindowKind};
@@ -45,3 +46,4 @@ pub use state::{
     BattleStep, CardInstance, DrawReason, GameResult, InstanceId, Lingering, LingeringKind,
     Location, Phase, PlayerId, PlayerState, Position, WinReason,
 };
+pub use view::PlayerView;

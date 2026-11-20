@@ -10,8 +10,8 @@ use rand_core::{Rng, SeedableRng};
 use ygo_data::{CardDb, CardId, CardKind, CardValues, Style};
 use ygo_engine::Tag;
 use ygo_engine::{
-    Action, CardStats, InstanceId, Observation, Place, PlayerId, Position, Shared, SpellTrapType,
-    VisibleCard, WindowKind,
+    Action, CardStats, InstanceId, Observation, Place, PlayerId, PlayerView, Position, Shared,
+    SpellTrapType, VisibleCard, WindowKind,
 };
 
 use crate::Player;
@@ -21,6 +21,7 @@ const TIE: f64 = 1e-9;
 /// Never chosen while anything else is legal.
 const NEVER: f64 = -1000.0;
 
+#[derive(Clone)]
 pub struct HeuristicPlayer {
     shared: Arc<Shared>,
     style: Style,
@@ -73,6 +74,21 @@ impl HeuristicPlayer {
             turn: 0,
             activated: Vec::new(),
         }
+    }
+
+    /// A copy at the start of a game, with its own random generator.
+    pub(crate) fn fresh(&self, seed: u64) -> Self {
+        Self {
+            rng: ChaCha8Rng::seed_from_u64(seed),
+            turn: 0,
+            activated: Vec::new(),
+            ..self.clone()
+        }
+    }
+
+    /// What a card is worth to this style.
+    pub(crate) fn card_value(&self, card: ygo_engine::CardIndex) -> f64 {
+        self.values[card.0 as usize]
     }
 
     fn stats(&self, id: CardId) -> Option<&CardStats> {
@@ -418,7 +434,8 @@ impl HeuristicPlayer {
 }
 
 impl Player for HeuristicPlayer {
-    fn choose(&mut self, obs: &Observation, actions: &[Action]) -> Action {
+    fn choose(&mut self, view: &PlayerView) -> Action {
+        let (obs, actions) = (view.observation(), view.actions());
         if obs.turn != self.turn {
             self.turn = obs.turn;
             self.activated.clear();

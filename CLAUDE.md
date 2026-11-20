@@ -32,7 +32,7 @@ Full spec: `docs/handoff.md`. This file holds what every session must know.
 | `records/` | Game records (git-ignored) | |
 | `data/` | JSON data; see `data/README.md` | |
 
-Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 to M3 gates passed. All 228 non-Normal cards are scripted with rulings tests (`docs/m3-plan.md`, which also lists the simplifications made). M4 (records, `ygo play`, heuristic bots, `ygo replay`) is built and its checks pass (`docs/m4-plan.md`, gate report); its gate is the owner playing a full game, with `ygo play` or in the browser game (`web/play/`). The rules and all card scripts were then moved to the modern official rules and text (`docs/card-audit.md`: findings, the three fix batches, and the exceptions left on purpose); the owner audits that work. Next after that: M5.
+Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 to M3 gates passed. All 228 non-Normal cards are scripted with rulings tests (`docs/m3-plan.md`, which also lists the simplifications made). M4 (records, `ygo play`, heuristic bots, `ygo replay`) is built and its checks pass (`docs/m4-plan.md`, gate report). The rules and all card scripts were then moved to the modern official rules and text (`docs/card-audit.md`: findings, the three fix batches, and the exceptions left on purpose). M4 gate passed (owner, 2026-11-20). M5 gate passed (2026-11-20): the search bot beats every heuristic style over 1,000 games each, 72% to 79% (`docs/m5-plan.md`, gate report). Next: M6.
 
 ## Conventions
 
@@ -51,9 +51,10 @@ scripts/check.sh                       # fmt, clippy -D warnings, tests
 cargo run -p ygo-cli -- check-data [--collection data/collection.json]
 cargo run -p ygo-cli -- check-deck data/decks/<deck>.json [--collection data/collection.json]
 cargo run --release -p ygo-cli -- sim data/decks/<a>.json data/decks/<b>.json -n 2000 [--seed S] \
-    [--bot-a random|heuristic:<style>] [--bot-b ...] [--record <dir>]
+    [--bot-a random|heuristic:<style>|search[:<style>]] [--bot-b ...] [--record <dir>] \
+    [--threads N] [--iterations N] [--horizon T]
 cargo run --release -p ygo-cli -- play --deck data/decks/<deck>.json [--bot heuristic:beatdown] \
-    [--bot-deck <file>] [--seed S] [--first me|bot|random] [--record <file>]
+    [--bot-deck <file>] [--seed S] [--first me|bot|random] [--record <file>] [--think <seconds>]
 cargo run --release -p ygo-cli -- replay <record.jsonl> [--view p0|p1|all] [--turn N]
 scripts/build-web.sh                   # browser game into web/play/dist (needs: rustup target add wasm32-unknown-unknown)
 python3 -m http.server -d web/play/dist  # play it locally
@@ -68,15 +69,16 @@ python3 -m http.server -d web/play/dist  # play it locally
 - Windows open after Sets and position changes, at summon declaration and success, at attack declaration, inside the Damage Step before damage calculation, after battle, after each chain link and after a chain resolves, and at the Standby, Battle-start, Battle-end and End Phases. Trigger and Flip effects are collected when a window opens, in SEGOC order.
 - `scripts/check.sh` must pass before every commit; `cargo test --no-fail-fast` shows every failing binary at once.
 - `GameSetup.shuffle = false` keeps decks in listed order for scenario tests; `tests/common/mod.rs` has `stacked`, `shared_with` (rules with one change) and known card ids.
-- Instance ids are assigned in a seeded random order so an id never reveals a face-down card's identity. `observe(player)` is the only view bots get.
+- Instance ids are assigned in a seeded random order so an id never reveals a face-down card's identity. Bots get a `PlayerView` (the decider's observation and legal actions); the real game stays private. `PlayerView::sample(seed)` returns a whole game that looks identical to the decider, with every card they cannot see redealt among its owner's hidden places and a fresh RNG; `tests/view.rs` in `ygo-ai` checks this at every decision of random games.
 - Modern-rules state: a Set completes with no negation window; Gate Guardian, the Moths and the Toons use summon procedures (`Action::ProcedureSummon`, `SummonKind::Procedure`, with a summon-negation window); each instance knows whether it was properly summoned (`special_summonable`, `special_summon_properly`, `room_after_leaving`); a `ChainLink` records `card_activation` and the cost's `value`; Field Spells can be Set; optional "When" triggers set `misses_timing`; once-per-turn names and name locks live in `PlayerState` (`use_name_once`, `lock_name_this_turn`) and clear at turn start. `tests/modern_rules.rs` and `tests/card_fixes.rs` in `ygo-cards` show each rule with real cards.
 - Speed baseline (after the modern-rules work, release, one core of this cloud container, all 228 scripts active): 1,215 to 1,812 random games/s, 265,000 to 320,000 actions/s; the Beatdown bot against itself 2,860 games/s. M4 was 1,870 to 2,580 games/s (350,000 to 400,000 actions/s) and Beatdown 3,777; the drop comes from the new name, procedure and proper-summon checks. M3 was 1,700 to 2,200, M2 2,600 to 3,500 and M1 7,300. Profiling (`valgrind --tool=callgrind` on `ygo sim`) at M2 showed a third of the time in `observe` and a fifth in allocation; M3 adds continuous-hook scans on every attack, summon and Graveyard move. An observation buffer reused across decisions, and caching the face-up continuous effects per state, are the next wins. Re-measure with `ygo sim` after engine changes and keep the numbers here current.
 
 ## Records, play and bots (ygo-engine, ygo-ai, ygo-cli)
 
 - A game record is JSON Lines: a header with the full `Rules`, the `GameSetup` and player labels, one line per action, then the result. It replays under its own rules, so `rules.toml` changes never break old records. `GameRecord::note` goes before `apply`.
-- Bots implement `ygo_ai::Player` and see only the `Observation`. `HeuristicPlayer` scores each legal action; its weights come from a style in `config/styles.toml` and card worth from `config/card_values.toml` (style values override). Card knowledge goes in those files, not in code. Use engine tags (Exodia pieces) when a rule of thumb needs a card property.
-- `ygo_cli::bots::Bots` turns `random` or `heuristic:<style>` into a player for `play` and `sim`. Evaluate any bot change with `ygo sim` (2,000 games, 95% interval) and record the numbers.
+- Bots implement `ygo_ai::Player`: `choose(&PlayerView) -> Action`; they see only the observation and samples. `HeuristicPlayer` scores each legal action; its weights come from a style in `config/styles.toml` and card worth from `config/card_values.toml` (style values override). Card knowledge goes in those files, not in code. Use engine tags (Exodia pieces) when a rule of thumb needs a card property.
+- `SearchPlayer` (M5) is information-set MCTS: per iteration a new sample, one shared tree (UCB1 with availability counts), heuristic-bot playouts cut at `horizon_turns` and scored by Life Points and card worth. Its `SearchSettings` (iterations, time limit, horizon) are bot settings, not rules; the browser never sets a time limit, so a resumed game replays the bot's choices exactly.
+- `ygo_cli::bots::Bots` turns `random`, `heuristic:<style>` or `search[:<style>]` (playouts in that style, Beatdown by default) into a player for `play` and `sim`; `Bots::search` holds the search settings. Evaluate any bot change with `ygo sim` (2,000 games, 95% interval) and record the numbers.
 - `ygo play` and `ygo sim` refuse a deck that fails the check-deck report (cards, ban list, deck rules; not the collection).
 - The browser game sends JSON commands to `ygo_wasm::Host::handle` (tests call it natively); its view is built from the human's observation only, so hidden cards never reach the page. A game resumes from its seed and the human's choices. The published page ships a card file without images or print records, and no Konami art.
 - `PlaySession` and `ReplaySession` hold the logic; `tui.rs` only draws and reads keys, so tests drive sessions and check screens with ratatui's `TestBackend`. Anything shown to a player is rendered from that player's observation (`describe.rs`).

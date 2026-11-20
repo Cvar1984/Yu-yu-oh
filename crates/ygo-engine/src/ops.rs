@@ -398,8 +398,18 @@ impl Game {
     /// Wins the game for `player` if their hand holds all five Exodia
     /// cards and the rules allow it.
     pub(crate) fn check_exodia(&mut self, player: PlayerId) {
-        if !self.shared.rules.win.exodia || self.result.is_some() {
-            return;
+        if self.result.is_none() && self.exodia_complete(player) {
+            self.finish(GameResult::Win {
+                winner: player,
+                reason: WinReason::Exodia,
+            });
+        }
+    }
+
+    /// `player`'s hand holds all of Exodia while the rules let it win.
+    pub(crate) fn exodia_complete(&self, player: PlayerId) -> bool {
+        if !self.shared.rules.win.exodia {
+            return false;
         }
         let mut head = false;
         let mut pieces = std::collections::BTreeSet::new();
@@ -413,12 +423,7 @@ impl Game {
                 }
             }
         }
-        if head && pieces.len() >= 4 {
-            self.finish(GameResult::Win {
-                winner: player,
-                reason: WinReason::Exodia,
-            });
-        }
+        head && pieces.len() >= 4
     }
 
     /// Shuffles `player`'s Deck with the game's seeded RNG.
