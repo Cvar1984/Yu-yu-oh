@@ -3,22 +3,22 @@
 //! floor of the evaluation ladder and the engine's fuzzing driver.
 
 mod heuristic;
+mod search;
 
 pub use heuristic::HeuristicPlayer;
+pub use search::{SearchPlayer, SearchSettings};
 
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
 use std::sync::Arc;
 
-use ygo_engine::{
-    Action, Game, GameRecord, GameResult, GameSetup, Observation, SetupError, Shared,
-};
+use ygo_engine::{Action, Game, GameRecord, GameResult, GameSetup, PlayerView, SetupError, Shared};
 
 /// Anything that can answer a decision with one of the legal actions.
 pub trait Player {
-    /// `actions` is never empty. The observation is from this player's
-    /// point of view.
-    fn choose(&mut self, observation: &Observation, actions: &[Action]) -> Action;
+    /// Returns one of `view.actions()`. The view holds this player's
+    /// observation; search bots also play forward in its samples.
+    fn choose(&mut self, view: &PlayerView) -> Action;
 }
 
 /// Picks uniformly among the legal actions.
@@ -36,7 +36,8 @@ impl RandomPlayer {
 }
 
 impl Player for RandomPlayer {
-    fn choose(&mut self, _observation: &Observation, actions: &[Action]) -> Action {
+    fn choose(&mut self, view: &PlayerView) -> Action {
+        let actions = view.actions();
         let i = (self.rng.next_u64() % actions.len() as u64) as usize;
         actions[i].clone()
     }
@@ -49,12 +50,8 @@ pub fn play_out(
     players: &mut [&mut dyn Player; 2],
     record: &mut GameRecord,
 ) -> GameResult {
-    while game.result().is_none() {
-        let decision = game
-            .pending_decision()
-            .expect("a running game always has a decision");
-        let observation = game.observe(decision.player);
-        let action = players[decision.player.index()].choose(&observation, game.actions());
+    while let Some(view) = PlayerView::new(game) {
+        let action = players[view.player().index()].choose(&view);
         record.note(game, &action);
         game.apply(&action)
             .expect("players choose only among legal actions");

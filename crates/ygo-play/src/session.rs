@@ -6,8 +6,8 @@ use std::sync::Arc;
 use ygo_ai::Player;
 use ygo_data::CardDb;
 use ygo_engine::{
-    Action, Game, GameRecord, GameResult, GameSetup, InstanceId, Observation, PlayerId, SetupError,
-    Shared, VisibleCard,
+    Action, Game, GameRecord, GameResult, GameSetup, InstanceId, Observation, PlayerId, PlayerView,
+    SetupError, Shared, VisibleCard,
 };
 
 use crate::describe;
@@ -118,12 +118,11 @@ impl PlaySession {
     }
 
     fn run_bot(&mut self) {
-        while let Some(d) = self.game.pending_decision() {
-            if d.player == self.human {
+        while let Some(view) = PlayerView::new(&self.game) {
+            if view.player() == self.human {
                 break;
             }
-            let obs = self.game.observe(d.player);
-            let action = self.bot.choose(&obs, self.game.actions());
+            let action = self.bot.choose(&view);
             self.apply(action, false);
         }
     }

@@ -20,6 +20,17 @@ pub struct SimOptions<'a> {
     pub max_turns: u32,
     /// Write each game's record to this directory.
     pub record_dir: Option<&'a Path>,
+    /// Games played at once. Each game depends only on its own seed, so the
+    /// results are the same for any number.
+    pub threads: usize,
+}
+
+/// What one game left for the report.
+struct Played {
+    first: PlayerId,
+    result: GameResult,
+    turns: u32,
+    actions: usize,
 }
 
 /// Outcome counts, split by who went first.
@@ -65,10 +76,9 @@ pub fn run(bots: &Bots, opts: &SimOptions) -> Result<Tally, Box<dyn std::error::
     let (deck_a, deck_b) = (opts.deck_a, opts.deck_b);
     let decks = [DeckList::from(deck_a), DeckList::from(deck_b)];
 
-    let mut tally = Tally::default();
-    let mut actions = 0u64;
     let started = Instant::now();
-    for i in 0..opts.games {
+    let threads = opts.threads.clamp(1, opts.games.max(1) as usize);
+    let play = |i: u32| -> Result<Played, String> {
         let mut setup = GameSetup::new(decks.clone(), opts.seed.wrapping_add(u64::from(i)));
         setup.first_player = Some(PlayerId((i % 2) as u8));
         setup.max_turns = opts.max_turns;
@@ -76,15 +86,45 @@ pub fn run(bots: &Bots, opts: &SimOptions) -> Result<Tally, Box<dyn std::error::
         let mut b = bots.make(opts.bot_b, setup.seed ^ 0xB)?;
         let mut players: [&mut dyn Player; 2] = [a.as_mut(), b.as_mut()];
         let labels = [opts.bot_a.to_string(), opts.bot_b.to_string()];
-        let (game, record) = play_game(shared.clone(), &setup, &mut players, labels)?;
+        let (game, record) =
+            play_game(shared.clone(), &setup, &mut players, labels).map_err(|e| e.to_string())?;
         if let Some(dir) = opts.record_dir {
             let path = dir.join(format!("game-{}.jsonl", setup.seed));
             std::fs::write(&path, record.to_jsonl())
-                .map_err(|source| DataError::Io { path, source })?;
+                .map_err(|source| DataError::Io { path, source }.to_string())?;
         }
-        actions += record.actions.len() as u64;
-        let result = record.result.expect("a played-out game has a result");
-        tally.record(setup.first_player.unwrap(), result, game.turn());
+        Ok(Played {
+            first: setup.first_player.unwrap(),
+            result: record.result.expect("a played-out game has a result"),
+            turns: game.turn(),
+            actions: record.actions.len(),
+        })
+    };
+    // Worker `w` plays games w, w + threads, w + 2 * threads...
+    let per_worker: Vec<Result<Vec<Played>, String>> = std::thread::scope(|scope| {
+        let workers: Vec<_> = (0..threads)
+            .map(|w| {
+                let play = &play;
+                scope.spawn(move || {
+                    (w as u32..opts.games)
+                        .step_by(threads)
+                        .map(play)
+                        .collect::<Result<Vec<_>, _>>()
+                })
+            })
+            .collect();
+        workers
+            .into_iter()
+            .map(|h| h.join().expect("a game panicked"))
+            .collect()
+    });
+    let mut tally = Tally::default();
+    let mut actions = 0u64;
+    for played in per_worker {
+        for p in played? {
+            tally.record(p.first, p.result, p.turns);
+            actions += p.actions as u64;
+        }
     }
     let elapsed = started.elapsed().as_secs_f64();
 

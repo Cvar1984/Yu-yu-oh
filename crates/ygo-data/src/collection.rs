@@ -27,6 +27,12 @@ pub struct Collection {
     /// Per-set completion as the game shows it, e.g. `"LOB": "92/126"`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub totals: Option<BTreeMap<String, String>>,
+    /// Different cards listed, when the file states it; checked on load.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unique: Option<usize>,
+    /// Copies listed, when the file states it; checked on load.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub copies: Option<usize>,
     pub cards: Vec<OwnedCard>,
 }
 
@@ -39,6 +45,20 @@ impl Collection {
     pub fn parse(text: &str, origin: &Path) -> Result<Self, DataError> {
         let collection: Self = crate::parse_json(text, origin)?;
         crate::check_schema("collection", collection.schema_version)?;
+        for (declared, actual) in [
+            (collection.unique, collection.unique_cards()),
+            (collection.copies, collection.total_copies()),
+        ] {
+            if let Some(declared) = declared
+                && declared != actual
+            {
+                return Err(DataError::CountMismatch {
+                    file: "collection",
+                    declared,
+                    actual,
+                });
+            }
+        }
         Ok(collection)
     }
 

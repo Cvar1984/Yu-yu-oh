@@ -374,6 +374,23 @@ pub fn event(obs: &Observation, pool: &CardPool, e: &Event) -> Option<String> {
         Event::Revealed { player, cards } => {
             format!("{} revealed {}", who(obs, *player), list(obs, pool, cards))
         }
+        // A private look: only the looker learns the cards.
+        Event::LookedAt { player, cards } if *player == obs.viewer => {
+            let names: Vec<String> = cards
+                .iter()
+                .map(|(_, id)| {
+                    pool.index_of(*id)
+                        .map_or_else(|| id.to_string(), |i| pool.get(i).name.clone())
+                })
+                .collect();
+            format!("You looked at {}", names.join(", "))
+        }
+        Event::LookedAt { player, cards } => format!(
+            "{} looked at {} card{}",
+            who(obs, *player),
+            cards.len(),
+            if cards.len() == 1 { "" } else { "s" }
+        ),
         Event::DeckShuffled { player } => format!("{} shuffled the Deck", who(obs, *player)),
         Event::GameOver { result } => result_sentence(obs, *result),
         _ => return None,

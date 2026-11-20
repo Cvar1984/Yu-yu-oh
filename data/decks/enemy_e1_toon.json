@@ -1,0 +1,124 @@
+{
+ "schema_version": 1,
+ "name": "Enemy E1 Toon",
+ "for": "enemy",
+ "notes": "Realistic enemy built from all 440 cards with the limited list; theme cards fixed, rest tuned (sim v9).",
+ "main": [
+  {
+   "id": 79571449,
+   "name": "Graceful Charity",
+   "count": 3
+  },
+  {
+   "id": 83011277,
+   "name": "Mystic Tomato",
+   "count": 3
+  },
+  {
+   "id": 65458948,
+   "name": "Toon Mermaid",
+   "count": 3
+  },
+  {
+   "id": 91842653,
+   "name": "Toon Summoned Skull",
+   "count": 3
+  },
+  {
+   "id": 15259703,
+   "name": "Toon World",
+   "count": 3
+  },
+  {
+   "id": 4206964,
+   "name": "Trap Hole",
+   "count": 3
+  },
+  {
+   "id": 53183600,
+   "name": "Blue-Eyes Toon Dragon",
+   "count": 2
+  },
+  {
+   "id": 97017120,
+   "name": "Giant Rat",
+   "count": 2
+  },
+  {
+   "id": 38369349,
+   "name": "Manga Ryu-Ran",
+   "count": 2
+  },
+  {
+   "id": 44095762,
+   "name": "Mirror Force",
+   "count": 2
+  },
+  {
+   "id": 12607053,
+   "name": "Waboku",
+   "count": 2
+  },
+  {
+   "id": 23771716,
+   "name": "7 Colored Fish",
+   "count": 1
+  },
+  {
+   "id": 41396436,
+   "name": "Blue-Winged Crown",
+   "count": 1
+  },
+  {
+   "id": 4031928,
+   "name": "Change of Heart",
+   "count": 1
+  },
+  {
+   "id": 53129443,
+   "name": "Dark Hole",
+   "count": 1
+  },
+  {
+   "id": 23289281,
+   "name": "Karate Man",
+   "count": 1
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "count": 1
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "count": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "count": 1
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "count": 1
+  },
+  {
+   "id": 41420027,
+   "name": "Solemn Judgment",
+   "count": 1
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "count": 1
+  },
+  {
+   "id": 78010363,
+   "name": "Witch of the Black Forest",
+   "count": 1
+  }
+ ],
+ "extra": []
+}

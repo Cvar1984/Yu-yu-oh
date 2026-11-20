@@ -11,6 +11,7 @@ Stats: how many big monsters were summoned and how many were gone before the own
 """
 from collections import Counter
 import ygo_sim4 as V4
+import ygo_sim2 as S
 from ygo_sim2 import C, Mon, is_mon
 
 BIG_MIN_LEVEL = 6
@@ -37,7 +38,7 @@ class Duel5(V4.Duel4):
     def try_big(self, pl, o):
         if pl.summoned:
             return
-        bigs = [c for c in pl.hand if is_mon(c) and C[c][1] >= BIG_MIN_LEVEL]
+        bigs = [c for c in pl.hand if is_mon(c) and C[c][1] >= BIG_MIN_LEVEL and c not in S.NOMI]
         if not bigs or not self.safe_to_go_big(pl, o):
             return
         card = max(bigs, key=lambda c: C[c][2])
@@ -53,7 +54,7 @@ class Duel5(V4.Duel4):
                 pl.mons.append(t)
                 self.log(f"{pl.name} borrows {t.name} as a tribute")
             pl.gy.append("Change of Heart")
-        fodder = sorted(pl.mons, key=lambda m: (not m.temp, m.dfn))
+        fodder = sorted([m for m in pl.mons if S.can_tribute(m)], key=lambda m: (not m.temp, m.dfn))
         if len(fodder) < need:
             return
         for m in fodder[:need]:

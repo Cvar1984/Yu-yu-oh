@@ -1,0 +1,1019 @@
+{
+ "schema_version": 1,
+ "owner": "player",
+ "read_from": "save B: set screens 2026-11-19",
+ "totals": {
+  "LOB": "100/126",
+  "MRD": "64/144",
+  "SRL": "37/104"
+ },
+ "unique": 201,
+ "copies": 421,
+ "cards": [
+  {
+   "id": 39111158,
+   "name": "Tri-Horned Dragon",
+   "copies": 1
+  },
+  {
+   "id": 76184692,
+   "name": "Hitotsu-Me Giant",
+   "copies": 1
+  },
+  {
+   "id": 45231177,
+   "name": "Flame Swordsman",
+   "copies": 1
+  },
+  {
+   "id": 32274490,
+   "name": "Skull Servant",
+   "copies": 5
+  },
+  {
+   "id": 89091579,
+   "name": "Basic Insect",
+   "copies": 2
+  },
+  {
+   "id": 40374923,
+   "name": "Mammoth Graveyard",
+   "copies": 4
+  },
+  {
+   "id": 90357090,
+   "name": "Silver Fang",
+   "copies": 2
+  },
+  {
+   "id": 9159938,
+   "name": "Dark Gray",
+   "copies": 4
+  },
+  {
+   "id": 77827521,
+   "name": "Trial of Nightmare",
+   "copies": 4
+  },
+  {
+   "id": 90963488,
+   "name": "Nemuriko",
+   "copies": 2
+  },
+  {
+   "id": 32864,
+   "name": "The 13th Grave",
+   "copies": 3
+  },
+  {
+   "id": 37421579,
+   "name": "Charubin the Fire Knight",
+   "copies": 1
+  },
+  {
+   "id": 34460851,
+   "name": "Flame Manipulator",
+   "copies": 3
+  },
+  {
+   "id": 36121917,
+   "name": "Monster Egg",
+   "copies": 4
+  },
+  {
+   "id": 53293545,
+   "name": "Firegrass",
+   "copies": 2
+  },
+  {
+   "id": 17881964,
+   "name": "Darkfire Dragon",
+   "copies": 1
+  },
+  {
+   "id": 53375573,
+   "name": "Dark King of the Abyss",
+   "copies": 3
+  },
+  {
+   "id": 2863439,
+   "name": "Fiend Reflection #2",
+   "copies": 1
+  },
+  {
+   "id": 1641882,
+   "name": "Fusionist",
+   "copies": 2
+  },
+  {
+   "id": 37313348,
+   "name": "Turtle Tiger",
+   "copies": 3
+  },
+  {
+   "id": 75356564,
+   "name": "Petit Dragon",
+   "copies": 6
+  },
+  {
+   "id": 38142739,
+   "name": "Petit Angel",
+   "copies": 2
+  },
+  {
+   "id": 85639257,
+   "name": "Aqua Madoor",
+   "copies": 2
+  },
+  {
+   "id": 15401633,
+   "name": "Kagemusha of the Blue Flame",
+   "copies": 4
+  },
+  {
+   "id": 57305373,
+   "name": "Two-Mouth Darkruler",
+   "copies": 4
+  },
+  {
+   "id": 40826495,
+   "name": "Dissolverock",
+   "copies": 4
+  },
+  {
+   "id": 39004808,
+   "name": "Root Water",
+   "copies": 6
+  },
+  {
+   "id": 18710707,
+   "name": "The Furious Sea King",
+   "copies": 3
+  },
+  {
+   "id": 22910685,
+   "name": "Green Phantom King",
+   "copies": 1
+  },
+  {
+   "id": 85309439,
+   "name": "Ray & Temperature",
+   "copies": 5
+  },
+  {
+   "id": 84686841,
+   "name": "King Fog",
+   "copies": 4
+  },
+  {
+   "id": 83464209,
+   "name": "Mystical Sheep #2",
+   "copies": 3
+  },
+  {
+   "id": 44287299,
+   "name": "Masaki the Legendary Swordsman",
+   "copies": 3
+  },
+  {
+   "id": 85705804,
+   "name": "Kurama",
+   "copies": 5
+  },
+  {
+   "id": 61854111,
+   "name": "Legendary Sword",
+   "copies": 2
+  },
+  {
+   "id": 46009906,
+   "name": "Beast Fangs",
+   "copies": 4
+  },
+  {
+   "id": 15052462,
+   "name": "Violet Crystal",
+   "copies": 2
+  },
+  {
+   "id": 91595718,
+   "name": "Book of Secret Arts",
+   "copies": 3
+  },
+  {
+   "id": 77027445,
+   "name": "Power of Kaishin",
+   "copies": 1
+  },
+  {
+   "id": 50045299,
+   "name": "Dragon Capture Jar",
+   "copies": 1
+  },
+  {
+   "id": 87430998,
+   "name": "Forest",
+   "copies": 3
+  },
+  {
+   "id": 23424603,
+   "name": "Wasteland",
+   "copies": 5
+  },
+  {
+   "id": 50913601,
+   "name": "Mountain",
+   "copies": 3
+  },
+  {
+   "id": 86318356,
+   "name": "Sogen",
+   "copies": 2
+  },
+  {
+   "id": 22702055,
+   "name": "Umi",
+   "copies": 6
+  },
+  {
+   "id": 59197169,
+   "name": "Yami",
+   "copies": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "copies": 1
+  },
+  {
+   "id": 38199696,
+   "name": "Red Medicine",
+   "copies": 4
+  },
+  {
+   "id": 76103675,
+   "name": "Sparks",
+   "copies": 2
+  },
+  {
+   "id": 46130346,
+   "name": "Hinotama",
+   "copies": 6
+  },
+  {
+   "id": 51482758,
+   "name": "Remove Trap",
+   "copies": 6
+  },
+  {
+   "id": 83887306,
+   "name": "Two-Pronged Attack",
+   "copies": 2
+  },
+  {
+   "id": 15025844,
+   "name": "Mystical Elf",
+   "copies": 1
+  },
+  {
+   "id": 72842870,
+   "name": "Tyhone",
+   "copies": 4
+  },
+  {
+   "id": 32452818,
+   "name": "Beaver Warrior",
+   "copies": 1
+  },
+  {
+   "id": 28279543,
+   "name": "Curse of Dragon",
+   "copies": 2
+  },
+  {
+   "id": 1784619,
+   "name": "Uraby",
+   "copies": 2
+  },
+  {
+   "id": 33066139,
+   "name": "Reaper of the Cards",
+   "copies": 2
+  },
+  {
+   "id": 36304921,
+   "name": "Witty Phantom",
+   "copies": 3
+  },
+  {
+   "id": 94675535,
+   "name": "Larvas",
+   "copies": 3
+  },
+  {
+   "id": 20060230,
+   "name": "Hard Armor",
+   "copies": 2
+  },
+  {
+   "id": 93553943,
+   "name": "Man Eater",
+   "copies": 4
+  },
+  {
+   "id": 56342351,
+   "name": "M-Warrior #1",
+   "copies": 2
+  },
+  {
+   "id": 92731455,
+   "name": "M-Warrior #2",
+   "copies": 4
+  },
+  {
+   "id": 80770678,
+   "name": "Spirit of the Harp",
+   "copies": 2
+  },
+  {
+   "id": 53153481,
+   "name": "Armaill",
+   "copies": 6
+  },
+  {
+   "id": 63308047,
+   "name": "Terra the Terrible",
+   "copies": 3
+  },
+  {
+   "id": 98818516,
+   "name": "Frenzied Panda",
+   "copies": 1
+  },
+  {
+   "id": 56283725,
+   "name": "Kumootoko",
+   "copies": 1
+  },
+  {
+   "id": 76211194,
+   "name": "Meda Bat",
+   "copies": 5
+  },
+  {
+   "id": 75376965,
+   "name": "Enchanting Mermaid",
+   "copies": 1
+  },
+  {
+   "id": 71407486,
+   "name": "Fireyarou",
+   "copies": 3
+  },
+  {
+   "id": 70681994,
+   "name": "Dragoness the Wicked Knight",
+   "copies": 1
+  },
+  {
+   "id": 33064647,
+   "name": "One-Eyed Shield Dragon",
+   "copies": 2
+  },
+  {
+   "id": 4614116,
+   "name": "Dark Energy",
+   "copies": 2
+  },
+  {
+   "id": 77007920,
+   "name": "Laser Cannon Armor",
+   "copies": 1
+  },
+  {
+   "id": 39774685,
+   "name": "Vile Germs",
+   "copies": 1
+  },
+  {
+   "id": 1557499,
+   "name": "Silver Bow and Arrow",
+   "copies": 3
+  },
+  {
+   "id": 1435851,
+   "name": "Dragon Treasure",
+   "copies": 3
+  },
+  {
+   "id": 37820550,
+   "name": "Electro-Whip",
+   "copies": 2
+  },
+  {
+   "id": 36607978,
+   "name": "Mystical Moon",
+   "copies": 4
+  },
+  {
+   "id": 25769732,
+   "name": "Machine Conversion Factory",
+   "copies": 3
+  },
+  {
+   "id": 51267887,
+   "name": "Raise Body Heat",
+   "copies": 2
+  },
+  {
+   "id": 98252586,
+   "name": "Follow Wind",
+   "copies": 5
+  },
+  {
+   "id": 11868825,
+   "name": "Goblin's Secret Remedy",
+   "copies": 3
+  },
+  {
+   "id": 73134081,
+   "name": "Final Flame",
+   "copies": 1
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "copies": 1
+  },
+  {
+   "id": 85326399,
+   "name": "Spike Seadra",
+   "copies": 1
+  },
+  {
+   "id": 45042329,
+   "name": "Tripwire Beast",
+   "copies": 4
+  },
+  {
+   "id": 10202894,
+   "name": "Skull Red Bird",
+   "copies": 2
+  },
+  {
+   "id": 73051941,
+   "name": "Sand Stone",
+   "copies": 3
+  },
+  {
+   "id": 33178416,
+   "name": "Misairuzame",
+   "copies": 1
+  },
+  {
+   "id": 29172562,
+   "name": "Steel Ogre Grotto #1",
+   "copies": 3
+  },
+  {
+   "id": 55444629,
+   "name": "Lesser Dragon",
+   "copies": 2
+  },
+  {
+   "id": 43500484,
+   "name": "Darkworld Thorns",
+   "copies": 4
+  },
+  {
+   "id": 16353197,
+   "name": "Drooling Lizard",
+   "copies": 5
+  },
+  {
+   "id": 17535588,
+   "name": "Armored Starfish",
+   "copies": 2
+  },
+  {
+   "id": 55291359,
+   "name": "Succubus Knight",
+   "copies": 3
+  },
+  {
+   "id": 44519536,
+   "name": "Left Leg of the Forbidden One",
+   "copies": 1
+  },
+  {
+   "id": 66889139,
+   "name": "Gaia the Dragon Champion",
+   "copies": 2
+  },
+  {
+   "id": 87796900,
+   "name": "Winged Dragon, Guardian of the Fortress #1",
+   "copies": 1
+  },
+  {
+   "id": 40240595,
+   "name": "Cocoon of Evolution",
+   "copies": 1
+  },
+  {
+   "id": 20277860,
+   "name": "Armored Zombie",
+   "copies": 3
+  },
+  {
+   "id": 28933734,
+   "name": "Mask of Darkness",
+   "copies": 1
+  },
+  {
+   "id": 16972957,
+   "name": "Doma The Angel of Silence",
+   "copies": 3
+  },
+  {
+   "id": 16768387,
+   "name": "Big Eye",
+   "copies": 1
+  },
+  {
+   "id": 10189126,
+   "name": "Masked Sorcerer",
+   "copies": 1
+  },
+  {
+   "id": 19066538,
+   "name": "Roaring Ocean Snake",
+   "copies": 1
+  },
+  {
+   "id": 58314394,
+   "name": "Ground Attacker Bugroth",
+   "copies": 2
+  },
+  {
+   "id": 58192742,
+   "name": "Petit Moth",
+   "copies": 1
+  },
+  {
+   "id": 90219263,
+   "name": "Elegant Egotist",
+   "copies": 1
+  },
+  {
+   "id": 86088138,
+   "name": "Ocubeam",
+   "copies": 3
+  },
+  {
+   "id": 12472242,
+   "name": "Leghul",
+   "copies": 2
+  },
+  {
+   "id": 10538007,
+   "name": "Leogun",
+   "copies": 2
+  },
+  {
+   "id": 70138455,
+   "name": "Blast Juggler",
+   "copies": 2
+  },
+  {
+   "id": 32809211,
+   "name": "Jinzo #7",
+   "copies": 1
+  },
+  {
+   "id": 93221206,
+   "name": "Ancient Elf",
+   "copies": 2
+  },
+  {
+   "id": 28593363,
+   "name": "Deepsea Shark",
+   "copies": 1
+  },
+  {
+   "id": 21347810,
+   "name": "Rainbow Flower",
+   "copies": 1
+  },
+  {
+   "id": 69572024,
+   "name": "Tongyo",
+   "copies": 2
+  },
+  {
+   "id": 15237615,
+   "name": "Empress Judge",
+   "copies": 3
+  },
+  {
+   "id": 55875323,
+   "name": "Electric Lizard",
+   "copies": 2
+  },
+  {
+   "id": 5901497,
+   "name": "Queen's Double",
+   "copies": 1
+  },
+  {
+   "id": 76446915,
+   "name": "Disk Magician",
+   "copies": 2
+  },
+  {
+   "id": 64501875,
+   "name": "Hibikime",
+   "copies": 3
+  },
+  {
+   "id": 3027001,
+   "name": "Fake Trap",
+   "copies": 1
+  },
+  {
+   "id": 5758500,
+   "name": "Soul Release",
+   "copies": 4
+  },
+  {
+   "id": 87564352,
+   "name": "Blackland Fire Dragon",
+   "copies": 3
+  },
+  {
+   "id": 40453765,
+   "name": "Swamp Battleguard",
+   "copies": 1
+  },
+  {
+   "id": 28546905,
+   "name": "Illusionist Faceless Mage",
+   "copies": 1
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "copies": 1
+  },
+  {
+   "id": 14851496,
+   "name": "Jellyfish",
+   "copies": 1
+  },
+  {
+   "id": 62121,
+   "name": "Castle of Dark Illusions",
+   "copies": 1
+  },
+  {
+   "id": 95727991,
+   "name": "Catapult Turtle",
+   "copies": 1
+  },
+  {
+   "id": 94905343,
+   "name": "Rabid Horseman",
+   "copies": 1
+  },
+  {
+   "id": 93889755,
+   "name": "Crass Clown",
+   "copies": 1
+  },
+  {
+   "id": 29155212,
+   "name": "Pumpking the King of Ghosts",
+   "copies": 3
+  },
+  {
+   "id": 28725004,
+   "name": "Tainted Wisdom",
+   "copies": 2
+  },
+  {
+   "id": 42431843,
+   "name": "Ancient Brain",
+   "copies": 2
+  },
+  {
+   "id": 89272878,
+   "name": "Guardian of the Labyrinth",
+   "copies": 1
+  },
+  {
+   "id": 25109950,
+   "name": "The Little Swordsman of Aile",
+   "copies": 2
+  },
+  {
+   "id": 46918794,
+   "name": "Tremendous Fire",
+   "copies": 2
+  },
+  {
+   "id": 94773007,
+   "name": "Jirai Gumo",
+   "copies": 1
+  },
+  {
+   "id": 24611934,
+   "name": "Ryu-Kishin Powered",
+   "copies": 1
+  },
+  {
+   "id": 25655502,
+   "name": "Bickuribox",
+   "copies": 1
+  },
+  {
+   "id": 8471389,
+   "name": "Giga-Tech Wolf",
+   "copies": 3
+  },
+  {
+   "id": 29380133,
+   "name": "Yado Karu",
+   "copies": 3
+  },
+  {
+   "id": 71107816,
+   "name": "The Bistro Butcher",
+   "copies": 1
+  },
+  {
+   "id": 8201910,
+   "name": "Star Boy",
+   "copies": 1
+  },
+  {
+   "id": 60862676,
+   "name": "Flame Cerebrus",
+   "copies": 3
+  },
+  {
+   "id": 7805359,
+   "name": "Niwatori",
+   "copies": 1
+  },
+  {
+   "id": 21417692,
+   "name": "Dark Elf",
+   "copies": 1
+  },
+  {
+   "id": 17358176,
+   "name": "Lady of Faith",
+   "copies": 1
+  },
+  {
+   "id": 41396436,
+   "name": "Blue-Winged Crown",
+   "copies": 1
+  },
+  {
+   "id": 5818798,
+   "name": "Gazelle the King of Mythical Beasts",
+   "copies": 1
+  },
+  {
+   "id": 52097679,
+   "name": "Shield & Sword",
+   "copies": 1
+  },
+  {
+   "id": 98495314,
+   "name": "Sword of Deep-Seated",
+   "copies": 1
+  },
+  {
+   "id": 25880422,
+   "name": "Block Attack",
+   "copies": 1
+  },
+  {
+   "id": 88279736,
+   "name": "Robbin' Goblin",
+   "copies": 1
+  },
+  {
+   "id": 24668830,
+   "name": "Germ Infection",
+   "copies": 2
+  },
+  {
+   "id": 50152549,
+   "name": "Paralyzing Potion",
+   "copies": 1
+  },
+  {
+   "id": 20436034,
+   "name": "Ring of Magnetism",
+   "copies": 2
+  },
+  {
+   "id": 83225447,
+   "name": "Stim-Pack",
+   "copies": 2
+  },
+  {
+   "id": 41462083,
+   "name": "Thousand Dragon",
+   "copies": 1
+  },
+  {
+   "id": 36039163,
+   "name": "Penguin Knight",
+   "copies": 1
+  },
+  {
+   "id": 11324436,
+   "name": "Electric Snake",
+   "copies": 1
+  },
+  {
+   "id": 32539892,
+   "name": "Minar",
+   "copies": 1
+  },
+  {
+   "id": 95744531,
+   "name": "Griggle",
+   "copies": 1
+  },
+  {
+   "id": 14015067,
+   "name": "Ancient One of the Deep Forest",
+   "copies": 1
+  },
+  {
+   "id": 72053645,
+   "name": "Weather Report",
+   "copies": 2
+  },
+  {
+   "id": 93108297,
+   "name": "Liquid Beast",
+   "copies": 1
+  },
+  {
+   "id": 54579801,
+   "name": "High Tide Gyojin",
+   "copies": 1
+  },
+  {
+   "id": 91996584,
+   "name": "Whiptail Crow",
+   "copies": 2
+  },
+  {
+   "id": 3797883,
+   "name": "Slot Machine",
+   "copies": 1
+  },
+  {
+   "id": 12470447,
+   "name": "Curse of Fiend",
+   "copies": 1
+  },
+  {
+   "id": 70368879,
+   "name": "Upstart Goblin",
+   "copies": 1
+  },
+  {
+   "id": 82003859,
+   "name": "Toll",
+   "copies": 1
+  },
+  {
+   "id": 18591904,
+   "name": "Final Destiny",
+   "copies": 1
+  },
+  {
+   "id": 81380218,
+   "name": "Chorus of Sanctuary",
+   "copies": 1
+  },
+  {
+   "id": 43641473,
+   "name": "Tailor of the Fickle",
+   "copies": 1
+  },
+  {
+   "id": 16430187,
+   "name": "The Reliable Guardian",
+   "copies": 1
+  },
+  {
+   "id": 79323590,
+   "name": "Chain Energy",
+   "copies": 1
+  },
+  {
+   "id": 74191942,
+   "name": "Painful Choice",
+   "copies": 1
+  },
+  {
+   "id": 74637266,
+   "name": "Octoberser",
+   "copies": 1
+  },
+  {
+   "id": 7892180,
+   "name": "Psychic Kappa",
+   "copies": 3
+  },
+  {
+   "id": 67284908,
+   "name": "Labyrinth Wall",
+   "copies": 3
+  },
+  {
+   "id": 64389297,
+   "name": "Magical Labyrinth",
+   "copies": 1
+  },
+  {
+   "id": 95051344,
+   "name": "Eternal Rest",
+   "copies": 2
+  },
+  {
+   "id": 43417563,
+   "name": "Commencement Dance",
+   "copies": 1
+  },
+  {
+   "id": 76806714,
+   "name": "Turtle Oath",
+   "copies": 1
+  },
+  {
+   "id": 38369349,
+   "name": "Manga Ryu-Ran",
+   "copies": 1
+  },
+  {
+   "id": 90020065,
+   "name": "Jigen Bakudan",
+   "copies": 1
+  },
+  {
+   "id": 23289281,
+   "name": "Karate Man",
+   "copies": 1
+  },
+  {
+   "id": 59784896,
+   "name": "Dark Zebra",
+   "copies": 1
+  },
+  {
+   "id": 58551308,
+   "name": "Spear Cretin",
+   "copies": 1
+  },
+  {
+   "id": 95956346,
+   "name": "Shining Angel",
+   "copies": 1
+  },
+  {
+   "id": 21340051,
+   "name": "Boar Soldier",
+   "copies": 1
+  },
+  {
+   "id": 57839750,
+   "name": "Mother Grizzly",
+   "copies": 1
+  },
+  {
+   "id": 19406822,
+   "name": "Kotodama",
+   "copies": 1
+  },
+  {
+   "id": 19384334,
+   "name": "Molten Destruction",
+   "copies": 1
+  },
+  {
+   "id": 18161786,
+   "name": "Mystic Plasma Zone",
+   "copies": 2
+  }
+ ]
+}

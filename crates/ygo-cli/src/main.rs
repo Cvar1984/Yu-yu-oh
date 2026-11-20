@@ -50,10 +50,10 @@ enum Command {
     Sim {
         deck_a: PathBuf,
         deck_b: PathBuf,
-        /// Player A: `random` or `heuristic:<style>`.
+        /// Player A: `random`, `heuristic:<style>` or `search[:<style>]`.
         #[arg(long, default_value = "random")]
         bot_a: String,
-        /// Player B: `random` or `heuristic:<style>`.
+        /// Player B: `random`, `heuristic:<style>` or `search[:<style>]`.
         #[arg(long, default_value = "random")]
         bot_b: String,
         /// Number of games; each player goes first in half of them.
@@ -67,6 +67,11 @@ enum Command {
         /// Write every game's record (JSON Lines) into this directory.
         #[arg(long)]
         record: Option<PathBuf>,
+        /// Games played at once; results do not depend on it.
+        #[arg(long, default_value_t = 1)]
+        threads: usize,
+        #[command(flatten)]
+        search: SearchArgs,
     },
     /// Play against a bot in a full-screen terminal UI.
     Play {
@@ -76,7 +81,8 @@ enum Command {
         /// The bot's deck; defaults to a copy of yours.
         #[arg(long)]
         bot_deck: Option<PathBuf>,
-        /// The opponent: `random` or `heuristic:<style>` (see config/styles.toml).
+        /// The opponent: `random`, `heuristic:<style>` (see config/styles.toml)
+        /// or `search[:<style>]`.
         #[arg(long, default_value = bots::DEFAULT_BOT)]
         bot: String,
         /// Shuffle seed; taken from the clock when left out.
@@ -90,6 +96,8 @@ enum Command {
         /// Record file; defaults to records/human/<time>-<seed>.jsonl.
         #[arg(long)]
         record: Option<PathBuf>,
+        #[command(flatten)]
+        search: SearchArgs,
     },
     /// Step through a recorded game in a full-screen terminal UI.
     Replay {
@@ -102,6 +110,39 @@ enum Command {
         #[arg(long, default_value_t = 1)]
         turn: u32,
     },
+}
+
+/// How hard `search` bots think.
+#[derive(clap::Args)]
+struct SearchArgs {
+    /// Playouts per decision for `search` bots [default: 200, or no
+    /// limit with --think].
+    #[arg(long)]
+    iterations: Option<u32>,
+    /// Seconds a `search` bot thinks per decision (less if --iterations
+    /// runs out first).
+    #[arg(long)]
+    think: Option<f64>,
+    /// Turns a `search` bot plays ahead before scoring; 0 plays to the end.
+    #[arg(long, default_value_t = ygo_ai::SearchSettings::default().horizon_turns)]
+    horizon: u32,
+}
+
+impl SearchArgs {
+    fn apply(&self, bots: &mut bots::Bots) -> Result<(), String> {
+        bots.search.iterations = match (self.iterations, self.think) {
+            (Some(n), _) => n,
+            (None, Some(_)) => u32::MAX,
+            (None, None) => bots.search.iterations,
+        };
+        bots.search.horizon_turns = self.horizon;
+        if let Some(secs) = self.think {
+            let limit = std::time::Duration::try_from_secs_f64(secs)
+                .map_err(|_| format!("--think {secs}: not a number of seconds"))?;
+            bots.search.time_limit = Some(limit);
+        }
+        Ok(())
+    }
 }
 
 fn main() -> ExitCode {
@@ -180,6 +221,8 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             seed,
             max_turns,
             record,
+            threads,
+            search,
         } => {
             if let Some(dir) = &record {
                 std::fs::create_dir_all(dir).map_err(|source| DataError::Io {
@@ -187,7 +230,8 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     source,
                 })?;
             }
-            let bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            search.apply(&mut bots)?;
             let deck_a = decks::load_legal(&deck_a, &bundle)?;
             let deck_b = decks::load_legal(&deck_b, &bundle)?;
             sim::run(
@@ -201,6 +245,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     seed,
                     max_turns,
                     record_dir: record.as_deref(),
+                    threads,
                 },
             )?;
             Ok(true)
@@ -213,12 +258,14 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             first,
             max_turns,
             record,
+            search,
         } => {
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default();
             let seed = seed.unwrap_or(now.as_nanos() as u64);
-            let bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            search.apply(&mut bots)?;
             let deck = decks::load_legal(&deck, &bundle)?;
             let bot_deck = bot_deck
                 .map(|p| decks::load_legal(&p, &bundle))

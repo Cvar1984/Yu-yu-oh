@@ -69,21 +69,46 @@ fn effect_monsters_summon_as_vanilla_but_toons_cannot() {
     );
 }
 
+/// Non-Normal EXTRA cards from the 440-card pool (handoff update,
+/// 2026-11-20) whose scripts are still to be written; see
+/// `docs/pool-440-plan.md`. The list only shrinks: every entry must be
+/// unscripted, and every unscripted card must be listed.
+const PENDING: &[(u32, &str)] = &[
+    (2833249, "D. Tribe"),
+    (62867251, "Light of Intervention"),
+    (77622396, "Reverse Trap"),
+    (70344351, "Riryoku Field"),
+    (73915051, "Scapegoat"),
+    (59560625, "Shift"),
+    (68005187, "Soul Exchange"),
+    (80604092, "Ultimate Offering"),
+];
+
 #[test]
 fn every_non_normal_card_in_the_pool_has_a_script() {
     let registry = ygo_cards::registry();
     let b = bundle();
-    let missing: Vec<String> = b
+    let missing: BTreeSet<u32> = b
         .cards
         .iter()
         .filter(|c| c.kind() != CardKind::Normal && registry.get(c.id).is_none())
-        .map(|c| format!("{} ({})", c.name, c.id))
+        .map(|c| c.id.0)
         .collect();
-    assert!(missing.is_empty(), "unscripted: {missing:?}");
+    let pending: BTreeSet<u32> = PENDING.iter().map(|&(id, _)| id).collect();
+    let unlisted: Vec<_> = missing.difference(&pending).collect();
+    assert!(
+        unlisted.is_empty(),
+        "unscripted and not pending: {unlisted:?}"
+    );
+    let done: Vec<_> = PENDING
+        .iter()
+        .filter(|(id, _)| !missing.contains(id))
+        .collect();
+    assert!(done.is_empty(), "scripted now, drop from PENDING: {done:?}");
     let non_normal = b
         .cards
         .iter()
         .filter(|c| c.kind() != CardKind::Normal)
         .count();
-    assert_eq!(non_normal, 228);
+    assert_eq!(non_normal, 272);
 }

@@ -300,7 +300,7 @@ function renderSetup() {
     <div class="field"><span class="label">Who goes first</span>
       <div class="seg" role="group" aria-label="Who goes first">${firstBtn("random", "Coin toss")}${firstBtn("me", "You")}${firstBtn("bot", "Opponent")}</div>
     </div>
-    <p class="note">Decks are checked against the ban list (Pot of Greed, Change of Heart and Raigeki at one copy) and the deck rules. The opponent's style comes from the bot styles file; Beatdown is the default.</p>
+    <p class="note">Decks are checked against the ban list (Pot of Greed, Change of Heart and Raigeki at one copy) and the deck rules. The opponent's style comes from the bot styles file; Beatdown is the default. The search bot plays each choice forward many times before it decides, so it is the strongest and the slowest.</p>
     ${illegal}
     <div class="actions-row"><button class="btn primary" type="submit">Start duel</button></div>
   </form>`;
@@ -320,6 +320,8 @@ function renderSetup() {
 
 function botName(b) {
   if (b === "random") return "Random (plays any legal move)";
+  if (b === "search") return "Search bot (thinks ahead)";
+  if (b.startsWith("search:")) return "Search bot (" + b.slice(7) + " playouts)";
   const style = b.replace("heuristic:", "");
   return style.charAt(0).toUpperCase() + style.slice(1) + " bot";
 }

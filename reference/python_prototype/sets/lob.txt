@@ -1,0 +1,126 @@
+0|LOB-000|Tri-Horned Dragon|Normal Monster|8|2850|2350|Dragon|DARK
+1|LOB-001|Blue-Eyes White Dragon|Normal Monster|8|3000|2500|Dragon|LIGHT
+2|LOB-002|Hitotsu-Me Giant|Normal Monster|4|1200|1000|Beast-Warrior|EARTH
+3|LOB-003|Flame Swordsman|Fusion Monster|5|1800|1600|Warrior|FIRE
+4|LOB-004|Skull Servant|Normal Monster|1|300|200|Zombie|DARK
+5|LOB-005|Dark Magician|Normal Monster|7|2500|2100|Spellcaster|DARK
+6|LOB-006|Gaia The Fierce Knight|Normal Monster|7|2300|2100|Warrior|EARTH
+7|LOB-007|Celtic Guardian|Normal Monster|4|1400|1200|Warrior|EARTH
+8|LOB-008|Basic Insect|Normal Monster|2|500|700|Insect|EARTH
+9|LOB-009|Mammoth Graveyard|Normal Monster|3|1200|800|Dinosaur|EARTH
+10|LOB-010|Silver Fang|Normal Monster|3|1200|800|Beast|EARTH
+11|LOB-011|Dark Gray|Normal Monster|3|800|900|Beast|EARTH
+12|LOB-012|Trial of Nightmare|Normal Monster|4|1300|900|Fiend|DARK
+13|LOB-013|Nemuriko|Normal Monster|3|800|700|Spellcaster|DARK
+14|LOB-014|The 13th Grave|Normal Monster|3|1200|900|Zombie|DARK
+15|LOB-015|Charubin the Fire Knight|Fusion Monster|3|1100|800|Pyro|FIRE
+16|LOB-016|Flame Manipulator|Normal Monster|3|900|1000|Spellcaster|FIRE
+17|LOB-017|Monster Egg|Normal Monster|3|600|900|Warrior|EARTH
+18|LOB-018|Firegrass|Normal Monster|2|700|600|Plant|EARTH
+19|LOB-019|Darkfire Dragon|Fusion Monster|4|1500|1250|Dragon|DARK
+20|LOB-020|Dark King of the Abyss|Normal Monster|3|1200|800|Fiend|DARK
+21|LOB-021|Fiend Reflection #2|Normal Monster|4|1100|1400|Winged Beast|LIGHT
+22|LOB-022|Fusionist|Fusion Monster|3|900|700|Beast|EARTH
+23|LOB-023|Turtle Tiger|Normal Monster|4|1000|1500|Aqua|WATER
+24|LOB-024|Petit Dragon|Normal Monster|2|600|700|Dragon|WIND
+25|LOB-025|Petit Angel|Normal Monster|3|600|900|Fairy|LIGHT
+26|LOB-026|Hinotama Soul|Normal Monster|2|600|500|Pyro|FIRE
+27|LOB-027|Aqua Madoor|Normal Monster|4|1200|2000|Spellcaster|WATER
+28|LOB-028|Kagemusha of the Blue Flame|Normal Monster|2|800|400|Warrior|EARTH
+29|LOB-029|Flame Ghost|Fusion Monster|3|1000|800|Zombie|DARK
+30|LOB-030|Two-Mouth Darkruler|Normal Monster|3|900|700|Dinosaur|EARTH
+31|LOB-031|Dissolverock|Normal Monster|3|900|1000|Rock|EARTH
+32|LOB-032|Root Water|Normal Monster|3|900|800|Fish|WATER
+33|LOB-033|The Furious Sea King|Normal Monster|3|800|700|Aqua|WATER
+34|LOB-034|Green Phantom King|Normal Monster|3|500|1600|Plant|EARTH
+35|LOB-035|Ray & Temperature|Normal Monster|3|1000|1000|Fairy|LIGHT
+36|LOB-036|King Fog|Normal Monster|3|1000|900|Fiend|DARK
+37|LOB-037|Mystical Sheep #2|Normal Monster|3|800|1000|Beast|EARTH
+38|LOB-038|Masaki the Legendary Swordsman|Normal Monster|4|1100|1100|Warrior|EARTH
+39|LOB-039|Kurama|Normal Monster|3|800|800|Winged Beast|WIND
+40|LOB-040|Legendary Sword|Spell Card||||Equip|
+41|LOB-041|Beast Fangs|Spell Card||||Equip|
+42|LOB-042|Violet Crystal|Spell Card||||Equip|
+43|LOB-043|Book of Secret Arts|Spell Card||||Equip|
+44|LOB-044|Power of Kaishin|Spell Card||||Equip|
+45|LOB-045|Dragon Capture Jar|Trap Card||||Continuous|
+46|LOB-046|Forest|Spell Card||||Field|
+47|LOB-047|Wasteland|Spell Card||||Field|
+48|LOB-048|Mountain|Spell Card||||Field|
+49|LOB-049|Sogen|Spell Card||||Field|
+50|LOB-050|Umi|Spell Card||||Field|
+51|LOB-051|Yami|Spell Card||||Field|
+52|LOB-052|Dark Hole|Spell Card||||Normal|
+53|LOB-053|Raigeki|Spell Card||||Normal|
+54|LOB-054|Red Medicine|Spell Card||||Normal|
+55|LOB-055|Sparks|Spell Card||||Normal|
+56|LOB-056|Hinotama|Spell Card||||Normal|
+57|LOB-057|Fissure|Spell Card||||Normal|
+58|LOB-058|Trap Hole|Trap Card||||Normal|
+59|LOB-059|Polymerization|Spell Card||||Normal|
+60|LOB-060|Remove Trap|Spell Card||||Normal|
+61|LOB-061|Two-Pronged Attack|Trap Card||||Normal|
+62|LOB-062|Mystical Elf|Normal Monster|4|800|2000|Spellcaster|LIGHT
+63|LOB-063|Tyhone|Normal Monster|4|1200|1400|Winged Beast|WIND
+64|LOB-064|Beaver Warrior|Normal Monster|4|1200|1500|Beast-Warrior|EARTH
+65|LOB-065|Gravedigger Ghoul|Spell Card||||Normal|
+66|LOB-066|Curse of Dragon|Normal Monster|5|2000|1500|Dragon|DARK
+67|LOB-067|Karbonala Warrior|Fusion Monster|4|1500|1200|Warrior|EARTH
+68|LOB-068|Giant Soldier of Stone|Normal Monster|3|1300|2000|Rock|EARTH
+69|LOB-069|Uraby|Normal Monster|4|1500|800|Dinosaur|EARTH
+70|LOB-070|Red-Eyes Black Dragon|Normal Monster|7|2400|2000|Dragon|DARK
+71|LOB-071|Reaper of the Cards|Flip Effect Monster|5|1380|1930|Fiend|DARK
+72|LOB-072|Witty Phantom|Normal Monster|4|1400|1300|Fiend|DARK
+73|LOB-073|Larvas|Normal Monster|3|800|1000|Beast|EARTH
+74|LOB-074|Hard Armor|Normal Monster|3|300|1200|Warrior|EARTH
+75|LOB-075|Man Eater|Normal Monster|2|800|600|Plant|EARTH
+76|LOB-076|M-Warrior #1|Normal Monster|3|1000|500|Warrior|EARTH
+77|LOB-077|M-Warrior #2|Normal Monster|3|500|1000|Warrior|EARTH
+78|LOB-078|Spirit of the Harp|Normal Monster|4|800|2000|Fairy|LIGHT
+79|LOB-079|Armaill|Normal Monster|3|700|1300|Warrior|EARTH
+80|LOB-080|Terra the Terrible|Normal Monster|4|1200|1300|Fiend|DARK
+81|LOB-081|Frenzied Panda|Normal Monster|4|1200|1000|Beast|EARTH
+82|LOB-082|Kumootoko|Normal Monster|3|700|1400|Insect|EARTH
+83|LOB-083|Meda Bat|Normal Monster|2|800|400|Fiend|DARK
+84|LOB-084|Enchanting Mermaid|Normal Monster|3|1200|900|Fish|WATER
+85|LOB-085|Fireyarou|Normal Monster|4|1300|1000|Pyro|FIRE
+86|LOB-086|Dragoness the Wicked Knight|Fusion Monster|3|1200|900|Warrior|WIND
+87|LOB-087|One-Eyed Shield Dragon|Normal Monster|3|700|1300|Dragon|WIND
+88|LOB-088|Dark Energy|Spell Card||||Equip|
+89|LOB-089|Laser Cannon Armor|Spell Card||||Equip|
+90|LOB-090|Vile Germs|Spell Card||||Equip|
+91|LOB-091|Silver Bow and Arrow|Spell Card||||Equip|
+92|LOB-092|Dragon Treasure|Spell Card||||Equip|
+93|LOB-093|Electro-Whip|Spell Card||||Equip|
+94|LOB-094|Mystical Moon|Spell Card||||Equip|
+95|LOB-095|Stop Defense|Spell Card||||Normal|
+96|LOB-096|Machine Conversion Factory|Spell Card||||Equip|
+97|LOB-097|Raise Body Heat|Spell Card||||Equip|
+98|LOB-098|Follow Wind|Spell Card||||Equip|
+99|LOB-099|Goblin's Secret Remedy|Spell Card||||Normal|
+100|LOB-100|Final Flame|Spell Card||||Normal|
+101|LOB-101|Swords of Revealing Light|Spell Card||||Normal|
+102|LOB-102|Metal Dragon|Fusion Monster|6|1850|1700|Machine|WIND
+103|LOB-103|Spike Seadra|Normal Monster|5|1600|1300|Sea Serpent|WATER
+104|LOB-104|Tripwire Beast|Normal Monster|4|1200|1300|Thunder|EARTH
+105|LOB-105|Skull Red Bird|Normal Monster|4|1550|1200|Winged Beast|WIND
+106|LOB-106|Armed Ninja|Flip Effect Monster|1|300|300|Warrior|EARTH
+107|LOB-107|Flower Wolf|Fusion Monster|5|1800|1400|Beast|EARTH
+108|LOB-108|Man-Eater Bug|Flip Effect Monster|2|450|600|Insect|EARTH
+109|LOB-109|Sand Stone|Normal Monster|5|1300|1600|Rock|EARTH
+110|LOB-110|Hane-Hane|Flip Effect Monster|2|450|500|Beast|EARTH
+111|LOB-111|Misairuzame|Normal Monster|5|1400|1600|Fish|WATER
+112|LOB-112|Steel Ogre Grotto #1|Normal Monster|5|1400|1800|Machine|EARTH
+113|LOB-113|Lesser Dragon|Normal Monster|4|1200|1000|Dragon|WIND
+114|LOB-114|Darkworld Thorns|Normal Monster|3|1200|900|Plant|EARTH
+115|LOB-115|Drooling Lizard|Normal Monster|3|900|800|Reptile|EARTH
+116|LOB-116|Armored Starfish|Normal Monster|4|850|1400|Aqua|WATER
+117|LOB-117|Succubus Knight|Normal Monster|5|1650|1300|Warrior|DARK
+118|LOB-118|Monster Reborn|Spell Card||||Normal|
+119|LOB-119|Pot of Greed|Spell Card||||Normal|
+120|LOB-120|Right Leg of the Forbidden One|Normal Monster|1|200|300|Spellcaster|DARK
+121|LOB-121|Left Leg of the Forbidden One|Normal Monster|1|200|300|Spellcaster|DARK
+122|LOB-122|Right Arm of the Forbidden One|Normal Monster|1|200|300|Spellcaster|DARK
+123|LOB-123|Left Arm of the Forbidden One|Normal Monster|1|200|300|Spellcaster|DARK
+124|LOB-124|Exodia the Forbidden One|Effect Monster|3|1000|1000|Spellcaster|DARK
+125|LOB-125|Gaia the Dragon Champion|Fusion Monster|7|2600|2100|Dragon|WIND

@@ -45,6 +45,9 @@ pub enum Tag {
     /// "Can only be Special Summoned by" its own procedure: no other effect
     /// may ever Special Summon it, even after a proper summon (the Moths).
     OnlyByProcedure,
+    /// While face-up on the field, its controller's opponent keeps their
+    /// hand revealed (The Eye of Truth).
+    RevealOpponentHand,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -139,6 +142,7 @@ impl Effect {
             replace_battle_destruction: None,
             lock_position: None,
             misses_timing: false,
+            pierce: None,
         }
     }
 
@@ -310,6 +314,9 @@ pub struct Effect {
     /// card activation came after it in the same window (an equipped
     /// monster Tributed for a Tribute Summon).
     pub misses_timing: bool,
+    /// Continuous: `attacker` inflicts piercing battle damage when it
+    /// attacks a Defense Position monster (Fairy Meteor Crush).
+    pub pierce: Option<fn(&Game, Source, InstanceId) -> bool>,
 }
 
 impl std::fmt::Debug for Effect {

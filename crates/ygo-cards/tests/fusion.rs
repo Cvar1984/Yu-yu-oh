@@ -84,8 +84,8 @@ fn every_fusion_row_names_cards_and_the_materials_are_monsters() {
         .filter(|(_, m)| m.iter().all(|id| b.cards.contains(*id)))
         .count();
     assert_eq!(
-        in_pool, 23,
-        "Rabid Horseman and Cyber Saurus need cards from other sets"
+        in_pool, 24,
+        "Cyber Saurus needs a card outside the pool; Battle Ox (EXTRA) completes Rabid Horseman"
     );
 }
 
@@ -246,5 +246,5 @@ fn every_fusion_monster_with_materials_in_the_pool_can_be_fusion_summoned() {
         );
         summoned += 1;
     }
-    assert_eq!(summoned, 23);
+    assert_eq!(summoned, 24);
 }

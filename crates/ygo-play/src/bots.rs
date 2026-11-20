@@ -1,10 +1,11 @@
-//! Builds players from their names on the command line: `random` or
-//! `heuristic:<style>`, with the styles and card values loaded once.
+//! Builds players from their names on the command line: `random`,
+//! `heuristic:<style>` or `search[:<style>]`, with the styles and card
+//! values loaded once.
 
 use std::path::Path;
 use std::sync::Arc;
 
-use ygo_ai::{HeuristicPlayer, Player, RandomPlayer};
+use ygo_ai::{HeuristicPlayer, Player, RandomPlayer, SearchPlayer, SearchSettings};
 use ygo_data::{Bundle, CardDb, CardValues, DataError, Styles};
 use ygo_engine::Shared;
 
@@ -16,6 +17,8 @@ pub struct Bots {
     pub cards: Arc<CardDb>,
     values: CardValues,
     styles: Styles,
+    /// How hard `search` bots think.
+    pub search: SearchSettings,
 }
 
 impl Bots {
@@ -38,13 +41,17 @@ impl Bots {
             cards: Arc::new(bundle.cards.clone()),
             values,
             styles,
+            search: SearchSettings::default(),
         }
     }
 
-    /// Every name `make` accepts.
+    /// The bots to offer: `random`, every heuristic style and `search`.
+    /// `make` also takes `search:<style>`, a search bot whose playouts use
+    /// another style.
     pub fn names(&self) -> Vec<String> {
         std::iter::once("random".to_string())
             .chain(self.styles.names().map(|s| format!("heuristic:{s}")))
+            .chain(std::iter::once("search".to_string()))
             .collect()
     }
 
@@ -52,21 +59,26 @@ impl Bots {
         if name == "random" {
             return Ok(Box::new(RandomPlayer::new(seed)));
         }
-        let style = name
-            .strip_prefix("heuristic:")
-            .and_then(|s| self.styles.get(s))
-            .ok_or_else(|| {
-                format!(
-                    "unknown bot `{name}`; available: {}",
-                    self.names().join(", ")
-                )
-            })?;
-        Ok(Box::new(HeuristicPlayer::new(
-            self.shared.clone(),
-            &self.cards,
-            &self.values,
-            style,
-            seed,
-        )))
+        // `search` plays out its samples with the default heuristic style.
+        let (search, style_name) = match name {
+            "search" => (true, DEFAULT_BOT.strip_prefix("heuristic:")),
+            _ => match name.strip_prefix("search:") {
+                Some(style) => (true, Some(style)),
+                None => (false, name.strip_prefix("heuristic:")),
+            },
+        };
+        let style = style_name.and_then(|s| self.styles.get(s)).ok_or_else(|| {
+            format!(
+                "unknown bot `{name}`; available: {}, search:<style>",
+                self.names().join(", ")
+            )
+        })?;
+        let heuristic =
+            HeuristicPlayer::new(self.shared.clone(), &self.cards, &self.values, style, seed);
+        Ok(if search {
+            Box::new(SearchPlayer::new(heuristic, self.search.clone(), seed))
+        } else {
+            Box::new(heuristic)
+        })
     }
 }

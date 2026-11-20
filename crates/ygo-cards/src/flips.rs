@@ -52,14 +52,14 @@ fn all_spells_traps(g: &Game) -> Vec<InstanceId> {
 
 /// Spells and Traps a "destroy 1 <kind>" FLIP may pick: face-up ones of
 /// that kind, and any Set card, which is revealed on resolution.
-fn picks_of_kind(g: &Game, kind: CardKind) -> TargetSets {
+pub(crate) fn picks_of_kind(g: &Game, kind: CardKind) -> TargetSets {
     singles(all_spells_traps(g).into_iter().filter(|&c| {
         let face_up = g.instance(c).position.is_face_up();
         !face_up || g.stats(c).kind == kind
     }))
 }
 
-fn destroy_if_kind(g: &mut Game, ctx: &mut EffectCtx, kind: CardKind) -> Flow {
+pub(crate) fn destroy_if_kind(g: &mut Game, ctx: &mut EffectCtx, kind: CardKind) -> Flow {
     let target = ctx.targets[0];
     if !g.on_field(target) {
         return Flow::Done;

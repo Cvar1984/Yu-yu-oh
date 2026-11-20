@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use ygo_data::CardId;
 
 use crate::{GameResult, InstanceId, Location, Phase, PlayerId, Position};
 
@@ -252,6 +253,12 @@ pub enum Event {
     Revealed {
         player: PlayerId,
         cards: Vec<InstanceId>,
+    },
+    /// `player` looked at `cards` privately; only they may be told which
+    /// cards these are.
+    LookedAt {
+        player: PlayerId,
+        cards: Vec<(InstanceId, CardId)>,
     },
     /// `card` was discarded or milled by an effect `controller` controls.
     ByEffect {
