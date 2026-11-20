@@ -146,10 +146,8 @@ impl PlaySession {
             .expect("only legal actions are offered");
         let after = self.observation();
         let pool = &self.game.shared().pool;
-        for e in &events {
-            if let Some(line) = describe::event(&after, pool, e) {
-                self.log.push(format!("  {line}"));
-            }
+        for line in describe::events(&before, &after, pool, &events) {
+            self.log.push(format!("  {line}"));
         }
         self.record.finish(&self.game);
     }
