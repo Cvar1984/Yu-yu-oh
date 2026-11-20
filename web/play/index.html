@@ -27,6 +27,10 @@
   --f-ritual: #3c6fb8;
   --f-spell: #178a78;
   --f-trap: #a63f79;
+  --z-field: #3e9a5c;
+  --z-monster: #c27a45;
+  --z-st: #2f8fb0;
+  --z-pile: #8794a5;
   --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -39,6 +43,7 @@
     --you: #6f97f2; --them: #ec6f83; --good: #4cc489; --back: #2a3646; --back-2: #3a4a5f;
     --f-normal: #d2aa59; --f-effect: #ec8a4c; --f-fusion: #a57ad6; --f-ritual: #6b9be0;
     --f-spell: #35b7a1; --f-trap: #d466a3;
+    --z-field: #5cc27b; --z-monster: #e0975f; --z-st: #4fb3d6; --z-pile: #7d8a9b;
     color-scheme: dark;
   }
 }
@@ -48,6 +53,7 @@
   --you: #6f97f2; --them: #ec6f83; --good: #4cc489; --back: #2a3646; --back-2: #3a4a5f;
   --f-normal: #d2aa59; --f-effect: #ec8a4c; --f-fusion: #a57ad6; --f-ritual: #6b9be0;
   --f-spell: #35b7a1; --f-trap: #d466a3;
+  --z-field: #5cc27b; --z-monster: #e0975f; --z-st: #4fb3d6; --z-pile: #7d8a9b;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -92,12 +98,17 @@ select, input[type="text"] { font: inherit; padding: 8px 10px; border-radius: va
 .sidehead .who { font-weight: 700; color: var(--fg); font-family: var(--font-display); }
 .lp { font-weight: 700; font-size: 18px; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
 .side.you .lp { color: var(--you); } .side.them .lp { color: var(--them); }
-.rowz { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 0.9fr); gap: 6px; }
-.zone { min-height: 74px; border-radius: var(--radius); background: var(--zone); border: 1px dashed var(--line); position: relative; min-width: 0; }
-.pile { min-height: 74px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--zone); padding: 6px; font-size: 11px; color: var(--muted); display: grid; align-content: start; gap: 4px; min-width: 0; }
-.pile > div { display: grid; min-width: 0; }
-.pile b { color: var(--fg); font-weight: 600; font-size: 12px; overflow-wrap: anywhere; }
-.pile.tag { align-content: center; }
+.mat { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.zone { min-height: 74px; border-radius: var(--radius); background: var(--zone); border: 1px dashed var(--line); min-width: 0; display: grid; place-items: center; padding: 4px; text-align: center; font-size: 10px; line-height: 1.2; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.zone.z-field { border-color: var(--z-field); } .zone.z-monster { border-color: var(--z-monster); } .zone.z-st { border-color: var(--z-st); }
+.pile { min-height: 74px; border-radius: var(--radius); border: 1px solid var(--z-pile); background: var(--zone); padding: 5px 6px; font-size: 10px; color: var(--muted); display: grid; align-content: space-between; gap: 2px; min-width: 0; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; }
+.pile .count { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--fg); letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.pile .top { text-transform: none; letter-spacing: 0; color: var(--fg); font-size: 11px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+button.pile { cursor: pointer; font: inherit; font-size: 10px; }
+button.pile:hover, button.pile[aria-expanded="true"] { border-color: var(--accent); }
+.pile.p-deck { background: color-mix(in srgb, var(--f-normal) 16%, var(--zone)); }
+.pile .lshort { display: none; }
+.pilelist { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
 
 .card { width: 100%; min-height: 74px; height: 100%; text-align: left; border-radius: var(--radius); border: 1px solid var(--line); border-top: 4px solid var(--f-normal); background: var(--table); padding: 5px 6px; display: grid; align-content: space-between; gap: 2px; cursor: pointer; min-width: 0; }
 .card .cname { font-weight: 600; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -141,13 +152,17 @@ select, input[type="text"] { font: inherit; padding: 8px 10px; border-radius: va
 .copybox { width: 100%; min-height: 100px; font-family: var(--font-mono); font-size: 11px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
 footer { color: var(--muted); font-size: 12px; }
 @media (max-width: 560px) {
-  .rowz { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .rowz .pile { grid-column: span 5; min-height: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .rowz .pile.tag { display: none; }
-  .zone, .card { min-height: 64px; }
-  .card { padding: 4px; }
-  .card .cname { font-size: 11px; }
-  .card .cstats { flex-direction: column; gap: 0; font-size: 10px; }
+  .table { padding: 8px; }
+  .mat { gap: 3px; }
+  .zone, .card, .pile { min-height: 60px; }
+  .zone { font-size: 8px; letter-spacing: 0; padding: 2px; }
+  .card { padding: 3px; border-top-width: 3px; }
+  .card .cname { font-size: 9.5px; -webkit-line-clamp: 3; }
+  .card .cstats { flex-direction: column; gap: 0; font-size: 9px; }
+  .pile { padding: 3px; font-size: 8px; letter-spacing: 0; }
+  .pile .count { font-size: 15px; }
+  .pile .top { display: none; }
+  .pile .lfull { display: none; } .pile .lshort { display: inline; }
 }
 @media (prefers-reduced-motion: no-preference) { .move, .card { transition: border-color 0.12s, box-shadow 0.12s; } }
 </style>
@@ -209,6 +224,7 @@ const state = {
   game: null,         // { deck, bot_deck, bot, seed, first, choices }
   view: null,
   selected: null,     // instance id of the card shown in detail
+  pile: null,         // "you" or "opponent": the Graveyard shown in a panel
   cardText: null,
   seenLog: 0,         // log lines already seen before the last move
   error: null,
@@ -313,7 +329,7 @@ function startGame(game) {
   const answer = Engine.call({ cmd: "start", ...game });
   state.game = { ...game, choices: answer.choices };
   state.view = answer.view;
-  state.selected = null; state.cardText = null; state.copyText = null;
+  state.selected = null; state.cardText = null; state.copyText = null; state.pile = null;
   state.seenLog = 0;
   save();
   renderGame();
@@ -409,22 +425,59 @@ function cardHtml(c, opts = {}) {
     <span class="cstats"><span>${esc(stats)}</span><span class="cpos">${pos}</span></span></button>`;
 }
 
-function pileHtml(side, mine) {
+// An empty zone, labelled like the playmat.
+function slotHtml(label, kind) { return `<div class="zone z-${kind}" aria-label="Empty ${label} zone">${label}</div>`; }
+
+function graveyardHtml(side, key) {
   const top = side.graveyard[side.graveyard.length - 1];
-  const field = side.field;
-  return `<div class="pile">
-    <div><span>Field</span><b>${field ? (field.name ? esc(field.name) : "Set card") : "–"}</b></div>
-    <div><span>Graveyard ${side.graveyard.length}</span><b>${top ? esc(top.name ?? "?") : "–"}</b></div>
-    <div><span>Deck</span><b>${side.deck}${side.extra ? ` · Extra ${side.extra}` : ""}${side.banished.length ? ` · Banished ${side.banished.length}` : ""}</b></div>
-  </div>`;
+  const banished = side.banished.length ? `<span class="lfull"> · ${side.banished.length} banished</span>` : "";
+  return `<button class="pile" data-pile="${key}" aria-expanded="${state.pile === key}" title="Show the Graveyard">
+    <span>${lbl("Graveyard", "GY")}${banished}</span><span class="count">${side.graveyard.length}</span>
+    <span class="top">${top ? esc(top.name ?? "?") : ""}</span></button>`;
 }
 
+function countHtml(label, short, n, cls) {
+  return `<div class="pile ${cls}" aria-label="${label}: ${n} cards"><span>${lbl(label, short)}</span><span class="count">${n}</span><span></span></div>`;
+}
+
+// A pile label, shortened on a phone where the column is narrow.
+function lbl(full, short) { return `<span class="lfull">${full}</span><span class="lshort" aria-hidden="true">${short}</span>`; }
+
+// One side laid out like the playmat: Field, five Monster zones and the
+// Graveyard; under them the Extra Deck, five Spell & Trap zones and the
+// Deck. The opponent's side is the same mat turned around, as across a table.
 function sideHtml(side, who, mine) {
+  const key = mine ? "you" : "opponent";
   const head = `<div class="sidehead"><span class="who">${who}</span><span class="lp">${side.lp.toLocaleString()} LP</span>
     <span>Hand ${side.hand}</span>${!mine ? `<span class="opp-hand" aria-hidden="true">${"<span></span>".repeat(Math.min(side.hand, 12))}</span>` : ""}</div>`;
-  const monsters = `<div class="rowz">${side.monsters.map((c) => cardHtml(c, { monster: true })).join("")}${pileHtml(side, mine)}</div>`;
-  const spells = `<div class="rowz">${side.spells.map((c) => cardHtml(c)).join("")}<div class="pile tag" aria-hidden="true"><span>Spells and Traps</span></div></div>`;
-  return `<section class="side ${mine ? "you" : "them"}" aria-label="${who}">${mine ? head + monsters + spells : head + spells + monsters}</section>`;
+  const front = [
+    side.field ? cardHtml(side.field) : slotHtml("Field", "field"),
+    ...side.monsters.map((c) => c ? cardHtml(c, { monster: true }) : slotHtml("Monster", "monster")),
+    graveyardHtml(side, key),
+  ];
+  const back = [
+    countHtml("Extra Deck", "Extra", side.extra, "p-extra"),
+    ...side.spells.map((c) => c ? cardHtml(c) : slotHtml("Spell & Trap", "st")),
+    countHtml("Deck", "Deck", side.deck, "p-deck"),
+  ];
+  const row = (cells) => `<div class="mat">${(mine ? cells : [...cells].reverse()).join("")}</div>`;
+  const rows = mine ? row(front) + row(back) : row(back) + row(front);
+  return `<section class="side ${mine ? "you" : "them"}" aria-label="${who}">${head}${rows}</section>`;
+}
+
+// The open Graveyard: its cards, newest first (tap one for its text and
+// moves), and the same player's banished cards.
+function pilePanelHtml() {
+  if (!state.pile) return "";
+  const side = state.pile === "you" ? state.view.you : state.view.opponent;
+  const whose = state.pile === "you" ? "Your" : "Opponent's";
+  const list = (cards) => cards.length
+    ? `<div class="pilelist">${[...cards].reverse().map((c) => cardHtml(c, { hand: true })).join("")}</div>`
+    : `<span class="sub">Empty</span>`;
+  return `<section class="panel" aria-label="${whose} Graveyard">
+    <div class="label">${whose} Graveyard (${side.graveyard.length}), newest first</div>${list(side.graveyard)}
+    ${side.banished.length ? `<div class="label">${whose} banished cards (${side.banished.length})</div>${list(side.banished)}` : ""}
+    <div class="actions-row"><button class="btn" id="close-pile">Close</button></div></section>`;
 }
 
 function renderGame() {
@@ -480,6 +533,7 @@ function renderGame() {
         ${state.copyText !== null ? `<textarea class="copybox" id="copybox" readonly>${esc(state.copyText)}</textarea><span class="sub">Copying is blocked here: select the text above and copy it.</span>` : ""}
       </section>
       ${detail}
+      ${pilePanelHtml()}
       <section class="panel"><div class="label">Log</div><div class="log" id="log">${log}</div></section>
     </div>
   </div>`;
@@ -487,6 +541,8 @@ function renderGame() {
   main.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", () => play(Number(b.dataset.move))));
   main.querySelectorAll("[data-inst]").forEach((b) => b.addEventListener("click", () => tapCard(Number(b.dataset.inst))));
   document.getElementById("close-card")?.addEventListener("click", () => select(state.selected));
+  main.querySelectorAll("[data-pile]").forEach((b) => b.addEventListener("click", () => { state.pile = state.pile === b.dataset.pile ? null : b.dataset.pile; renderGame(); }));
+  document.getElementById("close-pile")?.addEventListener("click", () => { state.pile = null; renderGame(); });
   document.getElementById("copy-record").addEventListener("click", () => copy(Engine.call({ cmd: "record" })));
   const ng = document.getElementById("new-game");
   let confirming = false;
