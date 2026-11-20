@@ -91,21 +91,21 @@ fn every_deck_is_legal_and_owned_decks_fit_their_collection() {
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         .collect();
     names.sort();
-    assert_eq!(names.len(), 15);
+    assert_eq!(names.len(), 10);
     for name in &names {
         let d = deck(name);
         let owned = match d.played_by.as_deref() {
             Some("save A") => Some(&save_a),
             Some("save B") => Some(&save_b),
             Some("enemy") => None,
-            None => Some(&save_a),
-            Some(other) => panic!("{name}: unknown player {other:?}"),
+            other => panic!("{name}: unknown player {other:?}"),
         };
         let problems = check_deck(&d, &b.cards, &b.banlist, &b.rules, owned);
         assert!(problems.is_empty(), "{name}: {problems:#?}");
     }
-    assert_eq!(deck("owner_main_45.json").main_size(), 45);
-    assert_eq!(deck("umiiruka_water_40.json").main_size(), 40);
+    for name in &names {
+        assert_eq!(deck(name).main_size(), 40, "{name}");
+    }
     assert_eq!(
         names.iter().filter(|n| n.starts_with("enemy_")).count(),
         6,

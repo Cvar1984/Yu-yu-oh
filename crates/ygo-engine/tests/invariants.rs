@@ -10,9 +10,9 @@ use ygo_engine::{DeckList, Game, GameSetup, InstanceId};
 fn decks() -> Vec<DeckList> {
     vec![
         normal_deck(40),
-        sample_deck("owner_main_45.json"),
-        sample_deck("defense_tuned_45.json"),
-        sample_deck("umiiruka_water_40.json"),
+        sample_deck("save_a_owner_current_40.json"),
+        sample_deck("save_a_best_overall_40.json"),
+        sample_deck("save_b_dark_plasma_40.json"),
     ]
 }
 
@@ -58,7 +58,10 @@ proptest! {
 
 #[test]
 fn every_offered_action_applies_cleanly() {
-    let setup = GameSetup::new([normal_deck(40), sample_deck("owner_main_45.json")], 5);
+    let setup = GameSetup::new(
+        [normal_deck(40), sample_deck("save_a_owner_current_40.json")],
+        5,
+    );
     let mut g = Game::new(shared(), &setup).unwrap();
     let mut lcg = 12345u64;
     for _ in 0..150 {

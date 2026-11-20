@@ -101,13 +101,13 @@ fn first_player_is_chosen_by_the_seed_or_the_setup() {
 fn sample_decks_load_including_effect_cards() {
     let setup = GameSetup::new(
         [
-            sample_deck("owner_main_45.json"),
-            sample_deck("umiiruka_water_40.json"),
+            sample_deck("save_a_owner_current_40.json"),
+            sample_deck("save_b_dark_plasma_40.json"),
         ],
         11,
     );
     let g = Game::new(shared(), &setup).unwrap();
-    assert_eq!(g.player(PlayerId(0)).deck.len(), 40);
+    assert_eq!(g.player(PlayerId(0)).deck.len(), 35);
     assert_eq!(g.player(PlayerId(1)).deck.len(), 35);
 }
 
@@ -178,9 +178,11 @@ fn extra_deck_cards_start_in_the_extra_zone() {
 
 #[test]
 fn deck_list_expands_entry_counts() {
-    let deck = ygo_data::Deck::load(&common::root().join("data/decks/owner_main_45.json")).unwrap();
+    let deck =
+        ygo_data::Deck::load(&common::root().join("data/decks/save_a_owner_current_40.json"))
+            .unwrap();
     let list = DeckList::from(&deck);
-    assert_eq!(list.main.len(), 45);
+    assert_eq!(list.main.len(), 40);
     assert!(list.extra.is_empty());
 }
 

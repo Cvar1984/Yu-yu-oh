@@ -15,7 +15,7 @@ rulings test). Both must pass again before M6 starts.
 | `data/collection.json` | yes | Save A, 385 cards, 1117 copies; new `unique` and `copies` fields, checked on load |
 | `data/collection_save_b.json` | yes | Save B, 201 cards, 421 copies |
 | `data/extra_cards.txt` | yes | The 66 EXTRA names, for `tools/refresh_cards.py` |
-| `data/decks/*` | yes, but one | 12 new decks with a `for` field (`enemy`, `save A`, `save B`); `exodia_stall_full_pool_40.json` stays out (owner, 2026-11-18: too strong) |
+| `data/decks/*` | yes, but one | 12 new decks with a `for` field (`enemy`, `save A`, `save B`); `exodia_stall_full_pool_40.json` stays out (owner, 2026-11-18: too strong); `save_a_f2_40` and `save_a_discard_reborn_40` were then removed as stale (owner, 2026-11-20) |
 | `tools/refresh_cards.py` | yes | Fetches the EXTRA cards by name; writes schema 2 |
 | `reference/` | yes | `effects_catalog.json`, `rulings.md`, prototype sim v2 to v9 and its tests |
 | `images/` | locally | 440 of each size, git-ignored |
@@ -106,3 +106,30 @@ Graveyard. Simplifications, like those listed in `docs/m3-plan.md`:
   the odds are the same.
 - **Shadow Spell** goes to the Graveyard with its monster as an Equip
   does, rather than being destroyed by its own effect.
+
+## Deck crafting from save A (paused, 2026-11-20)
+
+The owner asked for the best deck from save A's cards. Two findings so
+far, measured against the six enemy decks (the heuristic bot pilots the
+enemies):
+
+- **The heuristic bot misleads a deck search.** A hill climb scored by
+  the heuristic bot on both sides raised `save_a_best_overall_40` from
+  39.1% to 49.1% (6,000 games, fresh seeds). With the search bot
+  piloting, the same crafted deck scored 51.3% against the original's
+  54.1% (1,200 games each): the gain was the heuristic bot's quirks.
+  Deck search must be scored with the search bot, as the handoff warns.
+- **Search-bot swaps for the dead Scapegoat** (unscripted until batch 2),
+  150 games per enemy, same seeds: unchanged 54.8%; Solemn Judgment 58.0,
+  Dust Tornado 58.0, Raigeki Break 57.8, Premature Burial 57.7, Hane-Hane
+  57.0, Nobleman of Crossout 55.4, Kuriboh 54.4, Card Destruction 53.9,
+  Confiscation 52.2, Upstart Goblin 49.6. Differences under about 4
+  points are noise at this sample size; any live card beats the dead
+  slot by about 3.
+
+Next, when resumed: validate the best overall deck with Solemn Judgment
+for Scapegoat, and that deck with Dust Tornado and Raigeki Break for the
+two Horn of the Unicorn, at 400 or more games per enemy with the search
+bot, then save the winner as `save_a_crafted_40.json`. Scripting
+Scapegoat (batch 2) changes the baseline.
+

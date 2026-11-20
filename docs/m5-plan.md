@@ -148,6 +148,7 @@ mirror, 1,000 games per style, each player first in half, `--seed 5000`
 (fresh seeds, not the ones tuned on), 95% intervals:
 
 ```sh
+# owner_main_45.json was removed as stale on 2026-11-20; it is in git history.
 ygo sim data/decks/owner_main_45.json data/decks/owner_main_45.json \
     --bot-a search --bot-b heuristic:<style> -n 1000 --threads 4 --seed 5000
 ```

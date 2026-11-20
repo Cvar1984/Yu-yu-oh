@@ -7,7 +7,7 @@
 | `banlist.json` | Copy limits (0, 1 or 2) from the owner's game, kept by hand; every player follows them | yes |
 | `collection.json` | Save A: the owner's cards and copy counts | yes, from the data bundle |
 | `collection_save_b.json` | Save B | yes, from the data bundle |
-| `decks/*.json` | The owner's decks, the prototype's best decks and six enemy decks, with results in `notes`; `for` says whose cards a deck uses | yes |
+| `decks/*.json` | Six enemy decks, save A's best overall (`save_a_best_overall_40`), control and current decks, and save B's best, with results in `notes`; `for` says whose cards a deck uses | yes |
 | `../images/full`, `../images/small` | One JPEG per card id | no: Konami-owned, fetched locally |
 
 Card id is the key everywhere: it is the card's official password, and every

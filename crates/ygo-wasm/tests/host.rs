@@ -8,9 +8,9 @@ use ygo_play::testing::assert_no_hidden_names;
 use ygo_wasm::Host;
 
 const DECKS: [&str; 3] = [
-    "owner_main_45.json",
-    "umiiruka_water_40.json",
-    "defense_tuned_45.json",
+    "save_a_owner_current_40.json",
+    "save_b_dark_plasma_40.json",
+    "save_a_best_overall_40.json",
 ];
 
 fn read(path: &str) -> String {
@@ -76,7 +76,7 @@ fn lcg(state: &mut u64) -> usize {
 #[test]
 fn init_offers_the_legal_decks_and_every_bot() {
     let mut host = Host::default();
-    let mut two_raigeki = read("data/decks/owner_main_45.json");
+    let mut two_raigeki = read("data/decks/save_a_owner_current_40.json");
     two_raigeki = two_raigeki.replace(
         "\"name\": \"Raigeki\",\n   \"count\": 1",
         "\"name\": \"Raigeki\",\n   \"count\": 2",
@@ -179,7 +179,14 @@ fn the_json_never_names_a_hidden_card() {
             }
             let obs = host.session().unwrap().observation();
             assert_no_hidden_names(&text, &obs, &shared);
-            for c in obs.opponent().hand.iter() {
+            // A hidden hand card has no text; a face-up summon is public
+            // from its declaration, while the card is still in the hand.
+            for c in obs
+                .opponent()
+                .hand
+                .iter()
+                .filter(|c| matches!(c, ygo_engine::VisibleCard::Hidden { .. }))
+            {
                 let card = ok(
                     &mut host,
                     json!({ "cmd": "card", "instance": c.instance().0 }),
