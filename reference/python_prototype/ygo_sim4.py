@@ -65,6 +65,8 @@ class Duel4(V3.Duel3):
                 ts = o.set_traps(trap, self.turn)
                 if ok and ts:
                     self.destroy_st(o, ts[0])
+                    if self.trap_negated(o, trap):
+                        return False
                     self.log(f"{o.name} {trap} destroys {m.name}")
                     self.remove_mon(summoner, m)
                     return True
@@ -84,6 +86,7 @@ class Duel4(V3.Duel3):
     def play_turn(self, pl):
         if pl.role == "stall":
             self.turn += 1
+            S.CURRENT_TURN[0] = self.turn
             o = self.opp(pl)
             pl.summoned, pl.st_plays = False, 0
             pl.searched, o.searched = set(), set()
@@ -178,8 +181,8 @@ class Duel4(V3.Duel3):
         # Summon: Level 5 wall over the weakest monster, else the highest-DEF Level 4 or lower, face-down
         if not pl.summoned and len(pl.mons) < 5 + (1 if lv5 else 0):
             lv5 = [c for c in h if c in WALL_LV5]
-            if lv5 and pl.mons:
-                fod = min(pl.mons, key=lambda m: (not m.temp, C[m.name][1] >= 6, m.dfn))  # never tribute own big monster
+            if lv5 and any(S.can_tribute(m) for m in pl.mons):
+                fod = min([m for m in pl.mons if S.can_tribute(m)] or pl.mons, key=lambda m: (not m.temp, C[m.name][1] >= 6, m.dfn))  # never tribute own big monster
                 card = max(lv5, key=lambda c: C[c][3])
                 if fod.temp or (C[fod.name][1] < 6 and C[card][3] > fod.dfn + 300):
                     if fod.temp:
@@ -191,7 +194,7 @@ class Duel4(V3.Duel3):
                     pl.summoned = True
                     self.log(f"{pl.name} tributes for {card} (set)")
             if not pl.summoned and len(pl.mons) < 5:
-                walls = [c for c in h if is_mon(c) and C[c][1] <= 4]
+                walls = [c for c in h if is_mon(c) and C[c][1] <= 4 and c not in S.NOMI]
                 if walls:
                     card = max(walls, key=lambda c: C[c][3])
                     h.remove(card)
@@ -222,7 +225,7 @@ class Duel4(V3.Duel3):
                 self.draw(pl, 2)
             pl.gy.append("Pot of Greed")
         # Set traps
-        for t in ("Solemn Judgment", "Eatgaboon", "House of Adhesive Tape", "Mirror Force", "Trap Hole"):
+        for t in ("Solemn Judgment", "Magic Jammer", "Seven Tools of the Bandit", "Spellbinding Circle", "Eatgaboon", "House of Adhesive Tape", "Mirror Force", "Trap Hole"):
             while t in h and self.can_st(pl):
                 h.remove(t); pl.st_plays += 1
                 pl.st.append(ST(t, False, self.turn))

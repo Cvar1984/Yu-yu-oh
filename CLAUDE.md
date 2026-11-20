@@ -1,11 +1,11 @@
-# Yu-yu-oh: Rust Yu-Gi-Oh! engine, bot and deck builder (LOB / MRD / SRL)
+# Yu-yu-oh: Rust Yu-Gi-Oh! engine, bot and deck builder (LOB / MRD / SRL + EXTRA)
 
 Full spec: `docs/handoff.md`. This file holds what every session must know.
 
 ## Decisions already made (change only with the owner)
 
 - Rust for everything: engine, AI, deck builder, CLI and server. One Cargo workspace, edition 2024.
-- Card pool is the 374 cards of LOB, MRD and SRL, shipped as JSON. Card id (the official password) is the key in every file.
+- Card pool is the 440 cards of the owner's game: the 374 of LOB, MRD and SRL plus 66 EXTRA cards the game lists outside those sets (handoff update, 2026-11-20), shipped as JSON. Card id (the official password) is the key in every file.
 - Full official chain rules. House rules live in `config/rules.toml`; copy limits live in `data/banlist.json`. Nothing about limits or rules is hard-coded; a rule change must never need a recompile.
 - `ygo-engine` knows nothing about AI or UI, does no I/O, and takes randomness only from a seed, so it also builds to WebAssembly.
 - Card images are Konami-owned and never committed: `images/` is git-ignored.
@@ -32,7 +32,7 @@ Full spec: `docs/handoff.md`. This file holds what every session must know.
 | `records/` | Game records (git-ignored) | |
 | `data/` | JSON data; see `data/README.md` | |
 
-Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 to M3 gates passed. All 228 non-Normal cards are scripted with rulings tests (`docs/m3-plan.md`, which also lists the simplifications made). M4 (records, `ygo play`, heuristic bots, `ygo replay`) is built and its checks pass (`docs/m4-plan.md`, gate report). The rules and all card scripts were then moved to the modern official rules and text (`docs/card-audit.md`: findings, the three fix batches, and the exceptions left on purpose). M4 gate passed (owner, 2026-11-20). M5 gate passed (2026-11-20): the search bot beats every heuristic style over 1,000 games each, 72% to 79% (`docs/m5-plan.md`, gate report). Next: M6.
+Milestones M0 to M9 and their gates are in `docs/handoff.md`. Do not start a milestone before the previous gate passes. Status: M0 to M3 gates passed. All 228 non-Normal cards are scripted with rulings tests (`docs/m3-plan.md`, which also lists the simplifications made). M4 (records, `ygo play`, heuristic bots, `ygo replay`) is built and its checks pass (`docs/m4-plan.md`, gate report). The rules and all card scripts were then moved to the modern official rules and text (`docs/card-audit.md`: findings, the three fix batches, and the exceptions left on purpose). M4 gate passed (owner, 2026-11-20). M5 gate passed (2026-11-20): the search bot beats every heuristic style over 1,000 games each, 72% to 79% (`docs/m5-plan.md`, gate report). Then the pool grew to 440 cards (handoff update, 2026-11-20), which reopens M0 and M3: `docs/pool-440-plan.md` tracks the 44 new scripts (the registry test lists the pending ones), the prototype's acceptance cases and the bot reruns. M0 holds on the new data. Next: finish that plan, then M6.
 
 ## Conventions
 
@@ -119,7 +119,9 @@ Every file carries `"schema_version": 1`; `ygo-data` rejects any other version. 
 - Flip and Special Summons do not count toward a per-turn limit, but this may change, so both stay config keys.
 - Fusion and Ritual Summons are allowed (`fusion_summons`, `ritual_summons`).
 - Card text: support both modern and original 2002 text. `cards.json` holds only modern text; the original text needs a second data source, keyed by id, before `text_version = "original_2002"` can do anything. Effect scripts whose rulings differ by printing (Sangan, Witch of the Black Forest) must branch on this key.
-- Ban list (2026-11-17): Pot of Greed, Change of Heart and Raigeki are limited to 1 per deck (`data/banlist.json`). Swords of Revealing Light, the fourth badge seen earlier, stays unlimited. The Exodia stall sample deck was removed (owner, 2026-11-18: too strong).
+- Ban list (handoff update, 2026-11-20, replacing the three cards of 2026-11-17): 13 cards at 1 per deck, enemies included: Pot of Greed, Upstart Goblin, Sangan, Witch of the Black Forest, Cyber Jar, Raigeki, Swords of Revealing Light, Monster Reborn, Left Arm of the Forbidden One, Change of Heart, Delinquent Duo, Confiscation, Card Destruction (`data/banlist.json`). The Exodia stall sample deck was removed (owner, 2026-11-18: too strong) and stays out though the new bundle ships it again.
+- Collections: `data/collection.json` is save A (385 cards), `data/collection_save_b.json` save B (201). A deck's `for` field (`enemy`, `save A`, `save B`) says whose cards it uses; the six `enemy_*` decks use any of the 440 cards and are the league's first fixed opponents.
+- The 2026-11-20 bundle's `config/rules.toml` and `reference/rulings.md` repeat the earlier house rules (no Main Phase 2 summons, 5 Spell/Trap plays a turn); the answers here are newer and win.
 - Deck-out is a loss.
 - Training hardware: likely NVIDIA. Pick the neural-net crate at M6 with a spike on CUDA (candidates: burn, candle, tch-rs).
 - VR games cannot be exported; human games come only from this project's CLI and browser.

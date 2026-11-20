@@ -1,10 +1,10 @@
 # Handoff: Rust Yu-Gi-Oh! AI Bot & Deck Builder (LOB/MRD/SRL)
 
-Nov 16, 2026 · @Cvar1984
+Nov 20, 2026 · @Cvar1984
 
 ## Goal and scope
 
-Build a Rust project with three products sharing one rules engine. The card pool is the 374 cards of Legend of Blue Eyes (LOB), Metal Raiders (MRD) and Spell Ruler (SRL):
+Build a Rust project with three products sharing one rules engine. The card pool is the 440 cards in the owner's game: the 374 of Legend of Blue Eyes (LOB), Metal Raiders (MRD) and Spell Ruler (SRL), plus 66 EXTRA cards the game lists outside those three sets:
 
 1. **Engine**: a rules-accurate, deterministic game engine with full chain rules and configurable house rules.
 2. **Bot**: an AI that improves by self-play and by playing humans, across many playstyles, keeping the strongest through league play ("last one standing").
@@ -26,9 +26,9 @@ The owner has settled these. Change them only with the owner.
 | Topic | Decision |
 | --- | --- |
 | Language | Rust for engine, AI, deck builder, CLI and server |
-| Card pool | LOB, MRD, SRL: 374 cards, shipped as JSON with card images |
+| Card pool | LOB, MRD, SRL + 66 EXTRA: 440 cards, shipped as JSON with card images |
 | Rules fidelity | Full official chain rules: spell speeds, chains, priority, responses on both players' turns |
-| Card limits | Read from `banlist.json`, which changes when the game updates; no limits hard-coded |
+| Card limits | Read from `banlist.json`, which changes when the game updates; no limits hard-coded. Confirmed 2026-11-18: a red "1" badge in the game means max 1 copy per deck |
 | Summon limits | A config, not code. Default: 1 Normal or Tribute Summon (or Set) per turn, as the owner's game plays |
 | Main Phase 2 | In the owner's game you can activate and Set Spells/Traps in Main Phase 2 but not summon. Make it a config switch |
 | Interfaces | Engine as a portable library API, a CLI for quick access, a browser UI as the main human interface |
@@ -91,12 +91,12 @@ All card data ships as JSON in the starter bundle `ygo-rust-ai-data.zip`, so ban
 
 | File | Contents |
 | --- | --- |
-| `data/cards.json` | 374 cards: 146 Normal, 95 Effect, 25 Fusion and 4 Ritual Monsters, 89 Spells, 15 Traps |
+| `data/cards.json` | 440 cards: 168 Normal, 99 Effect, 25 Fusion and 5 Ritual Monsters, 107 Spells, 36 Traps (in\_game\_index: LOB, MRD, SRL or EXTRA) |
 | `data/banlist.json` | Card limits (0, 1 or 2 copies); only Pot of Greed, Raigeki, Swords of Revealing Light and Change of Heart (limit 1) observed so far |
 | `data/collection.json` | The owner's 226 cards (427 copies), read from in-game screenshots |
 | `data/decks/*.json` | Four decks from the prototype, with results in `notes` |
 | `config/rules.toml` | The house rules above |
-| `images/full`, `images/small` | One JPEG per card id, 374 of each |
+| `images/full`, `images/small` | One JPEG per card id, 440 of each |
 | `tools/refresh_cards.py` | Rebuilds `cards.json` and fetches missing images |
 
 One `cards.json` entry (text shortened):
@@ -245,7 +245,7 @@ Each milestone ends at a gate; don't start the next until it passes. The engine 
 
 | # | Milestone | Gate to pass |
 | --- | --- | --- |
-| M0 | Data layer: load and validate all JSON and `rules.toml` | All 374 cards, the ban list, the collection and the 4 sample decks load; `check-deck` flags illegal decks |
+| M0 | Data layer: load and validate all JSON and `rules.toml` | All 440 cards, the ban list, both collections and the sample decks load; `check-deck` flags illegal decks |
 | M1 | Core engine without chains: phases, summons, tributes, battle, Normal Monsters | Random games finish; invariant tests and fuzzing pass; speed measured |
 | M2 | Chain system plus about 30 key cards (Raigeki, Pot of Greed, Change of Heart, Monster Reborn, Swords, Mirror Force, Trap Hole, Solemn Judgment, Sangan, Witch, Exodia pieces) | Rulings tests for those cards pass |
 | M3 | All 228 non-Normal cards scripted | A rulings test per card |
@@ -277,6 +277,78 @@ Things the prototype learned the hard way:
 - Cyber Jar's text Special Summons several monsters at once, which a strict summon limit forbids. The engine needs a defined behavior for each summon setting.
 - AI mistakes changed deck rankings more than once (tributing its own big monster, a bad Painful Choice policy, Solemn Judgment saved for the wrong cards).
 - Bigger isn't better even for stall: a 60-card stall deck did worse (45%) than the tuned 45, because its single copies of key cards came up less often.
+
+## Update 2026-11-20: new cards
+
+The game's "All" card list holds 440 cards, not 374: 66 EXTRA cards sit outside the three set tabs, and the bundle now ships all of them. The new `ygo-rust-ai-data.zip` replaces the old one.
+
+| EXTRA cards | Count | Examples |
+| --- | --- | --- |
+| Normal Monsters | 22 | La Jinn (1800), Judge Man (2200, Lv6), Swordstalker (2000, Lv6), Battle Ox, Rude Kaiser |
+| Effect Monsters | 4 | Penguin Soldier, Trap Master, Mysterious Puppeteer, The Wicked Worm Beast |
+| Ritual Monster | 1 | Black Luster Soldier (needs Black Luster Ritual) |
+| Spells | 18 | Graceful Charity, Card Destruction, Premature Burial, Nobleman of Crossout, Scapegoat, Soul Exchange, Last Will |
+| Traps | 21 | Waboku, Shadow Spell, Raigeki Break, Dust Tornado, Jar of Greed, Riryoku Field, Ultimate Offering |
+
+The limited list is now 13 cards, and enemies follow it too: Pot of Greed, Upstart Goblin, Sangan, Witch of the Black Forest, Cyber Jar, Raigeki, Swords of Revealing Light, Monster Reborn, Left Arm of the Forbidden One, Change of Heart, Delinquent Duo, Confiscation, Card Destruction.
+
+| Bundle file | Change |
+| --- | --- |
+| `data/cards.json` | 374 to 440 cards, schema 2; new field `in_game_index` (LOB, MRD, SRL or EXTRA); EXTRA printings keep their original set codes |
+| `data/extra_cards.txt` | Names of the 66 EXTRA cards; `tools/refresh_cards.py` fetches them by name |
+| `images/full`, `images/small` | 440 JPEGs each |
+| `data/banlist.json` | 13 Limited cards |
+| `data/collection.json` | Save A: 385 of 386 owned read (1117 copies); one owned card is still unidentified |
+| `data/collection_save_b.json` | New: save B, 201 cards (LOB 100, MRD 64, SRL 37), 421 copies |
+| `data/decks/` | New: save A best overall, save B best, 6 enemy decks, and earlier builds, each with measured results |
+| `reference/effects_catalog.json` | New: every card's status in the prototype and the file that implements it |
+| `reference/rulings.md` | New: house rules, card rulings, known prototype shortcuts |
+| `reference/python_prototype/` | Sim v2 to v9, 77 card tests, a 3000-game rule check |
+| `config/rules.toml` | Flip and Special Summons confirmed free; Scapegoat needs 4 free zones |
+
+## New card effects and rulings
+
+The prototype now simulates 199 of the 440 cards' effects; 168 are Normal Monsters, 25 are Fusions, 5 can never work in this game and 43 are still missing. Each simulated card has a scenario test (`test_v8.py`: 40, `test_v9.py`: 37), and `smoke_v9.py` plays 3000 random games checking zones, hand size, Spell/Trap plays and the summon limit. Port these tests to Rust first: they are the engine's acceptance cases.
+
+| Group | Cards | Rule the engine must follow |
+| --- | --- | --- |
+| Toons | Toon World, Toon Mermaid, Toon Summoned Skull, Manga Ryu-Ran, Blue-Eyes Toon Dragon | Special Summon from hand only while you control Toon World (0, 1 or 2 Tributes); no attack the turn summoned; pay 500 LP per attack; attack directly unless the opponent has a Toon; destroyed when Toon World leaves |
+| Gate Guardian | Gate Guardian, Sanga of the Thunder, Kazejin, Suijin | Gate Guardian: Tribute all three from your field. Each piece once makes an attacker's ATK 0 during damage calculation |
+| Rituals | Black Luster Soldier, Relinquished, Crab Turtle, Hungry Burger, Performance of Sword (+ Senju, Sonic Bird) | Tributes from hand or field with total Level at least the ritual's; Relinquished absorbs a monster and loses it instead of dying in battle |
+| Special Summon / revive | Premature Burial, Last Will, Scapegoat, Mystic Tomato and the other attribute searchers, Nimble Momonga, Cyber Jar | Premature Burial is linked to its monster both ways; Scapegoat needs 4 free zones; tokens cannot be Tributed for a Tribute Summon |
+| Removal | Nobleman of Crossout, Raigeki Break, Dust Tornado, Two-Pronged Attack, Final Destiny, Time Wizard, Catapult Turtle, Horn of Heaven | Nobleman banishes every copy of a Flip monster from both Decks |
+| Battle tricks | Shadow Spell, Waboku, Castle Walls, Reinforcements, Shift, Reverse Trap, Rush Recklessly, Kuriboh, Dragon Capture Jar | Shadow Spell and Spellbinding Circle stop the attack they answer; Waboku stops battle damage and battle destruction for the turn |
+| Equips | Black Pendant, Horn of the Unicorn, Megamorph, Fairy Meteor Crush, Invigoration, Sword of Dark Destruction | Black Pendant burns 500 when it leaves; Horn of the Unicorn returns to the Deck top; Megamorph doubles or halves original ATK by LP |
+
+Two engine bugs found and fixed in the prototype, worth a test each in Rust:
+
+- A flip effect that removes the attacker or target (Penguin Soldier, Hane-Hane, Man-Eater Bug) must end the battle with no damage calculation.
+- A negated Spell goes to the Graveyard once, not twice (the duplicate let Magician of Faith return a copy that did not exist).
+
+The full list, with the prototype file that implements each card, is in `reference/rulings.md` and `reference/effects_catalog.json`.
+
+## Updated results
+
+Against six realistic enemy decks, the best save A deck wins 51.3%; the owner's own deck wins 36%. The enemies use any of the 440 cards under the limited list, with their theme cards fixed and the rest tuned (`data/decks/enemy_*.json`). They are the league's first fixed opponents; the bot should beat them before any self-play claim counts.
+
+| Enemy deck | Win rate vs. the field |
+| --- | --- |
+| Removal every turn | 80% |
+| DARK + Mystic Plasma Zone | 77% |
+| Gate Guardian | 70% |
+| Special summon / revive | 54% |
+| Big beatdown | 44% |
+| Toon World | 31% |
+
+| Owner deck (sim v9, 2 seeds x 1500 games) | vs. enemies | File |
+| --- | --- | --- |
+| Save A best overall: control + Change of Heart tribute | 51.3% | `save_a_best_overall_40.json` |
+| Save A control without tribute monsters | 52.3% (loses 45-51 head to head) | `save_a_control_no_tribute_40.json` |
+| Save A discard, search, reborn | 39% | `save_a_discard_reborn_40.json` |
+| Owner's current save A deck | 36% | `save_a_owner_current_40.json` |
+| Save B best: DARK + Mystic Plasma Zone | 40.5% vs. a save A/B field (not the enemies) | `save_b_dark_plasma_40.json` |
+
+What this changes for the deck builder: score decks on consistency as well as win rate. The owner found Stim-Pack and Change of Heart combos unreliable in real play although the prototype rated them well. `reference/python_prototype/consistency.py` reports opening-hand odds (a summonable 1600+ ATK monster in 6 cards, an ATK boost and a removal card in 10, Change of Heart with a tribute partner); report them next to every win rate.
 
 ## Open questions for the owner
 

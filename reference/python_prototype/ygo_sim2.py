@@ -38,7 +38,7 @@ JAM_WORTHY = {"Raigeki", "Dark Hole", "Change of Heart", "Snatch Steal", "Monste
               "Painful Choice", "Messenger of Peace", "The Forceful Sentry"}
 SOLEMN_WORTHY = {"Raigeki", "Dark Hole", "Heavy Storm", "Snatch Steal", "Monster Reborn",
                  "Change of Heart", "Painful Choice"}
-TRAPS = ("Mirror Force", "Trap Hole", "Magic Jammer", "Solemn Judgment", "Robbin' Goblin")
+TRAPS = ("Seven Tools of the Bandit", "Mirror Force", "Trap Hole", "Magic Jammer", "Solemn Judgment", "Robbin' Goblin")
 
 VALUE = {"Pot of Greed": 95, "Raigeki": 92, "Painful Choice": 85, "Snatch Steal": 90,
          "Change of Heart": 88, "Delinquent Duo": 87, "Confiscation": 84,
@@ -57,7 +57,25 @@ EXO_VALUE = {"Pot of Greed": 90, "Painful Choice": 85, "Upstart Goblin": 70,
 
 
 STAT_HOOK = None  # optional fn(mon, 2|3) -> stat modifier (fields/equips), set by extensions
+FLIP_COUNTS = True      # does a Flip Summon use the turn's Normal Summon? (official: no)
+SPECIAL_COUNTS = True   # does a Special Summon use it? (official: no)
+DIRECT_ATTACKERS = {"Mystic Lamp"}
+WALLS_SET_ONLY = False  # low-ATK/high-DEF monsters are only Set, never summoned to attack
+CURRENT_TURN = [0]
+NOMI = {"Harpie Lady Sisters", "Relinquished"}  # cannot be Normal Summoned/Set (extended by v8)
+
+
+def can_tribute(m):
+    """Tokens such as Sheep Tokens cannot be Tributed for a Tribute Summon."""
+    return not getattr(m, "no_tribute", False)
+
+
 SET_PRIORITY = ["Man-Eater Bug", "Magician of Faith", "Witch of the Black Forest", "Sangan", "Giant Soldier of Stone"]
+
+
+def is_wall(c):
+    """Low-ATK, high-DEF monster meant to be Set (e.g. Prevent Rat 500/2000, Aqua Madoor 1200/2000)."""
+    return C[c][0] == "M" and C[c][3] >= 1500 and C[c][3] - C[c][2] >= 500
 
 
 def is_mon(c):
@@ -68,6 +86,7 @@ class Mon:
     def __init__(self, name, owner, face_up=True, pos="atk"):
         self.name, self.owner, self.face_up, self.pos = name, owner, face_up, pos
         self.axe = 0
+        self.born = CURRENT_TURN[0]
         self.temp = False      # Change of Heart
         self.snatched = None   # ST object of Snatch Steal
 
@@ -243,6 +262,8 @@ class Duel:
             if js:
                 self.destroy_st(o, js[0])
                 self.discard(o, self.worst(o))
+                if self.trap_negated(o, "Magic Jammer"):
+                    return False
                 self.log(f"{o.name} Magic Jammer negates {card}")
                 return True
         if card in SOLEMN_WORTHY and o.lp >= 3000:
@@ -250,6 +271,8 @@ class Duel:
             if ss:
                 self.destroy_st(o, ss[0])
                 o.lp -= o.lp // 2
+                if self.trap_negated(o, "Solemn Judgment"):
+                    return False
                 self.log(f"{o.name} Solemn Judgment negates {card} (LP {o.lp})")
                 return True
         return False
@@ -261,6 +284,8 @@ class Duel:
             th = o.set_traps("Trap Hole", self.turn)
             if th:
                 self.destroy_st(o, th[0])
+                if self.trap_negated(o, "Trap Hole"):
+                    return False
                 self.log(f"{o.name} Trap Hole on {m.name}")
                 self.remove_mon(summoner, m)
                 return True
@@ -269,6 +294,8 @@ class Duel:
             if ss:
                 self.destroy_st(o, ss[0])
                 o.lp -= o.lp // 2
+                if self.trap_negated(o, "Solemn Judgment"):
+                    return False
                 self.log(f"{o.name} Solemn Judgment negates {m.name}")
                 self.remove_mon(summoner, m)
                 return True
@@ -278,10 +305,7 @@ class Duel:
         pl.hand.remove(card)
         pl.st_plays += 1
         self.log(f"{pl.name} activates {card}")
-        if self.respond_spell(pl, card):
-            pl.gy.append(card)
-            return False
-        return True
+        return not self.respond_spell(pl, card)  # callers put the card in the GY
 
     # ---------------- shared spell effects ----------------
     def painful_choice(self, pl):
@@ -371,7 +395,7 @@ class Duel:
                             self.draw(pl)
                         else:
                             self.painful_choice(pl)
-                        pl.gy.append(card)
+                    pl.gy.append(card)
                     progress = True
                     break
             if progress:
@@ -381,7 +405,7 @@ class Duel:
                         (card == "The Forceful Sentry" or pl.lp > 2000):
                     if self.activate(pl, card):
                         self.strip(pl, card)
-                        pl.gy.append(card)
+                    pl.gy.append(card)
                     progress = True
                     break
             if progress:
@@ -390,6 +414,8 @@ class Duel:
                 if card in pl.hand and not pl.active(card) and self.can_st(pl):
                     if self.activate(pl, card):
                         self.place_swords_like(pl, card)
+                    else:
+                        pl.gy.append(card)
                     progress = True
                     break
             if progress:
@@ -522,29 +548,73 @@ class Duel:
                     self.remove_mon(o, ob)
                 pl.gy.append("Tribute to the Doomed")
                 return True
-        # 5. flip a set utility monster (uses the turn's summon)
-        if not pl.summoned:
+        # 5. flip a set utility monster
+        if not (FLIP_COUNTS and pl.summoned):
             for m in pl.mons:
-                if not m.face_up and ((m.name == "Man-Eater Bug" and o.mons) or
+                if not m.face_up and m.born < self.turn and ((m.name == "Man-Eater Bug" and o.mons) or
                                       (m.name == "Magician of Faith" and
                                        any(C[c][0] == "S" for c in pl.gy))):
-                    pl.summoned, m.pos = True, "atk" if m.name == "Man-Eater Bug" else "def"
+                    pl.summoned = pl.summoned or FLIP_COUNTS
+                    m.pos = "atk" if m.name == "Man-Eater Bug" else "def"
                     self.log(f"{pl.name} flip summons {m.name}")
                     if not self.respond_summon(pl, m, "flip"):
                         self.flip(pl, m)
                     return True
         return False
 
+    def trap_negated(self, trap_owner, trap):
+        """The trap owner's opponent may chain Seven Tools of the Bandit (pay 1000 LP) to negate it."""
+        o = self.opp(trap_owner)
+        st = o.set_traps("Seven Tools of the Bandit", self.turn)
+        if st and o.lp > 1000:
+            self.destroy_st(o, st[0])
+            o.lp -= 1000
+            self.log(f"{o.name} Seven Tools of the Bandit negates {trap}")
+            return True
+        return False
+
+    def respond_attack(self, pl, m):
+        """Extensions: defender's responses to an attack declaration (besides Mirror Force). True = attack stopped."""
+        return False
+
+    def on_battle_damage(self, pl, m, o):
+        """Extensions: effects when monster m of pl inflicts battle damage to o."""
+
     def pay_attack_cost(self, pl, m):
         """Extensions add costs to declare an attack (Gravekeeper's Servant, Toll). False = no attack."""
         return True
+
+    def can_revive(self, side, card):
+        """Extensions: may this monster be Special Summoned from side's GY (proper-summon rule)."""
+        return True
+
+    def battle_destroy(self, ctrl, m):
+        """Extensions: destruction by battle (Waboku can prevent it)."""
+        self.remove_mon(ctrl, m)
+
+    def battle_damage(self, pl, amount):
+        """Extensions: battle damage to pl (Waboku can prevent it). Returns damage dealt."""
+        self.damage(pl, amount)
+        return amount
+
+    def attack_ok(self, m, x):
+        """Extensions: would attacker m pick face-up target x (e.g. avoid Sanga/Kazejin/Suijin)."""
+        return True
+
+    def calc_atk(self, m, tgt):
+        """Extensions: attacker's ATK during damage calculation."""
+        return m.atk
+
+    def pierce(self, m, tgt):
+        """Extensions: piercing damage when m destroys Defense Position tgt (Fairy Meteor Crush)."""
+        return 0
 
     def eff_atk(self, card):
         """ATK a card would have on the field (extensions add field bonuses)."""
         return C[card][2]
 
     def tribute_target(self, pl):
-        hi = [c for c in pl.hand if is_mon(c) and C[c][1] >= 5]
+        hi = [c for c in pl.hand if is_mon(c) and C[c][1] >= 5 and c not in NOMI]
         return max(hi, key=lambda c: C[c][2]) if hi else None
 
     def ctrl_summon(self, pl, o):
@@ -553,8 +623,8 @@ class Duel:
         ob = self.best_opp(o)
         ob_atk = ob.atk if ob and ob.face_up else (1500 if ob else 0)
         # Monster Reborn best monster from either GY
-        gys = [(c, side) for side in (pl, o) for c in side.gy if is_mon(c) and c not in PIECES]
-        hand_lv4 = [c for c in pl.hand if is_mon(c) and C[c][1] <= 4]
+        gys = [(c, side) for side in (pl, o) for c in side.gy if is_mon(c) and c not in PIECES and self.can_revive(side, c)]
+        hand_lv4 = [c for c in pl.hand if is_mon(c) and C[c][1] <= 4 and c not in NOMI]
         best_hand = max((self.eff_atk(c) for c in hand_lv4), default=0)
         if "Monster Reborn" in pl.hand and pl.st_plays < 5 and gys:
             c, side = max(gys, key=lambda x: C[x[0]][2])
@@ -563,17 +633,17 @@ class Duel:
                     side.gy.remove(c)
                     m = Mon(c, side, True, "atk")
                     pl.mons.append(m)
-                    pl.summoned = True
+                    pl.summoned = pl.summoned or SPECIAL_COUNTS
                     self.log(f"{pl.name} revives {c}")
                     self.respond_summon(pl, m, "special")
                 pl.gy.append("Monster Reborn")
-                if pl.summoned:
+                if pl.summoned or len(pl.mons) >= 5:
                     return
         # Tribute summon
         t = self.tribute_target(pl)
         if t:
             need = 1 if C[t][1] <= 6 else 2
-            fodder = sorted(pl.mons, key=lambda m: (not m.temp, m.atk))
+            fodder = sorted([m for m in pl.mons if can_tribute(m)], key=lambda m: (not m.temp, m.atk))
             if len(fodder) >= need and C[t][2] > sum(m.atk for m in fodder[:need] if not m.temp):
                 for m in fodder[:need]:
                     if m.temp:  # borrowed monster goes to its owner's GY
@@ -592,7 +662,7 @@ class Duel:
         # Normal summon / set
         msgr = bool(o.active("Messenger of Peace") or pl.active("Messenger of Peace"))
         beaters = [c for c in hand_lv4 if c not in ("Man-Eater Bug", "Magician of Faith")
-                   and c not in PIECES]
+                   and c not in PIECES and not (WALLS_SET_ONLY and (c in SET_PRIORITY or is_wall(c)))]
         if msgr:
             small = [c for c in hand_lv4 if C[c][2] < 1500 and C[c][2] >= 1000 and c not in PIECES]
             if small and (not ob or ob_atk < max(C[c][2] for c in small)):
@@ -621,8 +691,9 @@ class Duel:
                 pl.summoned = True
                 self.log(f"{pl.name} sets a monster")
                 return
-        if beaters:
-            c = max(beaters, key=lambda x: C[x][3])
+        rest = beaters or [c for c in hand_lv4 if c not in PIECES]
+        if rest:
+            c = max(rest, key=lambda x: C[x][3])
             pl.hand.remove(c)
             pl.mons.append(Mon(c, pl, False, "def"))
             pl.summoned = True
@@ -674,8 +745,8 @@ class Duel:
             forced = [x for x in targets if getattr(x, "magnet", False)]  # Ring of Magnetism
             if forced:
                 targets = forced
-            if (m.name != "Mystic Lamp" or forced) and targets:
-                beatable = [x for x in targets if x.face_up and
+            if (m.name not in DIRECT_ATTACKERS or forced) and targets:
+                beatable = [x for x in targets if x.face_up and self.attack_ok(m, x) and
                             (x.atk if x.pos == "atk" else x.dfn) < m.atk]
                 hidden = [x for x in targets if not x.face_up]
                 if beatable:
@@ -692,15 +763,23 @@ class Duel:
                 if pl.lp <= 1000:
                     continue
                 pl.lp -= 1000
+            self.cur_target, self.redirect_to = tgt, None
+            if self.respond_attack(pl, m):
+                continue
+            if self.redirect_to is not None:
+                tgt = self.redirect_to if self.redirect_to in o.mons else tgt
+            if m not in pl.mons or (tgt is not None and tgt not in o.mons):
+                continue
             # Mirror Force on attack declaration
             mf = o.set_traps("Mirror Force", self.turn)
-            if mf:
-                self.destroy_st(o, mf[0])
+            if mf and not (self.destroy_st(o, mf[0]) or self.trap_negated(o, "Mirror Force")):
                 self.log(f"{o.name} Mirror Force")
                 for x in [x for x in pl.mons if x.pos == "atk"]:
                     self.remove_mon(pl, x)
                 return
             dmg = 0
+            if tgt is None and o.mons and m.name not in DIRECT_ATTACKERS:
+                continue  # a monster appeared (e.g. Sheep Tokens): no direct attack
             if tgt is None:
                 dmg = m.atk
                 self.log(f"{m.name} attacks directly")
@@ -712,22 +791,23 @@ class Duel:
                 self.log(f"{m.name} ({m.atk}) attacks {tgt.name}")
                 if was_down:
                     self.flip(o, tgt)
-                if m.atk > val:
+                    if m not in pl.mons or tgt not in o.mons:
+                        continue  # the flip effect removed a monster: no battle
+                    val = tgt.atk if tgt.pos == "atk" else tgt.dfn
+                a = self.calc_atk(m, tgt)
+                if a > val:
+                    dmg = a - val if tgt.pos == "atk" else self.pierce(m, tgt)
+                    self.battle_destroy(o, tgt)
+                elif a < val:
+                    self.battle_damage(pl, val - a)
                     if tgt.pos == "atk":
-                        dmg = m.atk - val
-                    self.remove_mon(o, tgt)
-                elif m.atk < val:
-                    if tgt.pos == "atk":
-                        self.damage(pl, val - m.atk)
-                        self.remove_mon(pl, m)
-                    else:
-                        self.damage(pl, val - m.atk)
+                        self.battle_destroy(pl, m)
                 else:
                     if tgt.pos == "atk":
-                        self.remove_mon(pl, m)
-                        self.remove_mon(o, tgt)
-            if dmg > 0:
-                self.damage(o, dmg)
+                        self.battle_destroy(pl, m)
+                        self.battle_destroy(o, tgt)
+            if dmg > 0 and self.battle_damage(o, dmg) > 0:
+                self.on_battle_damage(pl, m, o)
                 for trig in (robbin, m.name == "White Magical Hat"):
                     if trig and o.hand:
                         t = self.rng.choice(o.hand)
@@ -755,6 +835,7 @@ class Duel:
 
     def play_turn(self, pl):
         self.turn += 1
+        CURRENT_TURN[0] = self.turn
         o = self.opp(pl)
         pl.summoned, pl.st_plays = False, 0
         pl.searched, o.searched = set(), set()

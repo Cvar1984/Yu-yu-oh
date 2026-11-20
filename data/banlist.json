@@ -1,12 +1,74 @@
 {
  "schema_version": 1,
- "name": "Owner's game",
- "updated": "2026-11-17",
+ "name": "Owner's game (observed)",
+ "updated": "2026-11-19",
  "default_limit": 3,
- "note": "Owner's decision 2026-11-17: Pot of Greed, Change of Heart and Raigeki are limited to 1 copy per deck. Swords of Revealing Light also showed a red '1' badge in the game but stays unlimited until the owner says otherwise. Cards not listed use default_limit.",
+ "note": "Red '1' badges seen in the game's deck and card-list screens (11 on 2026-11-19 deck screen, + Confiscation and Card Destruction from the 'All' list). Limits apply to every player, enemies included.",
  "limits": [
-  { "id": 55144522, "name": "Pot of Greed", "limit": 1 },
-  { "id": 4031928, "name": "Change of Heart", "limit": 1 },
-  { "id": 12580477, "name": "Raigeki", "limit": 1 }
+  {
+   "id": 72892473,
+   "name": "Card Destruction",
+   "limit": 1
+  },
+  {
+   "id": 4031928,
+   "name": "Change of Heart",
+   "limit": 1
+  },
+  {
+   "id": 17375316,
+   "name": "Confiscation",
+   "limit": 1
+  },
+  {
+   "id": 34124316,
+   "name": "Cyber Jar",
+   "limit": 1
+  },
+  {
+   "id": 44763025,
+   "name": "Delinquent Duo",
+   "limit": 1
+  },
+  {
+   "id": 7902349,
+   "name": "Left Arm of the Forbidden One",
+   "limit": 1
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "limit": 1
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "limit": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "limit": 1
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "limit": 1
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "limit": 1
+  },
+  {
+   "id": 70368879,
+   "name": "Upstart Goblin",
+   "limit": 1
+  },
+  {
+   "id": 78010363,
+   "name": "Witch of the Black Forest",
+   "limit": 1
+  }
  ]
 }

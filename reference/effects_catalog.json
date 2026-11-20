@@ -1,0 +1,2646 @@
+{
+ "schema_version": 1,
+ "note": "What the Python prototype (sim v9) does with each card. status: simulated / no_effect (Normal Monster) / no_possible_effect (needs a card not in the game) / not_simulated / fusion_material_only. Rust should implement every effect; this is a checklist and a pointer to reference behaviour.",
+ "cards": [
+  {
+   "id": 39111158,
+   "name": "Tri-Horned Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 89631139,
+   "name": "Blue-Eyes White Dragon",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 76184692,
+   "name": "Hitotsu-Me Giant",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 45231177,
+   "name": "Flame Swordsman",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 32274490,
+   "name": "Skull Servant",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 36996508,
+   "name": "Dark Magician",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 6368038,
+   "name": "Gaia The Fierce Knight",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 91152256,
+   "name": "Celtic Guardian",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 89091579,
+   "name": "Basic Insect",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 40374923,
+   "name": "Mammoth Graveyard",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 90357090,
+   "name": "Silver Fang",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 9159938,
+   "name": "Dark Gray",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 77827521,
+   "name": "Trial of Nightmare",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 90963488,
+   "name": "Nemuriko",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 32864,
+   "name": "The 13th Grave",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 37421579,
+   "name": "Charubin the Fire Knight",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 34460851,
+   "name": "Flame Manipulator",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 36121917,
+   "name": "Monster Egg",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 53293545,
+   "name": "Firegrass",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 17881964,
+   "name": "Darkfire Dragon",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 53375573,
+   "name": "Dark King of the Abyss",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 2863439,
+   "name": "Fiend Reflection #2",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 1641882,
+   "name": "Fusionist",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 37313348,
+   "name": "Turtle Tiger",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 75356564,
+   "name": "Petit Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 38142739,
+   "name": "Petit Angel",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 96851799,
+   "name": "Hinotama Soul",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 85639257,
+   "name": "Aqua Madoor",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 15401633,
+   "name": "Kagemusha of the Blue Flame",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 58528964,
+   "name": "Flame Ghost",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 57305373,
+   "name": "Two-Mouth Darkruler",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 40826495,
+   "name": "Dissolverock",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 39004808,
+   "name": "Root Water",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 18710707,
+   "name": "The Furious Sea King",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 22910685,
+   "name": "Green Phantom King",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 85309439,
+   "name": "Ray & Temperature",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 84686841,
+   "name": "King Fog",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 83464209,
+   "name": "Mystical Sheep #2",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 44287299,
+   "name": "Masaki the Legendary Swordsman",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 85705804,
+   "name": "Kurama",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 61854111,
+   "name": "Legendary Sword",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 46009906,
+   "name": "Beast Fangs",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 15052462,
+   "name": "Violet Crystal",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 91595718,
+   "name": "Book of Secret Arts",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 77027445,
+   "name": "Power of Kaishin",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 50045299,
+   "name": "Dragon Capture Jar",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 87430998,
+   "name": "Forest",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 23424603,
+   "name": "Wasteland",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 50913601,
+   "name": "Mountain",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 86318356,
+   "name": "Sogen",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 22702055,
+   "name": "Umi",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 59197169,
+   "name": "Yami",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 53129443,
+   "name": "Dark Hole",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 38199696,
+   "name": "Red Medicine",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 76103675,
+   "name": "Sparks",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 46130346,
+   "name": "Hinotama",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 66788016,
+   "name": "Fissure",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 4206964,
+   "name": "Trap Hole",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 24094653,
+   "name": "Polymerization",
+   "status": "simulated",
+   "prototype_file": "ygo_sim7.py"
+  },
+  {
+   "id": 51482758,
+   "name": "Remove Trap",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 83887306,
+   "name": "Two-Pronged Attack",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 15025844,
+   "name": "Mystical Elf",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 72842870,
+   "name": "Tyhone",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 32452818,
+   "name": "Beaver Warrior",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 82542267,
+   "name": "Gravedigger Ghoul",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 28279543,
+   "name": "Curse of Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 54541900,
+   "name": "Karbonala Warrior",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 13039848,
+   "name": "Giant Soldier of Stone",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 1784619,
+   "name": "Uraby",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 74677422,
+   "name": "Red-Eyes Black Dragon",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 33066139,
+   "name": "Reaper of the Cards",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 36304921,
+   "name": "Witty Phantom",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 94675535,
+   "name": "Larvas",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 20060230,
+   "name": "Hard Armor",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 93553943,
+   "name": "Man Eater",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 56342351,
+   "name": "M-Warrior #1",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 92731455,
+   "name": "M-Warrior #2",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 80770678,
+   "name": "Spirit of the Harp",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 53153481,
+   "name": "Armaill",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 63308047,
+   "name": "Terra the Terrible",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 98818516,
+   "name": "Frenzied Panda",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 56283725,
+   "name": "Kumootoko",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 76211194,
+   "name": "Meda Bat",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 75376965,
+   "name": "Enchanting Mermaid",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 71407486,
+   "name": "Fireyarou",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 70681994,
+   "name": "Dragoness the Wicked Knight",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 33064647,
+   "name": "One-Eyed Shield Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 4614116,
+   "name": "Dark Energy",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 77007920,
+   "name": "Laser Cannon Armor",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 39774685,
+   "name": "Vile Germs",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 1557499,
+   "name": "Silver Bow and Arrow",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 1435851,
+   "name": "Dragon Treasure",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 37820550,
+   "name": "Electro-Whip",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 36607978,
+   "name": "Mystical Moon",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 63102017,
+   "name": "Stop Defense",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 25769732,
+   "name": "Machine Conversion Factory",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 51267887,
+   "name": "Raise Body Heat",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 98252586,
+   "name": "Follow Wind",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 11868825,
+   "name": "Goblin's Secret Remedy",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 73134081,
+   "name": "Final Flame",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 9293977,
+   "name": "Metal Dragon",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 85326399,
+   "name": "Spike Seadra",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 45042329,
+   "name": "Tripwire Beast",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 10202894,
+   "name": "Skull Red Bird",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 9076207,
+   "name": "Armed Ninja",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 95952802,
+   "name": "Flower Wolf",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 54652250,
+   "name": "Man-Eater Bug",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 73051941,
+   "name": "Sand Stone",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 7089711,
+   "name": "Hane-Hane",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 33178416,
+   "name": "Misairuzame",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 29172562,
+   "name": "Steel Ogre Grotto #1",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 55444629,
+   "name": "Lesser Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 43500484,
+   "name": "Darkworld Thorns",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 16353197,
+   "name": "Drooling Lizard",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 17535588,
+   "name": "Armored Starfish",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 55291359,
+   "name": "Succubus Knight",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 8124921,
+   "name": "Right Leg of the Forbidden One",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 44519536,
+   "name": "Left Leg of the Forbidden One",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 70903634,
+   "name": "Right Arm of the Forbidden One",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 7902349,
+   "name": "Left Arm of the Forbidden One",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 33396948,
+   "name": "Exodia the Forbidden One",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 66889139,
+   "name": "Gaia the Dragon Champion",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 25833572,
+   "name": "Gate Guardian",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 41392891,
+   "name": "Feral Imp",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 87796900,
+   "name": "Winged Dragon, Guardian of the Fortress #1",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 70781052,
+   "name": "Summoned Skull",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 68846917,
+   "name": "Rock Ogre Grotto #1",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 15480588,
+   "name": "Armored Lizard",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 88979991,
+   "name": "Killer Needle",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 87756343,
+   "name": "Larvae Moth",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 76812113,
+   "name": "Harpie Lady",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 12206212,
+   "name": "Harpie Lady Sisters",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 1184620,
+   "name": "Kojikocy",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 40240595,
+   "name": "Cocoon of Evolution",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 67494157,
+   "name": "Crawling Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 20277860,
+   "name": "Armored Zombie",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 28933734,
+   "name": "Mask of Darkness",
+   "status": "simulated",
+   "prototype_file": "ygo_sim7.py"
+  },
+  {
+   "id": 16972957,
+   "name": "Doma The Angel of Silence",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 15150365,
+   "name": "White Magical Hat",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 16768387,
+   "name": "Big Eye",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 11901678,
+   "name": "Black Skull Dragon",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 10189126,
+   "name": "Masked Sorcerer",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 19066538,
+   "name": "Roaring Ocean Snake",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 2483611,
+   "name": "Water Omotics",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 58314394,
+   "name": "Ground Attacker Bugroth",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 58192742,
+   "name": "Petit Moth",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 90219263,
+   "name": "Elegant Egotist",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 25955164,
+   "name": "Sanga of the Thunder",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 62340868,
+   "name": "Kazejin",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 98434877,
+   "name": "Suijin",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 98049915,
+   "name": "Mystic Lamp",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 13599884,
+   "name": "Steel Scorpion",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 86088138,
+   "name": "Ocubeam",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 12472242,
+   "name": "Leghul",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 58861941,
+   "name": "Ooguchi",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 10538007,
+   "name": "Leogun",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 70138455,
+   "name": "Blast Juggler",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 32809211,
+   "name": "Jinzo #7",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 31560081,
+   "name": "Magician of Faith",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 93221206,
+   "name": "Ancient Elf",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 28593363,
+   "name": "Deepsea Shark",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 81386177,
+   "name": "Bottom Dweller",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 73481154,
+   "name": "Destroyer Golem",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 9653271,
+   "name": "Kaminari Attack",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 21347810,
+   "name": "Rainbow Flower",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 55784832,
+   "name": "Morinphen",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 21817254,
+   "name": "Mega Thunderball",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 69572024,
+   "name": "Tongyo",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 15237615,
+   "name": "Empress Judge",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 21263083,
+   "name": "Pale Beast",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 55875323,
+   "name": "Electric Lizard",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 80141480,
+   "name": "Hunter Spider",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 43230671,
+   "name": "Ancient Lizard Warrior",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 5901497,
+   "name": "Queen's Double",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 78780140,
+   "name": "Trent",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 76446915,
+   "name": "Disk Magician",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 2118022,
+   "name": "Hyosube",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 64501875,
+   "name": "Hibikime",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 3027001,
+   "name": "Fake Trap",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim7.py"
+  },
+  {
+   "id": 79759861,
+   "name": "Tribute to the Doomed",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 5758500,
+   "name": "Soul Release",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 41142615,
+   "name": "The Cheerful Coffin",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 4031928,
+   "name": "Change of Heart",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 88819587,
+   "name": "Baby Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 87564352,
+   "name": "Blackland Fire Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 40453765,
+   "name": "Swamp Battleguard",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 18246479,
+   "name": "Battle Steer",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 71625222,
+   "name": "Time Wizard",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 66602787,
+   "name": "Saggi the Dark Clown",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 55763552,
+   "name": "Dragon Piper",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 28546905,
+   "name": "Illusionist Faceless Mage",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 14141448,
+   "name": "Great Moth",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 40640057,
+   "name": "Kuriboh",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 14851496,
+   "name": "Jellyfish",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 62121,
+   "name": "Castle of Dark Illusions",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 69455834,
+   "name": "King of Yamimakai",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 95727991,
+   "name": "Catapult Turtle",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 68516705,
+   "name": "Mystic Horseman",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 94905343,
+   "name": "Rabid Horseman",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 93889755,
+   "name": "Crass Clown",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 29155212,
+   "name": "Pumpking the King of Ghosts",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 13215230,
+   "name": "Dream Clown",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 28725004,
+   "name": "Tainted Wisdom",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 42431843,
+   "name": "Ancient Brain",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 89272878,
+   "name": "Guardian of the Labyrinth",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 549481,
+   "name": "Prevent Rat",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 25109950,
+   "name": "The Little Swordsman of Aile",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 51371017,
+   "name": "Princess of Tsurugi",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 10071456,
+   "name": "Protector of the Throne",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 46918794,
+   "name": "Tremendous Fire",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 94773007,
+   "name": "Jirai Gumo",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 30778711,
+   "name": "Shadow Ghoul",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 99551425,
+   "name": "Labyrinth Tank",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 24611934,
+   "name": "Ryu-Kishin Powered",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 25655502,
+   "name": "Bickuribox",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 51828629,
+   "name": "Giltia the D. Knight",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 87322377,
+   "name": "Launcher Spider",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 8471389,
+   "name": "Giga-Tech Wolf",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 31786629,
+   "name": "Thunder Dragon",
+   "status": "simulated",
+   "prototype_file": "ygo_sim7.py"
+  },
+  {
+   "id": 23771716,
+   "name": "7 Colored Fish",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 84926738,
+   "name": "The Immortal of Thunder",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 74703140,
+   "name": "Punished Eagle",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 7019529,
+   "name": "Insect Soldiers of the Sky",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 67629977,
+   "name": "Hoshiningen",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 56907389,
+   "name": "Musician King",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 29380133,
+   "name": "Yado Karu",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 89112729,
+   "name": "Cyber Saurus",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 11384280,
+   "name": "Cannon Soldier",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 46657337,
+   "name": "Muka Muka",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 71107816,
+   "name": "The Bistro Butcher",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 8201910,
+   "name": "Star Boy",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 7489323,
+   "name": "Milus Radiant",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 60862676,
+   "name": "Flame Cerebrus",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 7805359,
+   "name": "Niwatori",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 21417692,
+   "name": "Dark Elf",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 93900406,
+   "name": "Mushroom Man #2",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 20394040,
+   "name": "Lava Battleguard",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 78010363,
+   "name": "Witch of the Black Forest",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 68658728,
+   "name": "Little Chimera",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 28470714,
+   "name": "Bladefly",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 17358176,
+   "name": "Lady of Faith",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 54752875,
+   "name": "Twin-Headed Thunder Dragon",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 80741828,
+   "name": "Witch's Apprentice",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 41396436,
+   "name": "Blue-Winged Crown",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 2504891,
+   "name": "Skull Knight",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 5818798,
+   "name": "Gazelle the King of Mythical Beasts",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 49888191,
+   "name": "Garnecia Elefantis",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 81480460,
+   "name": "Barrel Dragon",
+   "status": "simulated",
+   "prototype_file": "ygo_sim7.py"
+  },
+  {
+   "id": 41420027,
+   "name": "Solemn Judgment",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 77414722,
+   "name": "Magic Jammer",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 3819470,
+   "name": "Seven Tools of the Bandit",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 98069388,
+   "name": "Horn of Heaven",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 52097679,
+   "name": "Shield & Sword",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 98495314,
+   "name": "Sword of Deep-Seated",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 25880422,
+   "name": "Block Attack",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 51275027,
+   "name": "The Unhappy Maiden",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 88279736,
+   "name": "Robbin' Goblin",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 24668830,
+   "name": "Germ Infection",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 50152549,
+   "name": "Paralyzing Potion",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 44095762,
+   "name": "Mirror Force",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 20436034,
+   "name": "Ring of Magnetism",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 56830749,
+   "name": "Share the Pain",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 83225447,
+   "name": "Stim-Pack",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 19613556,
+   "name": "Heavy Storm",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 41462083,
+   "name": "Thousand Dragon",
+   "status": "fusion_material_only",
+   "prototype_file": null
+  },
+  {
+   "id": 53183600,
+   "name": "Blue-Eyes Toon Dragon",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 36039163,
+   "name": "Penguin Knight",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 40619825,
+   "name": "Axe of Despair",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 65169794,
+   "name": "Black Pendant",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 38552107,
+   "name": "Horn of Light",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 99597615,
+   "name": "Malevolent Nuzzler",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 18807108,
+   "name": "Spellbinding Circle",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 55998462,
+   "name": "Metal Fish",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 11324436,
+   "name": "Electric Snake",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 73081602,
+   "name": "Queen Bird",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 95174353,
+   "name": "Ameba",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 20624263,
+   "name": "Peacock",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 93013676,
+   "name": "Maha Vailo",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 47879985,
+   "name": "Guardian of the Throne Room",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 46534755,
+   "name": "Fire Kraken",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 32539892,
+   "name": "Minar",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 95744531,
+   "name": "Griggle",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 56789759,
+   "name": "Tyhone #2",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 14015067,
+   "name": "Ancient One of the Deep Forest",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 35565537,
+   "name": "Dark Witch",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 72053645,
+   "name": "Weather Report",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 34442949,
+   "name": "Mechanical Snail",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 96981563,
+   "name": "Giant Turtle Who Feeds on Flames",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 93108297,
+   "name": "Liquid Beast",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 81863068,
+   "name": "Hiro's Shadow Scout",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 54579801,
+   "name": "High Tide Gyojin",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 3056267,
+   "name": "Invader of the Throne",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 91996584,
+   "name": "Whiptail Crow",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 3797883,
+   "name": "Slot Machine",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 64631466,
+   "name": "Relinquished",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 65570596,
+   "name": "Red Archery Girl",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 16762927,
+   "name": "Gravekeeper's Servant",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 12470447,
+   "name": "Curse of Fiend",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 70368879,
+   "name": "Upstart Goblin",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 82003859,
+   "name": "Toll",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 18591904,
+   "name": "Final Destiny",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 45986603,
+   "name": "Snatch Steal",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 81380218,
+   "name": "Chorus of Sanctuary",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 17375316,
+   "name": "Confiscation",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 44763025,
+   "name": "Delinquent Duo",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 80168720,
+   "name": "Darkness Approaches",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 17653779,
+   "name": "Fairy's Hand Mirror",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 43641473,
+   "name": "Tailor of the Fickle",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 70046172,
+   "name": "Rush Recklessly",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 16430187,
+   "name": "The Reliable Guardian",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 42829885,
+   "name": "The Forceful Sentry",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 79323590,
+   "name": "Chain Energy",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 5318639,
+   "name": "Mystical Space Typhoon",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 42703248,
+   "name": "Giant Trunade",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 74191942,
+   "name": "Painful Choice",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 596051,
+   "name": "Snake Fang",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 41426869,
+   "name": "Black Illusion Ritual",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 74637266,
+   "name": "Octoberser",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 7892180,
+   "name": "Psychic Kappa",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 64047146,
+   "name": "Horn of the Unicorn",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 67284908,
+   "name": "Labyrinth Wall",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 63162310,
+   "name": "Wall Shadow",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 29692206,
+   "name": "Twin Long Rods #2",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 15023985,
+   "name": "Stone Ogre Grotto",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 64389297,
+   "name": "Magical Labyrinth",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 95051344,
+   "name": "Eternal Rest",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 22046459,
+   "name": "Megamorph",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 43417563,
+   "name": "Commencement Dance",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 80811661,
+   "name": "Hamburger Recipe",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 15083728,
+   "name": "House of Adhesive Tape",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 42578427,
+   "name": "Eatgaboon",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 76806714,
+   "name": "Turtle Oath",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 4849037,
+   "name": "Performance of Sword",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 30243636,
+   "name": "Hungry Burger",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 91782219,
+   "name": "Crab Turtle",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 2964201,
+   "name": "Ryu-Ran",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 38369349,
+   "name": "Manga Ryu-Ran",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 65458948,
+   "name": "Toon Mermaid",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 91842653,
+   "name": "Toon Summoned Skull",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 90020065,
+   "name": "Jigen Bakudan",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 62397231,
+   "name": "Hyozanryu",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 15259703,
+   "name": "Toon World",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 34124316,
+   "name": "Cyber Jar",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 61528025,
+   "name": "Banisher of the Light",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 97017120,
+   "name": "Giant Rat",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 23401839,
+   "name": "Senju of the Thousand Hands",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 60806437,
+   "name": "UFO Turtle",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 96890582,
+   "name": "Flash Assailant",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 23289281,
+   "name": "Karate Man",
+   "status": "simulated",
+   "prototype_file": "ygo_sim4.py"
+  },
+  {
+   "id": 59784896,
+   "name": "Dark Zebra",
+   "status": "simulated",
+   "prototype_file": "ygo_sim6.py"
+  },
+  {
+   "id": 95178994,
+   "name": "Giant Germ",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 22567609,
+   "name": "Nimble Momonga",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 58551308,
+   "name": "Spear Cretin",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 95956346,
+   "name": "Shining Angel",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 21340051,
+   "name": "Boar Soldier",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 57839750,
+   "name": "Mother Grizzly",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 84834865,
+   "name": "Flying Kamakiri #1",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 20228463,
+   "name": "Ceremonial Bell",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 57617178,
+   "name": "Sonic Bird",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 83011277,
+   "name": "Mystic Tomato",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 19406822,
+   "name": "Kotodama",
+   "status": "not_simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 56594520,
+   "name": "Gaia Power",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 82999629,
+   "name": "Umiiruka",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 19384334,
+   "name": "Molten Destruction",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 45778932,
+   "name": "Rising Air Current",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 81777047,
+   "name": "Luminous Spark",
+   "status": "simulated",
+   "prototype_file": "ygo_sim9.py"
+  },
+  {
+   "id": 18161786,
+   "name": "Mystic Plasma Zone",
+   "status": "simulated",
+   "prototype_file": "ygo_sim3.py"
+  },
+  {
+   "id": 44656491,
+   "name": "Messenger of Peace",
+   "status": "simulated",
+   "prototype_file": "ygo_sim2.py"
+  },
+  {
+   "id": 66516792,
+   "name": "Serpent Night Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 17092736,
+   "name": "Ancient Telescope",
+   "status": "no_possible_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 48365709,
+   "name": "Ansatsu",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 36280194,
+   "name": "Backup Soldier",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 5053103,
+   "name": "Battle Ox",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 55761792,
+   "name": "Black Luster Ritual",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 5405694,
+   "name": "Black Luster Soldier",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 80163754,
+   "name": "Burst Breath",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 72892473,
+   "name": "Card Destruction",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 44209392,
+   "name": "Castle Walls",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 41218256,
+   "name": "Claw Reacher",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 81057959,
+   "name": "D. Human",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 2833249,
+   "name": "D. Tribe",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 41949033,
+   "name": "Dark Assailant",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 89494469,
+   "name": "Dark Titan of Terror",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 19159413,
+   "name": "De-Spell",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 84257639,
+   "name": "Dian Keto the Cure Master",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 24623598,
+   "name": "Disappear",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 66672569,
+   "name": "Dragon Zombie",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 60082869,
+   "name": "Dust Tornado",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 96355986,
+   "name": "Enchanted Javelin",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 97687912,
+   "name": "Fairy Meteor Crush",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 98299011,
+   "name": "Gift of The Mystical Elf",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 79571449,
+   "name": "Graceful Charity",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 13429800,
+   "name": "Great White",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 55608151,
+   "name": "Gryphon Wing",
+   "status": "no_possible_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 31122091,
+   "name": "Gyakutenno Megami",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 98374133,
+   "name": "Invigoration",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 83968380,
+   "name": "Jar of Greed",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 30113682,
+   "name": "Judge Man",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 24068492,
+   "name": "Just Desserts",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 67724379,
+   "name": "Koumori Dragon",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 97590748,
+   "name": "La Jinn the Mystical Genie of the Lamp",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 85602018,
+   "name": "Last Will",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 62867251,
+   "name": "Light of Intervention",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 46474915,
+   "name": "Magical Ghost",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 75499502,
+   "name": "Master & Expert",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 54098121,
+   "name": "Mysterious Puppeteer",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 47060154,
+   "name": "Mystic Clown",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 71044499,
+   "name": "Nobleman of Crossout",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 45121025,
+   "name": "Ogre of the Black Shadow",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 19523799,
+   "name": "Ookazi",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 93920745,
+   "name": "Penguin Soldier",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 70828912,
+   "name": "Premature Burial",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 4178474,
+   "name": "Raigeki Break",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 17814387,
+   "name": "Reinforcements",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 77622396,
+   "name": "Reverse Trap",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 70344351,
+   "name": "Riryoku Field",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 91939608,
+   "name": "Rogue Doll",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 26378150,
+   "name": "Rude Kaiser",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 15303296,
+   "name": "Ryu-Kishin",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 73915051,
+   "name": "Scapegoat",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 29267084,
+   "name": "Shadow Spell",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 59560625,
+   "name": "Shift",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 68005187,
+   "name": "Soul Exchange",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 37120512,
+   "name": "Sword of Dark Destruction",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 50005633,
+   "name": "Swordstalker",
+   "status": "no_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 34694160,
+   "name": "The Eye of Truth",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 43973174,
+   "name": "The Flute of Summoning Dragon",
+   "status": "no_possible_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 81820689,
+   "name": "The Inexperienced Spy",
+   "status": "no_possible_effect",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 6285791,
+   "name": "The Wicked Worm Beast",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 59383041,
+   "name": "Toon Alligator",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 46461247,
+   "name": "Trap Master",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 80604092,
+   "name": "Ultimate Offering",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 97360116,
+   "name": "Unknown Warrior of Fiend",
+   "status": "no_effect",
+   "prototype_file": null
+  },
+  {
+   "id": 12607053,
+   "name": "Waboku",
+   "status": "simulated",
+   "prototype_file": "ygo_sim8.py"
+  },
+  {
+   "id": 9786492,
+   "name": "White Dragon Ritual",
+   "status": "no_possible_effect",
+   "prototype_file": "ygo_sim8.py"
+  }
+ ]
+}

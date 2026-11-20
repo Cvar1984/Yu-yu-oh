@@ -1,0 +1,139 @@
+{
+ "schema_version": 1,
+ "name": "Save B strongest: DARK + Mystic Plasma Zone",
+ "for": "save B",
+ "notes": "Sim v8: 40.5% vs a field of save-A and save-B decks; beats save-B Labyrinth Wall burn 55-57%.",
+ "main": [
+  {
+   "id": 20277860,
+   "name": "Armored Zombie",
+   "count": 3
+  },
+  {
+   "id": 87564352,
+   "name": "Blackland Fire Dragon",
+   "count": 3
+  },
+  {
+   "id": 77827521,
+   "name": "Trial of Nightmare",
+   "count": 3
+  },
+  {
+   "id": 4614116,
+   "name": "Dark Energy",
+   "count": 2
+  },
+  {
+   "id": 46130346,
+   "name": "Hinotama",
+   "count": 2
+  },
+  {
+   "id": 18161786,
+   "name": "Mystic Plasma Zone",
+   "count": 2
+  },
+  {
+   "id": 10202894,
+   "name": "Skull Red Bird",
+   "count": 2
+  },
+  {
+   "id": 83225447,
+   "name": "Stim-Pack",
+   "count": 2
+  },
+  {
+   "id": 46918794,
+   "name": "Tremendous Fire",
+   "count": 2
+  },
+  {
+   "id": 91996584,
+   "name": "Whiptail Crow",
+   "count": 2
+  },
+  {
+   "id": 36304921,
+   "name": "Witty Phantom",
+   "count": 2
+  },
+  {
+   "id": 93221206,
+   "name": "Ancient Elf",
+   "count": 1
+  },
+  {
+   "id": 93889755,
+   "name": "Crass Clown",
+   "count": 1
+  },
+  {
+   "id": 21417692,
+   "name": "Dark Elf",
+   "count": 1
+  },
+  {
+   "id": 59784896,
+   "name": "Dark Zebra",
+   "count": 1
+  },
+  {
+   "id": 60862676,
+   "name": "Flame Cerebrus",
+   "count": 1
+  },
+  {
+   "id": 94773007,
+   "name": "Jirai Gumo",
+   "count": 1
+  },
+  {
+   "id": 67284908,
+   "name": "Labyrinth Wall",
+   "count": 1
+  },
+  {
+   "id": 50152549,
+   "name": "Paralyzing Potion",
+   "count": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "count": 1
+  },
+  {
+   "id": 24611934,
+   "name": "Ryu-Kishin Powered",
+   "count": 1
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "count": 1
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "count": 1
+  },
+  {
+   "id": 82003859,
+   "name": "Toll",
+   "count": 1
+  },
+  {
+   "id": 72842870,
+   "name": "Tyhone",
+   "count": 1
+  },
+  {
+   "id": 1784619,
+   "name": "Uraby",
+   "count": 1
+  }
+ ],
+ "extra": []
+}

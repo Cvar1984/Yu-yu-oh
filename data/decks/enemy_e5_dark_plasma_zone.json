@@ -1,0 +1,119 @@
+{
+ "schema_version": 1,
+ "name": "Enemy E5 DARK + Plasma Zone",
+ "for": "enemy",
+ "notes": "Realistic enemy built from all 440 cards with the limited list; theme cards fixed, rest tuned (sim v9).",
+ "main": [
+  {
+   "id": 21417692,
+   "name": "Dark Elf",
+   "count": 3
+  },
+  {
+   "id": 97590748,
+   "name": "La Jinn the Mystical Genie of the Lamp",
+   "count": 3
+  },
+  {
+   "id": 18161786,
+   "name": "Mystic Plasma Zone",
+   "count": 3
+  },
+  {
+   "id": 83011277,
+   "name": "Mystic Tomato",
+   "count": 3
+  },
+  {
+   "id": 70781052,
+   "name": "Summoned Skull",
+   "count": 3
+  },
+  {
+   "id": 91996584,
+   "name": "Whiptail Crow",
+   "count": 3
+  },
+  {
+   "id": 79571449,
+   "name": "Graceful Charity",
+   "count": 2
+  },
+  {
+   "id": 44095762,
+   "name": "Mirror Force",
+   "count": 2
+  },
+  {
+   "id": 24611934,
+   "name": "Ryu-Kishin Powered",
+   "count": 2
+  },
+  {
+   "id": 4206964,
+   "name": "Trap Hole",
+   "count": 2
+  },
+  {
+   "id": 12607053,
+   "name": "Waboku",
+   "count": 2
+  },
+  {
+   "id": 80741828,
+   "name": "Witch's Apprentice",
+   "count": 2
+  },
+  {
+   "id": 4031928,
+   "name": "Change of Heart",
+   "count": 1
+  },
+  {
+   "id": 53129443,
+   "name": "Dark Hole",
+   "count": 1
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "count": 1
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "count": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "count": 1
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "count": 1
+  },
+  {
+   "id": 29267084,
+   "name": "Shadow Spell",
+   "count": 1
+  },
+  {
+   "id": 45986603,
+   "name": "Snatch Steal",
+   "count": 1
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "count": 1
+  },
+  {
+   "id": 78010363,
+   "name": "Witch of the Black Forest",
+   "count": 1
+  }
+ ],
+ "extra": []
+}
