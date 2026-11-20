@@ -17,7 +17,7 @@ field_spells_on_field = 1   # owner 2026-11-20: classic, one face-up Field Spell
 [hand]
 opening_size = 5                # owner: official 5-card opening hand
 max_size = 6                    # owner: no cap during the turn (Pot of Greed may exceed it)
-hand_limit_check = "end_phase"  # owner 2026-11-18: modern, discard down to max_size at your End Phase; "after_draw" = after your Draw Phase
+hand_limit_check = "after_draw" # owner 2026-11-20: in the Draw Phase
 
 [life]
 starting_lp = 8000

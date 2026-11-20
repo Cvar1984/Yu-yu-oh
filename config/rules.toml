@@ -1,7 +1,8 @@
 # House rules read by the engine at game start. Official rules apply wherever
 # this file says nothing. Values marked "owner" were confirmed by the owner;
 # since 2026-11-18 the owner wants the modern official rules, with the
-# classic shared Field Spell and no first-turn draw for either player (2026-11-20).
+# classic shared Field Spell, no first-turn draw for either player and the
+# hand limit checked in the Draw Phase (2026-11-20).
 # Changing a value must never need a recompile.
 
 [deck]
@@ -17,8 +18,8 @@ field_spells_on_field = 1   # owner 2026-11-20: classic, one face-up Field Spell
 
 [hand]
 opening_size = 5                # owner: official 5-card opening hand
-max_size = 6                    # no cap during the turn (Pot of Greed may exceed it)
-hand_limit_check = "end_phase"  # owner 2026-11-18: modern, discard down to max_size at your End Phase; "after_draw" = after your Draw Phase
+max_size = 6                    # checked only in the Draw Phase; the hand may exceed it during the turn (Pot of Greed)
+hand_limit_check = "after_draw" # owner 2026-11-20: discard down to max_size in your Draw Phase, after drawing; "end_phase" = at your End Phase (modern)
 
 [life]
 starting_lp = 8000

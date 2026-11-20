@@ -51,8 +51,8 @@ fn rules_match_the_committed_defaults() {
     assert_eq!(r.deck.default_copy_limit, 3);
     assert_eq!(r.hand.opening_size, 5);
     assert_eq!(r.hand.max_size, 6);
-    // Owner, 2026-11-18: modern official rules throughout.
-    assert_eq!(r.hand.hand_limit_check, HandLimitCheck::EndPhase);
+    // Owner, 2026-11-20: the hand limit is checked in the Draw Phase.
+    assert_eq!(r.hand.hand_limit_check, HandLimitCheck::AfterDraw);
     assert!(r.turn.first_player_skips_draw && !r.turn.first_player_can_attack);
     // Owner, 2026-11-20: nobody draws on their first turn; one Field Spell.
     assert!(r.turn.second_player_skips_draw);
