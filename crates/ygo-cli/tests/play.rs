@@ -36,8 +36,11 @@ fn start_with(bot: &str, seed: u64, first: First) -> PlaySession {
     let b = bundle();
     let mine = decks::load_legal(&deck("owner_main_45.json"), &b).unwrap();
     let theirs = decks::load_legal(&deck("umiiruka_water_40.json"), &b).unwrap();
+    let mut bots = bots();
+    // A light search keeps the test quick.
+    bots.search.iterations = 10;
     play::start(
-        &bots(),
+        &bots,
         &PlayOptions {
             deck: &mine,
             bot_deck: Some(&theirs),
@@ -79,8 +82,12 @@ fn lcg(state: &mut u64) -> usize {
 #[test]
 fn a_human_plays_whole_games_and_the_record_replays() {
     let shared = ygo_engine::testing::shared_from(ygo_cards::registry());
-    for seed in 0..6u64 {
-        let bot = if seed < 3 { "random" } else { DEFAULT_BOT };
+    for seed in 0..8u64 {
+        let bot = match seed {
+            0..3 => "random",
+            3..6 => DEFAULT_BOT,
+            _ => "search",
+        };
         let mut s = start_with(
             bot,
             seed,
@@ -126,6 +133,8 @@ fn who_goes_first_follows_the_choice() {
         "{err}"
     );
     assert!(bots().make("heuristic:nonsense", 1).is_err());
+    assert!(bots().make("search:nonsense", 1).is_err());
+    assert!(bots().make("search:control", 1).is_ok());
     for name in bots().names() {
         assert!(bots().make(&name, 1).is_ok(), "{name}");
     }
