@@ -7,9 +7,9 @@ use ygo_engine::{CardIndex, DeckList, Game, GameSetup};
 
 fn decks() -> Vec<DeckList> {
     vec![
-        sample_deck("owner_main_45.json"),
-        sample_deck("defense_tuned_45.json"),
-        sample_deck("umiiruka_water_40.json"),
+        sample_deck("save_a_owner_current_40.json"),
+        sample_deck("save_a_best_overall_40.json"),
+        sample_deck("save_b_dark_plasma_40.json"),
     ]
 }
 

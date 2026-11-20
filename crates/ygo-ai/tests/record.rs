@@ -12,8 +12,8 @@ fn shared() -> Arc<Shared> {
 
 fn random_record(shared: Arc<Shared>, seed: u64) -> (ygo_engine::Game, GameRecord) {
     let decks = [
-        sample_deck("owner_main_45.json"),
-        sample_deck("umiiruka_water_40.json"),
+        sample_deck("save_a_owner_current_40.json"),
+        sample_deck("save_b_dark_plasma_40.json"),
     ];
     let setup = GameSetup::new(decks, seed);
     let mut a = RandomPlayer::new(seed);

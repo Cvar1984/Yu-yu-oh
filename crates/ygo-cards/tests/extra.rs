@@ -6,7 +6,7 @@ use std::sync::Arc;
 use ygo_cards::extra_monsters::*;
 use ygo_cards::extra_spells::*;
 use ygo_cards::extra_traps::*;
-use ygo_cards::oneshot::SPARKS;
+use ygo_cards::oneshot::{RUSH_RECKLESSLY, SPARKS};
 use ygo_cards::remaining::SPELLBINDING_CIRCLE;
 use ygo_cards::ritual::WHITE_DRAGON_RITUAL;
 use ygo_cards::spells::{DARK_HOLE, RAIGEKI};
@@ -735,4 +735,46 @@ fn waboku_stops_battle_damage_and_battle_destruction_for_the_turn() {
     activate(&mut g, WABOKU);
     assert!(g.on_field(pad), "not destroyed by battle");
     assert_eq!(lp(&g, P0), 8000, "no battle damage");
+}
+
+#[test]
+fn a_damage_step_chain_takes_only_damage_step_responses() {
+    // Rush Recklessly starts a chain in the Damage Step; Shadow Spell may
+    // not answer it there (found by the search bot: an attack it stopped
+    // inside the Damage Step left the game with nothing pending).
+    let mut g = game(&[PAD, SHADOW_SPELL], &[SEVEN_COLORED_FISH, RUSH_RECKLESSLY]);
+    let pad = summon_now(&mut g, P0, PAD);
+    set_card(&mut g, P0, SHADOW_SPELL);
+    next_turn(&mut g);
+    let fish = summon_now(&mut g, P1, SEVEN_COLORED_FISH);
+    play(&mut g, Action::EnterBattlePhase);
+    pass_all(&mut g);
+    play(
+        &mut g,
+        Action::Attack {
+            attacker: fish,
+            target: Some(pad),
+        },
+    );
+    while g
+        .window()
+        .is_none_or(|(kind, _)| kind != ygo_engine::WindowKind::DamageCalculation)
+    {
+        play(&mut g, Action::Pass);
+    }
+    let rush = activations(&g, RUSH_RECKLESSLY)
+        .into_iter()
+        .find(|a| matches!(a, Action::Activate { targets, .. } if targets == &[fish]))
+        .expect("Rush Recklessly works in the Damage Step");
+    play(&mut g, rush);
+    // With nothing to answer, its owner was passed by and the battle went on.
+    assert!(
+        g.phase() != ygo_engine::Phase::Battle(ygo_engine::BattleStep::Damage),
+        "Shadow Spell was offered inside the Damage Step"
+    );
+    pass_all(&mut g);
+    assert_eq!(g.instance(pad).location, Location::Graveyard);
+    assert!(g.on_field(fish));
+    // 1800 + 700 against 1200 in Attack Position.
+    assert_eq!(lp(&g, P0), 8000 - 1300);
 }

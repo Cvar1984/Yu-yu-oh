@@ -34,8 +34,8 @@ fn bots() -> Bots {
 
 fn start_with(bot: &str, seed: u64, first: First) -> PlaySession {
     let b = bundle();
-    let mine = decks::load_legal(&deck("owner_main_45.json"), &b).unwrap();
-    let theirs = decks::load_legal(&deck("umiiruka_water_40.json"), &b).unwrap();
+    let mine = decks::load_legal(&deck("save_a_owner_current_40.json"), &b).unwrap();
+    let theirs = decks::load_legal(&deck("save_b_dark_plasma_40.json"), &b).unwrap();
     let mut bots = bots();
     // A light search keeps the test quick.
     bots.search.iterations = 10;

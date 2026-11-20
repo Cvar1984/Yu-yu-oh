@@ -137,6 +137,7 @@ Gate: the owner plays a full game with `ygo play`. That part is yours;
 everything that can be checked without you is below.
 
 ```sh
+# owner_main_45.json was removed as stale on 2026-11-20; save_a_owner_current_40.json replaces it.
 cargo run --release -p ygo-cli -- play --deck data/decks/owner_main_45.json
 cargo run --release -p ygo-cli -- replay records/human/<file>.jsonl --view all
 ```

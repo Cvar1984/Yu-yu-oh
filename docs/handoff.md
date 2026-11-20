@@ -344,7 +344,7 @@ Against six realistic enemy decks, the best save A deck wins 51.3%; the owner's 
 | --- | --- | --- |
 | Save A best overall: control + Change of Heart tribute | 51.3% | `save_a_best_overall_40.json` |
 | Save A control without tribute monsters | 52.3% (loses 45-51 head to head) | `save_a_control_no_tribute_40.json` |
-| Save A discard, search, reborn | 39% | `save_a_discard_reborn_40.json` |
+| Save A discard, search, reborn | 39% | `save_a_discard_reborn_40.json` (removed as stale, 2026-11-20) |
 | Owner's current save A deck | 36% | `save_a_owner_current_40.json` |
 | Save B best: DARK + Mystic Plasma Zone | 40.5% vs. a save A/B field (not the enemies) | `save_b_dark_plasma_40.json` |
 

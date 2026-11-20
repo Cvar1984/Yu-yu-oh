@@ -15,8 +15,8 @@ fn shared() -> Arc<Shared> {
 
 fn new_game(seed: u64) -> Game {
     let decks = [
-        sample_deck("owner_main_45.json"),
-        sample_deck("umiiruka_water_40.json"),
+        sample_deck("save_a_owner_current_40.json"),
+        sample_deck("save_b_dark_plasma_40.json"),
     ];
     Game::new(shared(), &GameSetup::new(decks, seed)).unwrap()
 }

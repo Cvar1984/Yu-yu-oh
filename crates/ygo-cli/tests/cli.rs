@@ -89,7 +89,7 @@ fn ygo_real(args: &[&str]) -> Output {
 #[test]
 fn sim_plays_named_bots_and_refuses_unknown_ones() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let deck = root.join("data/decks/owner_main_45.json");
+    let deck = root.join("data/decks/save_a_owner_current_40.json");
     let deck = deck.to_str().unwrap();
     let out = ygo_real(&[
         "sim",
@@ -122,7 +122,7 @@ fn sim_plays_named_bots_and_refuses_unknown_ones() {
 #[test]
 fn play_and_sim_refuse_a_deck_over_the_ban_list() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let legal = root.join("data/decks/owner_main_45.json");
+    let legal = root.join("data/decks/save_a_owner_current_40.json");
     // The owner's deck with its one Raigeki doubled: 46 cards, 2 Raigeki.
     let text = std::fs::read_to_string(&legal).unwrap();
     let illegal_text = text.replace(

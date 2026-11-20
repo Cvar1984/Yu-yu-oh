@@ -117,8 +117,8 @@ fn whole_games_against_the_heuristic_bot_replay_from_their_records() {
     for seed in 0..2u64 {
         let mut setup = GameSetup::new(
             [
-                sample_deck("owner_main_45.json"),
-                sample_deck("umiiruka_water_40.json"),
+                sample_deck("save_a_owner_current_40.json"),
+                sample_deck("save_b_dark_plasma_40.json"),
             ],
             seed,
         );

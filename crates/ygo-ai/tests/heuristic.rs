@@ -345,8 +345,8 @@ fn every_style_finishes_games_against_the_random_bot() {
         for seed in 0..4u64 {
             let setup = GameSetup::new(
                 [
-                    sample_deck("owner_main_45.json"),
-                    sample_deck("umiiruka_water_40.json"),
+                    sample_deck("save_a_owner_current_40.json"),
+                    sample_deck("save_b_dark_plasma_40.json"),
                 ],
                 seed + 10 * i as u64,
             );

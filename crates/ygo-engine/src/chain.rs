@@ -618,7 +618,9 @@ impl Game {
         let window = Window { kind, events };
         // With no chain, speed 1 is left to `fast_effect_allowed` (Standby Spells).
         let min_speed = self.chain.last().map_or(1, |l| l.speed);
-        let in_damage_step = kind == WindowKind::DamageCalculation;
+        // Every window of the Damage Step counts, chain windows included:
+        // only effects that may start there can respond to a Damage Step chain.
+        let in_damage_step = self.phase == crate::Phase::Battle(crate::BattleStep::Damage);
         let state = &self.players[player.index()];
         let candidates = state
             .hand

@@ -1112,6 +1112,11 @@ impl Game {
         }
         self.current_attack = None;
         self.emit(Event::AttackCancelled { attacker });
+        // Stopped inside the Damage Step: the battle ends there.
+        if self.phase == crate::Phase::Battle(crate::BattleStep::Damage) {
+            self.phase = crate::Phase::Battle(crate::BattleStep::Battle);
+            self.emit(Event::PhaseEntered { phase: self.phase });
+        }
         true
     }
 

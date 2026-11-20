@@ -139,9 +139,9 @@ fn two_copies_on_the_field_are_told_apart_by_zone() {
 fn nothing_hidden_is_ever_named_in_random_games() {
     let shared = shared();
     let decks = [
-        "owner_main_45.json",
-        "umiiruka_water_40.json",
-        "defense_tuned_45.json",
+        "save_a_owner_current_40.json",
+        "save_b_dark_plasma_40.json",
+        "save_a_best_overall_40.json",
     ];
     let mut lcg = 11u64;
     for seed in 0..24u64 {
