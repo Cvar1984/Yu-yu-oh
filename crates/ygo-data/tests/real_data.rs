@@ -91,7 +91,7 @@ fn every_deck_is_legal_and_owned_decks_fit_their_collection() {
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         .collect();
     names.sort();
-    assert_eq!(names.len(), 10);
+    assert_eq!(names.len(), 11);
     for name in &names {
         let d = deck(name);
         let owned = match d.played_by.as_deref() {

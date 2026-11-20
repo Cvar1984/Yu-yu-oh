@@ -107,7 +107,7 @@ Graveyard. Simplifications, like those listed in `docs/m3-plan.md`:
 - **Shadow Spell** goes to the Graveyard with its monster as an Equip
   does, rather than being destroyed by its own effect.
 
-## Deck crafting from save A (paused, 2026-11-20)
+## Deck crafting from save A (2026-11-20)
 
 The owner asked for the best deck from save A's cards. Two findings so
 far, measured against the six enemy decks (the heuristic bot pilots the
@@ -127,9 +127,26 @@ enemies):
   points are noise at this sample size; any live card beats the dead
   slot by about 3.
 
-Next, when resumed: validate the best overall deck with Solemn Judgment
-for Scapegoat, and that deck with Dust Tornado and Raigeki Break for the
-two Horn of the Unicorn, at 400 or more games per enemy with the search
-bot, then save the winner as `save_a_crafted_40.json`. Scripting
-Scapegoat (batch 2) changes the baseline.
+**Validation (resumed 2026-11-20).** Three decks, each piloted by the
+search bot (defaults: 200 iterations, horizon 2) against the six enemy
+decks piloted by the Beatdown heuristic bot, 600 games per enemy, the
+same seed per enemy for every deck (`--seed 9101` to `9106`,
+`--threads 4`):
+
+| Enemy | Best overall | A: Solemn for Scapegoat | B: A, Dust Tornado and Raigeki Break for the Horns |
+| --- | --- | --- | --- |
+| e1 Toon | 63.0 | 65.0 | 72.8 |
+| e2 Special Summon | 57.2 | 56.3 | 62.3 |
+| e3 Removal | 57.3 | 60.0 | 66.7 |
+| e4 Big beatdown | 73.7 | 75.3 | 77.3 |
+| e5 Dark Plasma zone | 29.0 | 29.7 | 33.0 |
+| e6 Gate Guardian | 35.5 | 40.3 | 37.5 |
+| **All, 3,600 games** | **52.6 ±1.6** | **54.4 ±1.6** | **58.3 ±1.6** |
+
+B is saved as `data/decks/save_a_crafted_40.json`: 5.7 points over the
+original (204 more wins of 3,600), better against five of the six
+enemies, and its interval does not overlap the original's. A alone is
+within noise of the original. The weak spots stay the Dark Plasma zone
+and Gate Guardian decks (about a third won). Scripting Scapegoat (batch
+2) changes the baseline: rerun this comparison then.
 
