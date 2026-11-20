@@ -19,7 +19,7 @@ mod rules;
 pub use banlist::{Banlist, CardLimit};
 pub use bot::{CardValues, MAX_CARD_VALUE, Style, Styles, ValueDefaults};
 pub use bundle::Bundle;
-pub use card::{Card, CardDb, CardFile, CardId, CardKind, CardType, Images, Printing};
+pub use card::{Card, CardDb, CardFile, CardId, CardKind, CardType, GameIndex, Images, Printing};
 pub use check::{DeckProblem, check_deck};
 pub use collection::{Collection, OwnedCard};
 pub use deck::{Deck, DeckEntry};
@@ -31,17 +31,30 @@ pub use rules::{
 
 use std::path::Path;
 
-/// The one JSON schema version this build understands.
+/// The JSON schema version this build understands, for every file but
+/// `cards.json`.
 pub const SCHEMA_VERSION: u32 = 1;
 
+/// The `cards.json` schema version this build understands. Version 2 added
+/// the 66 EXTRA cards' `in_game_index` and the file's `note`.
+pub const CARDS_SCHEMA_VERSION: u32 = 2;
+
 pub(crate) fn check_schema(file: &'static str, found: u32) -> Result<(), DataError> {
-    if found == SCHEMA_VERSION {
+    check_schema_version(file, found, SCHEMA_VERSION)
+}
+
+pub(crate) fn check_schema_version(
+    file: &'static str,
+    found: u32,
+    expected: u32,
+) -> Result<(), DataError> {
+    if found == expected {
         Ok(())
     } else {
         Err(DataError::UnsupportedSchema {
             file,
             found,
-            expected: SCHEMA_VERSION,
+            expected,
         })
     }
 }
