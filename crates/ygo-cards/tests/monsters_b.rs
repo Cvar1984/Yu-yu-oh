@@ -638,7 +638,10 @@ fn gate_guardian_needs_its_three_parts() {
 #[test]
 fn cocoon_of_evolution_then_larvae_moth_and_great_moth() {
     for (moth, turns) in [(LARVAE_MOTH, 4), (GREAT_MOTH, 8)] {
-        let mut g = game([&[PETIT_MOTH, COCOON_OF_EVOLUTION, moth], &[]]);
+        let mut g = game([
+            &[PETIT_MOTH, COCOON_OF_EVOLUTION, moth, MONSTER_REBORN],
+            &[],
+        ]);
         let petit = put(&mut g, P0, PETIT_MOTH);
         activate(&mut g, COCOON_OF_EVOLUTION);
         assert_eq!(
@@ -658,8 +661,30 @@ fn cocoon_of_evolution_then_larvae_moth_and_great_moth() {
         }
         activate(&mut g, moth);
         let m = g.player(P0).monsters().find(|&c| g.stats(c).id == moth);
-        assert!(m.is_some(), "{moth} on the field");
+        let m = m.unwrap_or_else(|| panic!("{moth} on the field"));
         assert_eq!(g.instance(petit).location, Location::Graveyard);
+
+        // "Can only be Special Summoned by Tributing Petit Moth": even after
+        // that proper summon, Monster Reborn cannot bring it back.
+        g.destroy(m, m);
+        assert_eq!(g.instance(m).location, Location::Graveyard);
+        assert!(!g.special_summonable(m));
+        next_turn(&mut g);
+        next_turn(&mut g);
+        let reborn: Vec<Action> = g
+            .legal_actions()
+            .into_iter()
+            .filter(|a| {
+                matches!(a, Action::Activate { card, .. } if g.stats(*card).id == MONSTER_REBORN)
+            })
+            .collect();
+        assert!(!reborn.is_empty(), "Petit Moth can still be revived");
+        assert!(
+            reborn
+                .iter()
+                .all(|a| matches!(a, Action::Activate { targets, .. } if !targets.contains(&m))),
+            "{moth} is never a target"
+        );
     }
 }
 

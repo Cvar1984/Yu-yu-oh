@@ -300,7 +300,6 @@ fn gravekeepers_servant_mills_each_attacker_and_penguin_knight_reshuffles() {
             SPARKS,
             SPARKS,
             SPARKS,
-            MYSTICAL_ELF,
             PENGUIN_KNIGHT,
         ],
     ]);

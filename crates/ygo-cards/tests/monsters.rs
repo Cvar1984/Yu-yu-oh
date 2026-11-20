@@ -237,7 +237,9 @@ fn simultaneous_mandatory_triggers_are_ordered_by_their_controller() {
             .all(|a| matches!(a, Action::Choose { card } if g.stats(*card).def <= 1500))
     );
     play(&mut g, options[0].clone());
-    assert_eq!(g.player(P1).hand.len(), 5 + 1 - 2 + 2);
+    // Five in the opening hand (no draw on their first turn), two summoned,
+    // two searched.
+    assert_eq!(g.player(P1).hand.len(), 5 - 2 + 2);
 }
 
 #[test]

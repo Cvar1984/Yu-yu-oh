@@ -42,6 +42,9 @@ pub enum Tag {
     /// Attached like an Equip, but stays on the field when its monster leaves
     /// (Spellbinding Circle, destroyed only with its monster's destruction).
     StaysWithoutTarget,
+    /// "Can only be Special Summoned by" its own procedure: no other effect
+    /// may ever Special Summon it, even after a proper summon (the Moths).
+    OnlyByProcedure,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

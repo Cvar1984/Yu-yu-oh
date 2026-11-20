@@ -1,6 +1,7 @@
 # House rules read by the engine at game start. Official rules apply wherever
 # this file says nothing. Values marked "owner" were confirmed by the owner;
-# since 2026-11-18 the owner wants the modern official rules throughout.
+# since 2026-11-18 the owner wants the modern official rules, with the
+# classic shared Field Spell and no first-turn draw for either player (2026-11-20).
 # Changing a value must never need a recompile.
 
 [deck]
@@ -12,7 +13,7 @@ default_copy_limit = 3  # per card; banlist.json overrides
 [field]
 monster_zones = 5
 spell_trap_zones = 5
-field_spells_on_field = 2   # owner 2026-11-18: modern, one per player (a new one replaces only your own); 1 = one on the whole field
+field_spells_on_field = 1   # owner 2026-11-20: classic, one face-up Field Spell on the whole field; a new one from either player destroys it. 2 = modern, one per player
 
 [hand]
 opening_size = 5                # owner: official 5-card opening hand
@@ -24,6 +25,7 @@ starting_lp = 8000
 
 [turn]
 first_player_skips_draw = true      # owner: no draw on turn 1
+second_player_skips_draw = true     # owner 2026-11-20: nobody draws on their own first turn (turn 2 for the second player)
 first_player_can_attack = false     # owner: may summon, Set and activate on turn 1, but not attack
 trap_activation_turn_set = false    # owner 2026-11-18: modern, a Trap waits a turn after being Set; true = usable the turn it is Set
 spell_target_monster_set_this_turn = true   # owner 2026-11-18: modern, Spells may target a monster Set this turn; false = not until next turn

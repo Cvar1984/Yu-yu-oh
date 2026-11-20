@@ -29,8 +29,22 @@ fn turn_one_starts_in_main_phase_one_with_end_turn_as_the_only_action() {
 }
 
 #[test]
-fn ending_the_turn_passes_to_the_opponent_who_draws() {
+fn nobody_draws_on_their_first_turn() {
+    // Owner, 2026-11-20: the second player skips the draw of turn 2 too.
     let mut g = game();
+    let events = play(&mut g, Action::EndTurn);
+    assert_eq!((g.turn(), g.turn_player()), (2, PlayerId(1)));
+    assert_eq!(g.player(PlayerId(1)).hand.len(), 5);
+    assert_eq!(g.player(PlayerId(1)).deck.len(), 35);
+    assert!(!events.iter().any(|e| matches!(e, Event::Drew { .. })));
+    play(&mut g, Action::EndTurn);
+    assert_eq!(g.player(PlayerId(0)).hand.len(), 6, "turn 3: a normal draw");
+}
+
+#[test]
+fn flip_second_player_skips_draw_and_the_opponent_draws_on_turn_2() {
+    let shared = shared_with(|r| r.turn.second_player_skips_draw = false);
+    let mut g = Game::new(shared, &setup(1)).unwrap();
     let events = play(&mut g, Action::EndTurn);
     assert_eq!(g.turn(), 2);
     assert_eq!(g.turn_player(), PlayerId(1));
@@ -63,20 +77,21 @@ fn ending_the_turn_passes_to_the_opponent_who_draws() {
 }
 
 #[test]
-fn doing_nothing_ends_by_deck_out_on_turn_72() {
-    // 35 cards after the opening hand. Player 1 draws on even turns and
-    // runs out on turn 72; player 0, who skipped turn 1, still has one.
+fn doing_nothing_ends_by_deck_out_on_turn_73() {
+    // 35 cards after the opening hand, and nobody draws on their first
+    // turn. Player 0 draws on turns 3 to 71 and finds an empty deck on
+    // turn 73; player 1 drew their last card on turn 72.
     let mut g = game();
     end_turns_until_over(&mut g);
-    assert_eq!(g.turn(), 72);
+    assert_eq!(g.turn(), 73);
     assert_eq!(
         g.result(),
         Some(GameResult::Win {
-            winner: PlayerId(0),
+            winner: PlayerId(1),
             reason: WinReason::DeckOut
         })
     );
-    assert_eq!(g.player(PlayerId(0)).deck.len(), 0);
+    assert_eq!(g.player(PlayerId(1)).deck.len(), 0);
     assert!(g.legal_actions().is_empty());
     assert_eq!(g.apply(&Action::EndTurn), Err(RuleError::GameOver));
 }
@@ -159,14 +174,11 @@ fn hand_limit_after_draw_when_the_rules_say_so() {
     assert_eq!(g.player(PlayerId(0)).hand.len(), 4);
     assert_eq!(g.phase(), Phase::Main1);
 
-    // Player 1 draws to 6 on turn 2 and must discard twice.
+    // Player 1 holds 5 on turn 2 (no first-turn draw) and discards once.
     play(&mut g, Action::EndTurn);
     assert_eq!(g.turn_player(), PlayerId(1));
     assert_eq!(g.phase(), Phase::Draw);
-    assert_eq!(g.legal_actions().len(), 6);
-    let a = g.legal_actions()[0].clone();
-    play(&mut g, a);
-    assert_eq!(g.phase(), Phase::Draw);
+    assert_eq!(g.legal_actions().len(), 5);
     let a = g.legal_actions()[0].clone();
     play(&mut g, a);
     assert_eq!(g.phase(), Phase::Main1);

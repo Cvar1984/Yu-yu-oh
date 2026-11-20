@@ -36,8 +36,9 @@ fn a_player_sees_their_own_hand_and_set_cards_but_not_the_opponents() {
     assert_eq!(from_p0.turn, 2);
     assert!(from_p0.me().hand.iter().all(|c| c.card().is_some()));
     assert!(from_p0.opponent().hand.iter().all(|c| c.card().is_none()));
-    assert_eq!(from_p0.opponent().hand.len(), 5);
-    assert_eq!(from_p0.opponent().deck_count, 34);
+    // Player 1 did not draw on turn 2 and has summoned Celtic Guardian.
+    assert_eq!(from_p0.opponent().hand.len(), 4);
+    assert_eq!(from_p0.opponent().deck_count, 35);
     assert_eq!(
         from_p0.me().monster_zones[0],
         Some(VisibleCard::Known {

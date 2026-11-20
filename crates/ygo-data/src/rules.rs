@@ -64,6 +64,10 @@ pub struct LifeRules {
 #[serde(deny_unknown_fields)]
 pub struct TurnRules {
     pub first_player_skips_draw: bool,
+    /// Whether the second player also skips the draw of their first turn
+    /// (turn 2). Records made before this key existed read it as `false`.
+    #[serde(default)]
+    pub second_player_skips_draw: bool,
     pub first_player_can_attack: bool,
     /// Whether a Trap may be activated in the same turn it was Set.
     pub trap_activation_turn_set: bool,

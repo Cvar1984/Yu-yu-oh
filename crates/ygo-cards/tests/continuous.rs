@@ -10,7 +10,9 @@ use ygo_engine::testing::{
     CELTIC_GUARDIAN, MYSTICAL_ELF, SEVEN_COLORED_FISH, in_hand, next_turn, pass_all, play,
     shared_from, stacked, summon, with_rules,
 };
-use ygo_engine::{Action, DecisionKind, Game, Location, PlayerId, Position, Shared, VisibleCard};
+use ygo_engine::{
+    Action, DecisionKind, Event, Game, Location, PlayerId, Position, Shared, VisibleCard,
+};
 
 const P0: PlayerId = PlayerId(0);
 const P1: PlayerId = PlayerId(1);
@@ -198,10 +200,10 @@ fn legendary_sword_only_targets_warriors() {
 
 #[test]
 fn umi_changes_stats_by_type_and_a_new_field_spell_replaces_it_with_one_on_the_field() {
-    // With one Field Spell on the whole field (modern is one per player; see
-    // flip_field_spells_on_field_to_the_official_two).
+    // The classic rule (owner, 2026-11-20): one Field Spell on the whole
+    // field; see flip_field_spells_on_field_to_the_modern_two.
     let mut g = Game::new(
-        with_rules(&shared(), |r| r.field.field_spells_on_field = 1),
+        shared(),
         &stacked(
             [&[SEVEN_COLORED_FISH, UMI], &[UMI, CELTIC_GUARDIAN]],
             MYSTICAL_ELF,
@@ -229,11 +231,18 @@ fn umi_changes_stats_by_type_and_a_new_field_spell_replaces_it_with_one_on_the_f
     assert_eq!(g.atk(celtic), 1400, "a Warrior is unaffected");
     let umi2 = in_hand(&g, P1, UMI);
     let a = activations(&g, UMI)[0].clone();
-    play(&mut g, a);
+    let events = play(&mut g, a);
     assert_eq!(
         g.instance(umi).location,
         Location::Graveyard,
         "one Field Spell on the whole field"
+    );
+    assert!(
+        events.contains(&Event::DestroyedByEffect {
+            card: umi,
+            source: umi2
+        }),
+        "the older one is destroyed"
     );
     assert_eq!(g.field_spell(P1), Some(umi2));
     assert_eq!(g.field_spell(P0), None);
@@ -241,7 +250,7 @@ fn umi_changes_stats_by_type_and_a_new_field_spell_replaces_it_with_one_on_the_f
 }
 
 #[test]
-fn flip_field_spells_on_field_to_the_official_two() {
+fn flip_field_spells_on_field_to_the_modern_two() {
     let base = shared();
     let shared = with_rules(&base, |r| r.field.field_spells_on_field = 2);
     let mut g = Game::new(shared, &stacked([&[UMI, UMI], &[UMI]], MYSTICAL_ELF)).unwrap();

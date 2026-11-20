@@ -463,10 +463,15 @@ impl Game {
 
     /// Whether a card effect may Special Summon `card` from where it is: any
     /// monster that needs no proper summon, or one that was properly summoned
-    /// and is now in the Graveyard or banished.
+    /// and is now in the Graveyard or banished; never one tagged
+    /// `OnlyByProcedure`.
     pub fn special_summonable(&self, card: InstanceId) -> bool {
         let inst = &self.instances[card.index()];
+        let only_by_procedure = self
+            .script(card)
+            .is_some_and(|s| s.has(crate::Tag::OnlyByProcedure));
         self.stats(card).is_monster()
+            && !only_by_procedure
             && (!self.needs_proper_summon(card)
                 || (inst.properly_summoned
                     && matches!(inst.location, Location::Graveyard | Location::Banished)))
@@ -1082,8 +1087,9 @@ impl Game {
         inst.counter = 0;
     }
 
-    /// A Field Spell becomes active: with `field_spells_on_field` at 1, the
-    /// other face-up Field Spell, whoever owns it, goes to the Graveyard.
+    /// A Field Spell becomes active. With `field_spells_on_field` at 1 (the
+    /// classic rule) the other face-up Field Spell, whoever owns it, is
+    /// destroyed; with 2, a player's own older one is already replaced.
     pub(crate) fn field_spell_turns_face_up(&mut self, card: InstanceId) {
         let limit = self.shared.rules.field.field_spells_on_field.max(1);
         let mut active: Vec<InstanceId> = PlayerId::BOTH
@@ -1094,6 +1100,10 @@ impl Game {
         while active.len() + 1 > limit {
             let victim = active.remove(0);
             self.send_to_graveyard(victim);
+            self.emit(Event::DestroyedByEffect {
+                card: victim,
+                source: card,
+            });
         }
     }
 

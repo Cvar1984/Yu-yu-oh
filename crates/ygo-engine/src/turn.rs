@@ -315,7 +315,9 @@ impl Game {
         self.emit(Event::TurnStarted { turn, player });
         self.enter_phase(Phase::Draw);
 
-        let skip = turn == 1 && self.shared.rules.turn.first_player_skips_draw;
+        let rules = &self.shared.rules.turn;
+        let skip = (turn == 1 && rules.first_player_skips_draw)
+            || (turn == 2 && rules.second_player_skips_draw);
         if skip {
             return;
         }
