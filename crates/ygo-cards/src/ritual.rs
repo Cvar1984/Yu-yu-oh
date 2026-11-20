@@ -1,4 +1,4 @@
-//! The four Ritual Spells, their Ritual Monsters, and Relinquished.
+//! The six Ritual Spells, their Ritual Monsters, and Relinquished.
 
 use ygo_data::CardId;
 
@@ -15,13 +15,20 @@ pub const RELINQUISHED: CardId = CardId(64631466);
 pub const PERFORMANCE_OF_SWORD: CardId = CardId(4849037);
 pub const HUNGRY_BURGER: CardId = CardId(30243636);
 pub const CRAB_TURTLE: CardId = CardId(91782219);
+pub const BLACK_LUSTER_RITUAL: CardId = CardId(55761792);
+pub const BLACK_LUSTER_SOLDIER: CardId = CardId(5405694);
+pub const WHITE_DRAGON_RITUAL: CardId = CardId(9786492);
+/// Not in the pool: White Dragon Ritual can never be activated here.
+pub const PALADIN_OF_WHITE_DRAGON: CardId = CardId(73398797);
 
 /// (Ritual Spell, the monster it summons, the Levels the tributes must reach).
-pub const RITUALS: [(CardId, CardId, u8); 4] = [
+pub const RITUALS: [(CardId, CardId, u8); 6] = [
     (BLACK_ILLUSION_RITUAL, RELINQUISHED, 1),
     (COMMENCEMENT_DANCE, PERFORMANCE_OF_SWORD, 6),
     (HAMBURGER_RECIPE, HUNGRY_BURGER, 6),
     (TURTLE_OATH, CRAB_TURTLE, 8),
+    (BLACK_LUSTER_RITUAL, BLACK_LUSTER_SOLDIER, 8),
+    (WHITE_DRAGON_RITUAL, PALADIN_OF_WHITE_DRAGON, 4),
 ];
 
 fn ritual_row(g: &Game, s: Source) -> (CardId, u8) {
@@ -144,7 +151,12 @@ pub fn register(r: &mut Registry) {
             },
         );
     }
-    for id in [PERFORMANCE_OF_SWORD, HUNGRY_BURGER, CRAB_TURTLE] {
+    for id in [
+        PERFORMANCE_OF_SWORD,
+        HUNGRY_BURGER,
+        CRAB_TURTLE,
+        BLACK_LUSTER_SOLDIER,
+    ] {
         r.register(
             id,
             CardScript {

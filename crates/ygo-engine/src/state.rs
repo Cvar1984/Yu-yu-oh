@@ -106,6 +106,9 @@ pub enum LingeringKind {
     /// The source remembers `card` (Castle of Dark Illusions' Zombies);
     /// no effect of its own.
     Marked { card: InstanceId },
+    /// `player` takes no battle damage from the opponent's monsters, and
+    /// `player`'s monsters cannot be destroyed by battle (Waboku).
+    BattleShield { player: PlayerId },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.
@@ -215,6 +218,9 @@ pub struct PlayerState {
     pub field_zone: Option<InstanceId>,
     /// Normal Summons, Tribute Summons and Sets used this turn.
     pub summons_used: u8,
+    /// Monsters this player controlled that went from the field to their
+    /// Graveyard this turn (Last Will).
+    pub monsters_to_graveyard: u8,
     /// Monsters that entered the field this turn, for `max_monsters_entering_per_turn`.
     pub monsters_entered: u8,
     /// Card names whose "only once per turn" effect this player used this
@@ -238,6 +244,7 @@ impl PlayerState {
             spell_trap_zones: vec![None; spell_trap_zones],
             field_zone: None,
             summons_used: 0,
+            monsters_to_graveyard: 0,
             monsters_entered: 0,
             names_used: Vec::new(),
             names_locked: Vec::new(),

@@ -167,7 +167,12 @@ impl Game {
                 } else {
                     let diff = atk - target_def;
                     match diff.signum() {
-                        1 => destroyed.push(target),
+                        1 => {
+                            destroyed.push(target);
+                            if self.pierces(attacker) {
+                                damage = Some((defender, diff));
+                            }
+                        }
                         -1 => damage = Some((player, -diff)),
                         _ => {}
                     }
@@ -193,7 +198,10 @@ impl Game {
             });
         }
         for card in destroyed {
-            self.destroy_by_battle(card);
+            let controller = self.instances[card.index()].controller;
+            if !self.battle_shielded(controller) {
+                self.destroy_by_battle(card);
+            }
         }
         self.damage_prevented = [false, false];
         self.current_attack = None;
@@ -219,7 +227,9 @@ impl Game {
 
     /// Deals battle damage unless prevented; returns the amount dealt.
     fn battle_damage(&mut self, player: PlayerId, amount: i32) -> Option<u32> {
-        if self.damage_prevented[player.index()] {
+        // A player's battle damage always comes from the opponent's
+        // monsters, so a shield (Waboku) prevents all of it.
+        if self.damage_prevented[player.index()] || self.battle_shielded(player) {
             return None;
         }
         let amount = u32::try_from(amount).unwrap_or(0);

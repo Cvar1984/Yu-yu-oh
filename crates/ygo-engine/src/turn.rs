@@ -303,6 +303,7 @@ impl Game {
         self.turn_player = player;
         for p in self.players.iter_mut() {
             p.summons_used = 0;
+            p.monsters_to_graveyard = 0;
             p.monsters_entered = 0;
             p.names_used.clear();
             p.names_locked.clear();

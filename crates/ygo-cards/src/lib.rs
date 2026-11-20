@@ -4,6 +4,9 @@
 //! Module per card type; each module has a `register` function.
 
 pub mod continuous;
+pub mod extra_monsters;
+pub mod extra_spells;
+pub mod extra_traps;
 pub mod flips;
 pub mod fusion;
 pub mod monsters;
@@ -38,5 +41,8 @@ pub fn registry() -> Registry {
     flips::register(&mut r);
     toons::register(&mut r);
     remaining::register(&mut r);
+    extra_monsters::register(&mut r);
+    extra_spells::register(&mut r);
+    extra_traps::register(&mut r);
     r
 }

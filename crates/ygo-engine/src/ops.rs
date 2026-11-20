@@ -5,6 +5,7 @@ use rand_core::Rng;
 
 use ygo_data::CardKind;
 
+use crate::chain::Pending;
 use crate::{
     Effect, EffectKind, Event, Game, GameResult, InstanceId, Lingering, LingeringKind, Location,
     PlayerId, Position, Source, StatMod, Tag, WinReason,
@@ -79,7 +80,7 @@ impl Game {
     /// Whether both hands are public right now (Ceremonial Bell).
     pub fn hands_revealed(&self) -> bool {
         let mut revealed = false;
-        self.for_each_face_up_script(|script| {
+        self.for_each_face_up_script(|_, script| {
             if script.has(Tag::RevealHands) {
                 revealed = true;
             }
@@ -87,7 +88,22 @@ impl Game {
         revealed
     }
 
-    fn for_each_face_up_script(&self, mut f: impl FnMut(&crate::CardScript)) {
+    /// Whether `player`'s hand is public right now: both hands are (Ceremonial
+    /// Bell), or the opponent has a face-up card that reveals it (The Eye of
+    /// Truth).
+    pub fn hand_revealed(&self, player: PlayerId) -> bool {
+        let mut revealed = false;
+        self.for_each_face_up_script(|controller, script| {
+            if script.has(Tag::RevealHands)
+                || (controller != player && script.has(Tag::RevealOpponentHand))
+            {
+                revealed = true;
+            }
+        });
+        revealed
+    }
+
+    fn for_each_face_up_script(&self, mut f: impl FnMut(PlayerId, &crate::CardScript)) {
         for p in PlayerId::BOTH {
             let state = &self.players[p.index()];
             let cards = state
@@ -102,7 +118,7 @@ impl Game {
                 if inst.position.is_face_up()
                     && let Some(script) = self.shared.script(inst.card)
                 {
-                    f(script);
+                    f(inst.controller, script);
                 }
             }
         }
@@ -308,7 +324,7 @@ impl Game {
     /// Graveyard.
     fn banish_instead_of_graveyard(&self) -> bool {
         let mut banish = false;
-        self.for_each_face_up_script(|script| {
+        self.for_each_face_up_script(|_, script| {
             if script.has(Tag::BanishInsteadOfGraveyard) {
                 banish = true;
             }
@@ -624,7 +640,8 @@ impl Game {
                 LingeringKind::Stats { .. }
                 | LingeringKind::CannotAttack { .. }
                 | LingeringKind::DamageCalcStats { .. }
-                | LingeringKind::Marked { .. } => {}
+                | LingeringKind::Marked { .. }
+                | LingeringKind::BattleShield { .. } => {}
             }
         }
     }
@@ -842,7 +859,7 @@ impl Game {
     /// LP a player pays to play a card from the hand right now.
     pub fn hand_play_toll(&self) -> u32 {
         let mut toll = 0;
-        self.for_each_face_up_script(|script| {
+        self.for_each_face_up_script(|_, script| {
             if script.has(Tag::HandPlayToll) {
                 toll += 500;
             }
@@ -903,6 +920,18 @@ impl Game {
             self.emit(Event::ControlChanged { card, to });
         }
         true
+    }
+
+    /// Whether a continuous effect makes `attacker` inflict piercing
+    /// battle damage (Fairy Meteor Crush).
+    pub fn pierces(&self, attacker: InstanceId) -> bool {
+        let mut pierce = false;
+        self.for_each_continuous(|source, effect| {
+            if !pierce && effect.pierce.is_some_and(|f| f(self, source, attacker)) {
+                pierce = true;
+            }
+        });
+        pierce
     }
 
     /// Whether some continuous or lingering effect forbids `card` from attacking.
@@ -1054,6 +1083,74 @@ impl Game {
             .take(n)
             .copied()
             .collect()
+    }
+
+    /// `player` looks at `cards` privately (Ancient Telescope); the opponent
+    /// only learns that cards were looked at.
+    pub fn look_at(&mut self, player: PlayerId, cards: &[InstanceId]) {
+        let cards = cards
+            .iter()
+            .map(|&c| (c, self.shared.pool.get(self.instances[c.index()].card).id))
+            .collect();
+        self.emit(Event::LookedAt { player, cards });
+    }
+
+    /// Stops the attack `attacker` declared, if it is still under way
+    /// (a monster that "cannot attack" any more: Shadow Spell).
+    pub fn cancel_attack(&mut self, attacker: InstanceId) -> bool {
+        if self.current_attack.is_none_or(|(a, _)| a != attacker) {
+            return false;
+        }
+        let before = self.pending.len();
+        self.pending.retain(|p| {
+            !matches!(p,
+                Pending::DamageStep { attacker: a, .. } | Pending::DamageCalc { attacker: a, .. }
+                    if *a == attacker)
+        });
+        if self.pending.len() == before {
+            return false;
+        }
+        self.current_attack = None;
+        self.emit(Event::AttackCancelled { attacker });
+        true
+    }
+
+    /// For the rest of this turn, `player` takes no battle damage from the
+    /// opponent's monsters and `player`'s monsters cannot be destroyed by
+    /// battle (Waboku).
+    pub fn shield_from_battle_this_turn(&mut self, source: InstanceId, player: PlayerId) {
+        let turn = self.turn;
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::BattleShield { player },
+            expires_turn: turn,
+        });
+    }
+
+    pub(crate) fn battle_shielded(&self, player: PlayerId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::BattleShield { player })
+    }
+
+    /// Sets a Spell or Trap from `player`'s hand by an effect (Dust Tornado);
+    /// `false` if there is no room or the card is not in the hand.
+    pub fn set_from_hand(&mut self, player: PlayerId, card: InstanceId) -> bool {
+        let inst = &self.instances[card.index()];
+        let stats = self.shared.pool.get(inst.card);
+        if inst.location != Location::Hand || inst.controller != player || stats.is_monster() {
+            return false;
+        }
+        if stats.subtype == crate::SpellTrapType::Field {
+            self.place_field_spell(player, card, Position::FaceDown);
+        } else {
+            let Some(zone) = self.free_spell_trap_zone(player) else {
+                return false;
+            };
+            self.place_spell_trap(player, card, zone, Position::FaceDown);
+        }
+        self.emit(Event::SetCard { player, card });
+        true
     }
 
     /// Shows cards to both players; the record keeps what was seen.
@@ -1286,12 +1383,19 @@ impl Game {
             self.banish(card);
             return;
         }
+        let was_own_monster = matches!(from, Location::MonsterZone(_))
+            && self.instances[card.index()].controller == self.instances[card.index()].owner;
         self.remove_from_current_place(card);
         if from.on_field() {
             self.on_leave_field(card);
         }
         let inst = &mut self.instances[card.index()];
         let owner = inst.owner;
+        if was_own_monster {
+            let count = &mut self.players[owner.index()].monsters_to_graveyard;
+            *count = count.saturating_add(1);
+        }
+        let inst = &mut self.instances[card.index()];
         inst.location = Location::Graveyard;
         inst.position = Position::FaceUp;
         inst.controller = owner;

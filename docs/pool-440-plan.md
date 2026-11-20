@@ -86,4 +86,23 @@ calculation, and a negated Spell goes to the Graveyard exactly once.
 
 | Step | Commit | Result |
 | --- | --- | --- |
-| 1. Data | this commit | 440 cards, 13 limited, 2 collections, 15 decks load and check; 44 scripts pending |
+| 1. Data | `874320f` | 440 cards, 13 limited, 2 collections, 15 decks load and check; 44 scripts pending |
+| 2. Batch 1 | this commit | 36 cards scripted (Fairy Meteor Crush moved here from batch 2), 29 tests in `tests/extra.rs`; 8 pending |
+
+Batch 1 added to the engine: piercing damage (`Effect::pierce`), stopping
+an attack already declared (`cancel_attack`; Spellbinding Circle now
+calls it too, as `reference/rulings.md` asks), a turn-long battle shield
+(Waboku), a one-sided hand reveal (`Tag::RevealOpponentHand`), private
+looks (`look_at`, `Event::LookedAt`), Setting from the hand by an effect,
+`CardStats.flip` and the per-turn count of monsters sent to the
+Graveyard. Simplifications, like those listed in `docs/m3-plan.md`:
+
+- **Backup Soldier** picks its cards on resolution, as many as it can up
+  to three, like Soul Release, instead of targeting.
+- **Last Will** checks its condition on activation and summons on
+  resolution; the text's "once during this turn" window for a later
+  summon is not kept.
+- **The Inexperienced Spy** looks at a random card: the pick is blind, so
+  the odds are the same.
+- **Shadow Spell** goes to the Graveyard with its monster as an Equip
+  does, rather than being destroyed by its own effect.
