@@ -37,7 +37,16 @@ pub fn visible_names<'a>(obs: &Observation, shared: &'a Shared) -> Vec<&'a str> 
 
 /// Fails if `text` names any card except those `obs` shows.
 pub fn assert_no_hidden_names(text: &str, obs: &Observation, shared: &Shared) {
-    let mut visible = visible_names(obs, shared);
+    assert_no_hidden_names_across(text, &[obs], shared);
+}
+
+/// Fails if `text` names any card that none of `observations` shows (log
+/// lines about one action may name a card as it was seen before it).
+pub fn assert_no_hidden_names_across(text: &str, observations: &[&Observation], shared: &Shared) {
+    let mut visible: Vec<&str> = observations
+        .iter()
+        .flat_map(|o| visible_names(o, shared))
+        .collect();
     visible.sort_by_key(|n| std::cmp::Reverse(n.len()));
     let mut rest = text.to_string();
     for name in &visible {

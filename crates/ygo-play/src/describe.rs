@@ -6,8 +6,8 @@ use std::fmt::Write;
 
 use ygo_data::CardId;
 use ygo_engine::{
-    Action, BattleStep, CardPool, DecisionKind, Event, Found, GameResult, InstanceId, Observation,
-    Phase, Place, PlayerId, Position, Side, VisibleCard, WinReason,
+    Action, BattleStep, CardPool, DecisionKind, Event, Found, GameResult, InstanceId, Location,
+    Observation, Phase, Place, PlayerId, Position, Side, VisibleCard, WinReason,
 };
 
 /// "You" or "Your opponent", from the viewer's side.
@@ -207,6 +207,69 @@ pub fn phase_name(phase: Phase) -> &'static str {
         Phase::Main2 => "Main Phase 2",
         Phase::End => "End Phase",
     }
+}
+
+/// The log lines for everything one action caused. `before` and `after`
+/// are the viewer's observations around the action: a card that left for a
+/// Deck is named as the viewer saw it before it went.
+///
+/// Silent on purpose: `Resolved` and `SummonDeclared` (steps already told by
+/// the action itself), `BattleDamageDealt` (the damage line says it) and
+/// `ByEffect` (a tag on a discard or a card sent to the Graveyard). A card
+/// sent to the Graveyard is told only when nothing else in the same action
+/// already says why (destroyed, tributed, discarded, or a Spell or Trap
+/// that resolved).
+pub fn events(
+    before: &Observation,
+    after: &Observation,
+    pool: &CardPool,
+    events: &[Event],
+) -> Vec<String> {
+    let explained = |id: InstanceId| {
+        events.iter().any(|e| match e {
+            Event::Discarded { card, .. }
+            | Event::Tributed { card, .. }
+            | Event::DestroyedByBattle { card }
+            | Event::DestroyedByEffect { card, .. }
+            | Event::Resolved { card, .. } => *card == id,
+            _ => false,
+        })
+    };
+    events
+        .iter()
+        .filter_map(|e| match e {
+            Event::SentToGraveyard { card: id, .. } if explained(*id) => None,
+            Event::SentToGraveyard { card: id, from } => Some(format!(
+                "{} was sent {}to the Graveyard",
+                card(after, pool, *id),
+                match from {
+                    Location::Deck => "from the Deck ",
+                    Location::Hand => "from the hand ",
+                    _ => "",
+                }
+            )),
+            Event::ReturnedToDeck { player, card: id } => Some(format!(
+                "{} returned to {} Deck",
+                card(before, pool, *id),
+                whose(after, *player)
+            )),
+            Event::PlacedOnTopOfDeck { player, card: id } => Some(format!(
+                "{} was placed on top of {} Deck",
+                card(before, pool, *id),
+                whose(after, *player)
+            )),
+            Event::ReturnedToExtraDeck { player, card: id } => Some(format!(
+                "{} returned to {} Extra Deck",
+                card(before, pool, *id),
+                whose(after, *player)
+            )),
+            Event::DeckReordered { player, count } => Some(format!(
+                "{} reordered the top {count} cards of the Deck",
+                who(after, *player)
+            )),
+            _ => event(after, pool, e),
+        })
+        .collect()
 }
 
 /// A log line for an event, or `None` for bookkeeping not worth showing.

@@ -164,10 +164,8 @@ impl ReplaySession {
                 describe::action(&before, pool, &a.action)
             ));
             let after = self.observe(i + 1, a.player);
-            for e in &self.events[i] {
-                if let Some(line) = describe::event(&after, pool, e) {
-                    lines.push(format!("  {line}"));
-                }
+            for line in describe::events(&before, &after, pool, &self.events[i]) {
+                lines.push(format!("  {line}"));
             }
         }
         lines
