@@ -364,8 +364,8 @@ fn jigen_bakudan_blows_up_its_own_side_in_the_next_standby_phase() {
 }
 
 /// Player 0's deck: Cyber Jar, four Elves, a draw on turn 3, then the
-/// five cards Cyber Jar reveals. Player 1's next five are two Elves and
-/// three Sparks.
+/// five cards Cyber Jar reveals. Player 1 (five Sparks in hand, no draw
+/// on their first turn) reveals two Elves and three Sparks.
 fn cyber_jar_game(rules: impl FnOnce(&mut ygo_data::Rules)) -> (Game, InstanceId) {
     let base = shared();
     let shared = with_rules(&base, rules);
@@ -383,7 +383,6 @@ fn cyber_jar_game(rules: impl FnOnce(&mut ygo_data::Rules)) -> (Game, InstanceId
         MAMMOTH_GRAVEYARD,
     ];
     let p1 = [
-        SPARKS,
         SPARKS,
         SPARKS,
         SPARKS,
@@ -433,7 +432,8 @@ fn cyber_jar_summons_every_revealed_small_monster_and_hands_out_the_rest() {
             .iter()
             .filter(|&&c| g.stats(c).id == SPARKS)
             .count(),
-        6 + 3
+        5 + 3,
+        "the opening five and the three revealed"
     );
 }
 

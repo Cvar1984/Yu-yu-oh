@@ -54,12 +54,14 @@ fn rules_match_the_committed_defaults() {
     // Owner, 2026-11-18: modern official rules throughout.
     assert_eq!(r.hand.hand_limit_check, HandLimitCheck::EndPhase);
     assert!(r.turn.first_player_skips_draw && !r.turn.first_player_can_attack);
+    // Owner, 2026-11-20: nobody draws on their first turn; one Field Spell.
+    assert!(r.turn.second_player_skips_draw);
     assert!(!r.turn.trap_activation_turn_set);
     assert!(r.turn.spell_target_monster_set_this_turn);
     assert_eq!(r.life.starting_lp, 8000);
     assert_eq!(r.summon.normal_or_tribute_per_turn, 1);
     assert!(r.summon.summon_in_main_phase_2);
-    assert_eq!(r.field.field_spells_on_field, 2);
+    assert_eq!(r.field.field_spells_on_field, 1);
     assert_eq!(r.summon.max_monsters_entering_per_turn, 0);
     assert!(r.summon.fusion_summons && r.summon.ritual_summons);
     assert_eq!(r.cards.text_version, TextVersion::Modern);

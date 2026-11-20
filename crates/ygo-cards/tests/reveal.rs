@@ -178,7 +178,6 @@ fn hiros_shadow_scout_makes_the_opponent_draw_three_and_discard_the_spells() {
                     MYSTICAL_ELF,
                     MYSTICAL_ELF,
                     MYSTICAL_ELF,
-                    MYSTICAL_ELF,
                     SPARKS,
                     CELTIC_GUARDIAN,
                     SPARKS,
@@ -199,7 +198,7 @@ fn hiros_shadow_scout_makes_the_opponent_draw_three_and_discard_the_spells() {
     );
     next_turn(&mut g);
     next_turn(&mut g);
-    // Player 1 has drawn one Elf on turn 2; the next three are Sparks, Celtic, Sparks.
+    // Player 1 did not draw on turn 2; the next three are Sparks, Celtic, Sparks.
     let events = play(&mut g, Action::FlipSummon { card: scout });
     pass_all(&mut g);
     let revealed = events

@@ -210,7 +210,7 @@ fn moth_turns(g: &Game, s: Source) -> u32 {
 /// Tributes the evolved Petit Moth.
 fn moth_script() -> CardScript {
     CardScript {
-        tags: vec![Tag::CannotNormalSummon],
+        tags: vec![Tag::CannotNormalSummon, Tag::OnlyByProcedure],
         effects: vec![Effect {
             timing: |g, s, _| {
                 g.instance(s.card).location == Location::Hand
