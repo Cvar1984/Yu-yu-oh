@@ -94,7 +94,9 @@ fn init_offers_the_legal_decks_and_every_bot() {
     let problem = decks[3]["problem"].as_str().unwrap();
     assert!(problem.contains("2 copies of Raigeki"), "{problem}");
     assert_eq!(answer["default_bot"], "heuristic:beatdown");
-    assert_eq!(answer["bots"].as_array().unwrap().len(), 7);
+    let bots = answer["bots"].as_array().unwrap();
+    assert_eq!(bots.len(), 8, "random, six styles, search");
+    assert!(bots.contains(&json!("search")));
 
     let refused = call(
         &mut host,
@@ -195,28 +197,34 @@ fn the_json_never_names_a_hidden_card() {
 
 #[test]
 fn a_game_resumes_from_its_choices() {
-    let mut host = ready_host();
-    let mut answer = start(&mut host, 21, "heuristic:beatdown", &[]);
-    let mut rng = 5u64;
-    for _ in 0..40 {
-        if !answer["view"]["result"].is_null() {
-            break;
+    // The search bot thinks again on a resume and must choose the same.
+    for (bot, moves) in [("heuristic:beatdown", 40), ("search", 15)] {
+        let mut host = ready_host();
+        let mut answer = start(&mut host, 21, bot, &[]);
+        let mut rng = 5u64;
+        for _ in 0..moves {
+            if !answer["view"]["result"].is_null() {
+                break;
+            }
+            let n = answer["view"]["actions"].as_array().unwrap().len();
+            answer = ok(
+                &mut host,
+                json!({ "cmd": "play", "index": lcg(&mut rng) % n }),
+            );
         }
-        let n = answer["view"]["actions"].as_array().unwrap().len();
-        answer = ok(
-            &mut host,
-            json!({ "cmd": "play", "index": lcg(&mut rng) % n }),
+        let choices: Vec<usize> = serde_json::from_value(answer["choices"].clone()).unwrap();
+        assert!(!choices.is_empty());
+        let mut fresh = ready_host();
+        let resumed = start(&mut fresh, 21, bot, &choices);
+        assert_eq!(
+            resumed, answer,
+            "{bot}: same view and choices after a resume"
+        );
+        assert_eq!(
+            fresh.session().unwrap().game(),
+            host.session().unwrap().game()
         );
     }
-    let choices: Vec<usize> = serde_json::from_value(answer["choices"].clone()).unwrap();
-    assert!(!choices.is_empty());
-    let mut fresh = ready_host();
-    let resumed = start(&mut fresh, 21, "heuristic:beatdown", &choices);
-    assert_eq!(resumed, answer, "same view and choices after a resume");
-    assert_eq!(
-        fresh.session().unwrap().game(),
-        host.session().unwrap().game()
-    );
 }
 
 #[test]

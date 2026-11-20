@@ -66,6 +66,8 @@ pub struct CardStats {
     /// Monster type (Dragon, Fiend...) or empty for Spells and Traps.
     pub race: String,
     pub attribute: Option<String>,
+    /// A Flip monster (Nobleman of Crossout checks this).
+    pub flip: bool,
 }
 
 impl CardStats {
@@ -110,6 +112,7 @@ impl CardPool {
                     String::new()
                 },
                 attribute: c.attribute.clone(),
+                flip: c.card_type == ygo_data::CardType::FlipEffectMonster,
             })
             .collect();
         cards.sort_by_key(|c| c.id);

@@ -133,6 +133,23 @@ pub struct Printing {
     pub number: u32,
     pub code: String,
     pub rarity: String,
+    /// The set's full name; given for the EXTRA cards' printings.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_name: Option<String>,
+}
+
+/// Which list a card appears under in the owner's game.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum GameIndex {
+    #[serde(rename = "LOB")]
+    Lob,
+    #[serde(rename = "MRD")]
+    Mrd,
+    #[serde(rename = "SRL")]
+    Srl,
+    /// Listed in the game's "All" list outside the three set tabs.
+    #[serde(rename = "EXTRA")]
+    Extra,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -162,6 +179,7 @@ pub struct Card {
     pub race: String,
     pub attribute: Option<String>,
     pub printings: Vec<Printing>,
+    pub in_game_index: GameIndex,
     pub images: Images,
 }
 
@@ -179,6 +197,8 @@ pub struct CardFile {
     pub source: String,
     pub sets: Vec<String>,
     pub count: usize,
+    /// What the fields mean, for humans.
+    pub note: String,
     pub cards: Vec<Card>,
 }
 
@@ -197,7 +217,7 @@ impl CardDb {
     /// Reads `cards.json` text; `origin` names it in errors.
     pub fn parse(text: &str, origin: &Path) -> Result<Self, DataError> {
         let file: CardFile = crate::parse_json(text, origin)?;
-        crate::check_schema("cards", file.schema_version)?;
+        crate::check_schema_version("cards", file.schema_version, crate::CARDS_SCHEMA_VERSION)?;
         if file.count != file.cards.len() {
             return Err(DataError::CountMismatch {
                 file: "cards",

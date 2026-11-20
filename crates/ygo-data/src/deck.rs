@@ -22,6 +22,9 @@ pub struct DeckEntry {
 pub struct Deck {
     pub schema_version: u32,
     pub name: String,
+    /// Who plays it, for humans: `enemy`, `save A`, `save B`.
+    #[serde(rename = "for", default, skip_serializing_if = "Option::is_none")]
+    pub played_by: Option<String>,
     /// Free-form: match results, the style it plays, where it came from.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<serde_json::Value>,

@@ -1,0 +1,104 @@
+0|SRL-000|Blue-Eyes Toon Dragon|Toon Monster|8|3000|2500|Dragon|LIGHT
+1|SRL-001|Penguin Knight|Effect Monster|3|900|800|Aqua|WATER
+2|SRL-002|Axe of Despair|Spell Card||||Equip|
+3|SRL-003|Black Pendant|Spell Card||||Equip|
+4|SRL-004|Horn of Light|Spell Card||||Equip|
+5|SRL-005|Malevolent Nuzzler|Spell Card||||Equip|
+6|SRL-006|Spellbinding Circle|Trap Card||||Continuous|
+7|SRL-007|Metal Fish|Normal Monster|5|1600|1900|Machine|WATER
+8|SRL-008|Electric Snake|Effect Monster|3|800|900|Thunder|LIGHT
+9|SRL-009|Queen Bird|Normal Monster|5|1200|2000|Winged Beast|WIND
+10|SRL-010|Ameba|Effect Monster|1|300|350|Aqua|WATER
+11|SRL-011|Peacock|Normal Monster|5|1700|1500|Winged Beast|WIND
+12|SRL-012|Maha Vailo|Effect Monster|4|1550|1400|Spellcaster|LIGHT
+13|SRL-013|Guardian of the Throne Room|Normal Monster|4|1650|1600|Machine|LIGHT
+14|SRL-014|Fire Kraken|Normal Monster|4|1600|1500|Aqua|FIRE
+15|SRL-015|Minar|Effect Monster|3|850|750|Insect|EARTH
+16|SRL-016|Griggle|Effect Monster|1|350|300|Plant|EARTH
+17|SRL-017|Tyhone #2|Normal Monster|6|1700|1900|Dragon|FIRE
+18|SRL-018|Ancient One of the Deep Forest|Normal Monster|6|1800|1900|Beast|EARTH
+19|SRL-019|Dark Witch|Normal Monster|5|1800|1700|Fairy|LIGHT
+20|SRL-020|Weather Report|Flip Effect Monster|4|950|1500|Aqua|WATER
+21|SRL-021|Mechanical Snail|Normal Monster|3|800|1000|Machine|DARK
+22|SRL-022|Giant Turtle Who Feeds on Flames|Normal Monster|5|1400|1800|Aqua|WATER
+23|SRL-023|Liquid Beast|Normal Monster|3|950|800|Aqua|WATER
+24|SRL-024|Hiro's Shadow Scout|Flip Effect Monster|2|650|500|Fiend|DARK
+25|SRL-025|High Tide Gyojin|Normal Monster|4|1650|1300|Aqua|WATER
+26|SRL-026|Invader of the Throne|Flip Effect Monster|4|1350|1700|Warrior|EARTH
+27|SRL-027|Whiptail Crow|Normal Monster|4|1650|1600|Fiend|DARK
+28|SRL-028|Slot Machine|Normal Monster|7|2000|2300|Machine|DARK
+29|SRL-029|Relinquished|Ritual Effect Monster|1|0|0|Spellcaster|DARK
+30|SRL-030|Red Archery Girl|Normal Monster|4|1400|1500|Aqua|WATER
+31|SRL-031|Gravekeeper's Servant|Spell Card||||Continuous|
+32|SRL-032|Curse of Fiend|Spell Card||||Normal|
+33|SRL-033|Upstart Goblin|Spell Card||||Normal|
+34|SRL-034|Toll|Spell Card||||Continuous|
+35|SRL-035|Final Destiny|Spell Card||||Normal|
+36|SRL-036|Snatch Steal|Spell Card||||Equip|
+37|SRL-037|Chorus of Sanctuary|Spell Card||||Field|
+38|SRL-038|Confiscation|Spell Card||||Normal|
+39|SRL-039|Delinquent Duo|Spell Card||||Normal|
+40|SRL-040|Darkness Approaches|Spell Card||||Normal|
+41|SRL-041|Fairy's Hand Mirror|Trap Card||||Normal|
+42|SRL-042|Tailor of the Fickle|Spell Card||||Quick-Play|
+43|SRL-043|Rush Recklessly|Spell Card||||Quick-Play|
+44|SRL-044|The Reliable Guardian|Spell Card||||Quick-Play|
+45|SRL-045|The Forceful Sentry|Spell Card||||Normal|
+46|SRL-046|Chain Energy|Spell Card||||Continuous|
+47|SRL-047|Mystical Space Typhoon|Spell Card||||Quick-Play|
+48|SRL-048|Giant Trunade|Spell Card||||Normal|
+49|SRL-049|Painful Choice|Spell Card||||Normal|
+50|SRL-050|Snake Fang|Trap Card||||Normal|
+51|SRL-051|Black Illusion Ritual|Spell Card||||Ritual|
+52|SRL-052|Octoberser|Normal Monster|5|1600|1400|Aqua|WATER
+53|SRL-053|Psychic Kappa|Normal Monster|2|400|1000|Aqua|WATER
+54|SRL-054|Horn of the Unicorn|Spell Card||||Equip|
+55|SRL-055|Labyrinth Wall|Normal Monster|5|0|3000|Rock|EARTH
+56|SRL-056|Wall Shadow|Effect Monster|7|1600|3000|Warrior|DARK
+57|SRL-057|Twin Long Rods #2|Normal Monster|3|850|700|Aqua|WATER
+58|SRL-058|Stone Ogre Grotto|Normal Monster|5|1600|1500|Rock|EARTH
+59|SRL-059|Magical Labyrinth|Spell Card||||Equip|
+60|SRL-060|Eternal Rest|Spell Card||||Normal|
+61|SRL-061|Megamorph|Spell Card||||Equip|
+62|SRL-062|Commencement Dance|Spell Card||||Ritual|
+63|SRL-063|Hamburger Recipe|Spell Card||||Ritual|
+64|SRL-064|House of Adhesive Tape|Trap Card||||Normal|
+65|SRL-065|Eatgaboon|Trap Card||||Normal|
+66|SRL-066|Turtle Oath|Spell Card||||Ritual|
+67|SRL-067|Performance of Sword|Ritual Monster|6|1950|1850|Warrior|EARTH
+68|SRL-068|Hungry Burger|Ritual Monster|6|2000|1850|Warrior|DARK
+69|SRL-069|Crab Turtle|Ritual Monster|8|2550|2500|Aqua|WATER
+70|SRL-070|Ryu-Ran|Normal Monster|7|2200|2600|Dragon|FIRE
+71|SRL-071|Manga Ryu-Ran|Toon Monster|7|2200|2600|Dragon|FIRE
+72|SRL-072|Toon Mermaid|Toon Monster|4|1400|1500|Aqua|WATER
+73|SRL-073|Toon Summoned Skull|Toon Monster|6|2500|1200|Fiend|DARK
+74|SRL-074|Jigen Bakudan|Flip Effect Monster|2|200|1000|Pyro|FIRE
+75|SRL-075|Hyozanryu|Normal Monster|7|2100|2800|Dragon|LIGHT
+76|SRL-076|Toon World|Spell Card||||Continuous|
+77|SRL-077|Cyber Jar|Flip Effect Monster|3|900|900|Rock|DARK
+78|SRL-078|Banisher of the Light|Effect Monster|3|100|2000|Fairy|LIGHT
+79|SRL-079|Giant Rat|Effect Monster|4|1400|1450|Beast|EARTH
+80|SRL-080|Senju of the Thousand Hands|Effect Monster|4|1400|1000|Fairy|LIGHT
+81|SRL-081|UFO Turtle|Effect Monster|4|1400|1200|Machine|FIRE
+82|SRL-082|Flash Assailant|Effect Monster|4|2000|2000|Fiend|DARK
+83|SRL-083|Karate Man|Effect Monster|3|1000|1000|Warrior|EARTH
+84|SRL-084|Dark Zebra|Effect Monster|4|1800|400|Beast|EARTH
+85|SRL-085|Giant Germ|Effect Monster|2|1000|100|Fiend|DARK
+86|SRL-086|Nimble Momonga|Effect Monster|2|1000|100|Beast|EARTH
+87|SRL-087|Spear Cretin|Flip Effect Monster|2|500|500|Fiend|DARK
+88|SRL-088|Shining Angel|Effect Monster|4|1400|800|Fairy|LIGHT
+89|SRL-089|Boar Soldier|Effect Monster|4|2000|500|Beast-Warrior|EARTH
+90|SRL-090|Mother Grizzly|Effect Monster|4|1400|1000|Beast-Warrior|WATER
+91|SRL-091|Flying Kamakiri #1|Effect Monster|4|1400|900|Insect|WIND
+92|SRL-092|Ceremonial Bell|Effect Monster|3|0|1850|Spellcaster|LIGHT
+93|SRL-093|Sonic Bird|Effect Monster|4|1400|1000|Winged Beast|WIND
+94|SRL-094|Mystic Tomato|Effect Monster|4|1400|1100|Plant|DARK
+95|SRL-095|Kotodama|Effect Monster|3|0|1600|Fairy|EARTH
+96|SRL-096|Gaia Power|Spell Card||||Field|
+97|SRL-097|Umiiruka|Spell Card||||Field|
+98|SRL-098|Molten Destruction|Spell Card||||Field|
+99|SRL-099|Rising Air Current|Spell Card||||Field|
+100|SRL-100|Luminous Spark|Spell Card||||Field|
+101|SRL-101|Mystic Plasma Zone|Spell Card||||Field|
+102|SRL-102|Messenger of Peace|Spell Card||||Continuous|
+103|SRL-103|Serpent Night Dragon|Normal Monster|7|2350|2400|Dragon|DARK

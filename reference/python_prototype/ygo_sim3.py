@@ -120,10 +120,11 @@ class Duel3(S.Duel):
         if super().ctrl_step(pl, o):
             return True
         # flip Hane-Hane when it has a target
-        if not pl.summoned and o.mons:
+        if not (S.FLIP_COUNTS and pl.summoned) and o.mons:
             for m in pl.mons:
-                if m.name == "Hane-Hane" and not m.face_up:
-                    pl.summoned, m.pos = True, "def"
+                if m.name == "Hane-Hane" and not m.face_up and m.born < self.turn:
+                    pl.summoned = pl.summoned or S.FLIP_COUNTS
+                    m.pos = "def"
                     self.log(f"{pl.name} flip summons Hane-Hane")
                     if not self.respond_summon(pl, m, "flip"):
                         self.flip(pl, m)

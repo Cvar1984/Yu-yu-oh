@@ -14,7 +14,7 @@ use ygo_engine::testing::{
     SUMMONED_SKULL, bundle, in_hand, next_turn, pass_all, play, root, sample_deck, shared_from,
     stacked, summon, with_rules,
 };
-use ygo_engine::{Action, DecisionKind, Game, GameSetup, InstanceId, PlayerId, Shared};
+use ygo_engine::{Action, DecisionKind, Game, GameSetup, InstanceId, PlayerId, PlayerView, Shared};
 
 const P0: PlayerId = PlayerId(0);
 const P1: PlayerId = PlayerId(1);
@@ -38,8 +38,7 @@ fn game(p0: &[CardId], p1: &[CardId]) -> Game {
 
 /// What the bot plays at the current decision.
 fn pick(bot: &mut HeuristicPlayer, g: &Game) -> Action {
-    let d = g.pending_decision().expect("a decision is pending");
-    bot.choose(&g.observe(d.player), g.actions())
+    bot.choose(&PlayerView::new(g).expect("a decision is pending"))
 }
 
 fn summon_now(g: &mut Game, player: PlayerId, id: CardId) -> InstanceId {

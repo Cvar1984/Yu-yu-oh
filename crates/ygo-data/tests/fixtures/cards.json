@@ -1,5 +1,5 @@
 {
- "schema_version": 1,
+ "schema_version": 2,
  "source": "ygo-data test fixture",
  "sets": [
   "LOB",
@@ -7,6 +7,7 @@
   "SRL"
  ],
  "count": 20,
+ "note": "Test fixture: a few real cards. in_game_index: which list the card appears under in the owner's game.",
  "cards": [
   {
    "id": 89631139,
@@ -27,6 +28,7 @@
      "rarity": "Ultra Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/89631139.jpg",
     "small": "images/small/89631139.jpg",
@@ -53,6 +55,7 @@
      "rarity": "Ultra Rare"
     }
    ],
+   "in_game_index": "MRD",
    "images": {
     "full": "images/full/70781052.jpg",
     "small": "images/small/70781052.jpg",
@@ -79,6 +82,7 @@
      "rarity": "Ultra Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/46986414.jpg",
     "small": "images/small/46986414.jpg",
@@ -105,6 +109,7 @@
      "rarity": "Secret Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/39111158.jpg",
     "small": "images/small/39111158.jpg",
@@ -131,6 +136,7 @@
      "rarity": "Super Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/15025844.jpg",
     "small": "images/small/15025844.jpg",
@@ -157,6 +163,7 @@
      "rarity": "Ultra Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/6368038.jpg",
     "small": "images/small/6368038.jpg",
@@ -183,6 +190,7 @@
      "rarity": "Rare"
     }
    ],
+   "in_game_index": "MRD",
    "images": {
     "full": "images/full/26202165.jpg",
     "small": "images/small/26202165.jpg",
@@ -209,6 +217,7 @@
      "rarity": "Super Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/54652250.jpg",
     "small": "images/small/54652250.jpg",
@@ -235,6 +244,7 @@
      "rarity": "Super Rare"
     }
    ],
+   "in_game_index": "MRD",
    "images": {
     "full": "images/full/40640057.jpg",
     "small": "images/small/40640057.jpg",
@@ -261,6 +271,7 @@
      "rarity": "Ultra Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/33396948.jpg",
     "small": "images/small/33396948.jpg",
@@ -287,6 +298,7 @@
      "rarity": "Secret Rare"
     }
    ],
+   "in_game_index": "SRL",
    "images": {
     "full": "images/full/5405694.jpg",
     "small": "images/small/5405694.jpg",
@@ -313,6 +325,7 @@
      "rarity": "Secret Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/23995346.jpg",
     "small": "images/small/23995346.jpg",
@@ -335,6 +348,7 @@
      "rarity": "Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/55144522.jpg",
     "small": "images/small/55144522.jpg",
@@ -357,6 +371,7 @@
      "rarity": "Super Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/12580477.jpg",
     "small": "images/small/12580477.jpg",
@@ -379,6 +394,7 @@
      "rarity": "Super Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/72302403.jpg",
     "small": "images/small/72302403.jpg",
@@ -401,6 +417,7 @@
      "rarity": "Ultra Rare"
     }
    ],
+   "in_game_index": "MRD",
    "images": {
     "full": "images/full/4031928.jpg",
     "small": "images/small/4031928.jpg",
@@ -423,6 +440,7 @@
      "rarity": "Ultra Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/83764718.jpg",
     "small": "images/small/83764718.jpg",
@@ -445,6 +463,7 @@
      "rarity": "Super Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/24094653.jpg",
     "small": "images/small/24094653.jpg",
@@ -467,6 +486,7 @@
      "rarity": "Ultra Rare"
     }
    ],
+   "in_game_index": "MRD",
    "images": {
     "full": "images/full/44095762.jpg",
     "small": "images/small/44095762.jpg",
@@ -489,6 +509,7 @@
      "rarity": "Super Rare"
     }
    ],
+   "in_game_index": "LOB",
    "images": {
     "full": "images/full/4206964.jpg",
     "small": "images/small/4206964.jpg",

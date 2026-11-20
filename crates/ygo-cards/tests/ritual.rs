@@ -239,7 +239,11 @@ fn relinquished_loses_its_absorbed_monster_when_it_leaves() {
 
 #[test]
 fn every_ritual_spell_summons_its_monster() {
-    for (spell, monster, _) in RITUALS {
+    // Paladin of White Dragon is not in the pool (see extra_spells tests).
+    for (spell, monster, _) in RITUALS
+        .into_iter()
+        .filter(|&(_, m, _)| m != ygo_cards::ritual::PALADIN_OF_WHITE_DRAGON)
+    {
         let mut g = Game::new(
             shared(),
             &stacked(
