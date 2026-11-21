@@ -37,7 +37,14 @@ Phase or turn (Time Seal, Solomon's Lawbook, Gamble), a second attack
 Vampire Baby), a position lock that lasts into the next turn (Goblin
 Attack Force), a "no Spells or Traps" lock (Cold Wave), a turn player's
 revealed hand (Respect Play), and the field-wide shuffles of Morphing
-Jar #2 and Major Riot, and Thousand-Eyes Restrict.
+Jar #2 and Major Riot, and Thousand-Eyes Restrict. Done: 12 cards, `tests/psv_2.rs`.
+Engine: `PlayerState.skip_draw`, `skip_standby`, `skip_turn` (and
+`Event::TurnSkipped`); `CardInstance.attacks_this_turn` (a count, was a
+flag) with `Tag::SecondAttack`; `CardInstance.destroyed_by_battle`;
+lingering `PositionLocked` and `NoSpellsOrTraps`;
+`Tag::RevealTurnPlayerHand`. Relinquished's absorb is shared with
+Thousand-Eyes Restrict (`ritual::absorb_one`), which joins the Fusion
+table.
 
 Batch 3 adds effect negation and current Types: Jinzo, Imperial Order,
 Armored Glass, World Suppression, Mystic Probe, Metal Detector,
@@ -72,3 +79,20 @@ Batch 1:
 - Call of the Haunted remembers its monster in its counter; it destroys
   the monster when it is sent from the field to the Graveyard (not when
   banished or returned).
+
+Batch 2:
+
+- Time Seal skips the draw of the Draw Phase; the phase itself still
+  happens.
+- Cold Wave's "at the start of Main Phase 1" is read as "in your Main
+  Phase 1"; the lock ends in the End Phase of your opponent's turn.
+- Morphing Jar #2 reveals the excavated cards; a Level 4 or lower monster
+  that cannot be Special Summoned (no zone, or it needs its proper summon)
+  goes to the Graveyard with the rest.
+- Major Riot reads "returned by your opponent's effect" as: your monster
+  went from the field to your hand in a window where a card your opponent
+  controls resolved. Each player Special Summons as many monsters as they
+  had on the field, or as many as they can.
+- Sword Hunter equips as many of its monsters as there are free
+  Spell/Trap Zones.
+- Vampire Baby asks the position (face-up Attack or Defense).

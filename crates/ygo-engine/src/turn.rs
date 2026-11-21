@@ -71,6 +71,9 @@ impl Game {
         if toll > 0 && self.players[decision.player.index()].lp <= toll {
             actions.retain(|a| !self.plays_from_hand(a));
         }
+        if self.spells_and_traps_forbidden() {
+            actions.retain(|a| !self.plays_spell_or_trap(a));
+        }
         self.decision = Some(decision);
         self.actions = actions;
     }
@@ -255,7 +258,14 @@ impl Game {
                         return;
                     }
                     match self.phase {
-                        Phase::Draw => self.enter_phase(Phase::Standby),
+                        Phase::Draw => {
+                            let player = self.turn_player;
+                            if std::mem::take(&mut self.players[player.index()].skip_standby) {
+                                self.enter_phase(Phase::Main1);
+                            } else {
+                                self.enter_phase(Phase::Standby);
+                            }
+                        }
                         Phase::Standby => self.enter_phase(Phase::Main1),
                         Phase::Battle(BattleStep::Start) => {
                             self.enter_phase(Phase::Battle(BattleStep::Battle))
@@ -299,6 +309,11 @@ impl Game {
             });
             return;
         }
+        if std::mem::take(&mut self.players[player.index()].skip_turn) {
+            self.emit(Event::TurnSkipped { turn, player });
+            self.start_turn(turn + 1, player.opponent());
+            return;
+        }
         self.turn = turn;
         self.turn_player = player;
         for p in self.players.iter_mut() {
@@ -310,15 +325,17 @@ impl Game {
         }
         for card in self.instances.iter_mut() {
             card.position_changed_this_turn = false;
-            card.attacked_this_turn = false;
+            card.attacks_this_turn = 0;
             card.effect_uses = 0;
         }
         self.emit(Event::TurnStarted { turn, player });
         self.enter_phase(Phase::Draw);
 
         let rules = &self.shared.rules.turn;
+        let skipped = std::mem::take(&mut self.players[player.index()].skip_draw);
         let skip = (turn == 1 && rules.first_player_skips_draw)
-            || (turn == 2 && rules.second_player_skips_draw);
+            || (turn == 2 && rules.second_player_skips_draw)
+            || skipped;
         if skip {
             return;
         }
@@ -383,7 +400,7 @@ impl Game {
             let player = self.turn_player;
             for card in self.instances.iter_mut() {
                 if card.controller == player {
-                    card.attacked_this_turn = false;
+                    card.attacks_this_turn = 0;
                 }
             }
         }

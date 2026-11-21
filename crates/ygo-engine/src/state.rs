@@ -109,6 +109,11 @@ pub enum LingeringKind {
     /// `player` takes no battle damage from the opponent's monsters, and
     /// `player`'s monsters cannot be destroyed by battle (Waboku).
     BattleShield { player: PlayerId },
+    /// `card`'s controller cannot change its battle position (Goblin Attack
+    /// Force, until the End Phase of its controller's next turn).
+    PositionLocked { card: InstanceId },
+    /// Neither player may activate or Set a Spell or Trap Card (Cold Wave).
+    NoSpellsOrTraps,
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.
@@ -133,7 +138,11 @@ pub struct CardInstance {
     pub turn_set: Option<u32>,
     pub turn_entered_field: Option<u32>,
     pub position_changed_this_turn: bool,
-    pub attacked_this_turn: bool,
+    /// Attacks declared this turn (Hayabusa Knight may make two).
+    pub attacks_this_turn: u8,
+    /// The monster that destroyed this card by battle, and in which turn
+    /// (Sword Hunter, Vampire Baby).
+    pub destroyed_by_battle: Option<(InstanceId, u32)>,
     /// For an Equip Spell on the field: the monster it is equipped to.
     pub equipped_to: Option<InstanceId>,
     /// A script-owned counter (Swords of Revealing Light counts End Phases).
@@ -157,7 +166,8 @@ impl CardInstance {
             turn_set: None,
             turn_entered_field: None,
             position_changed_this_turn: false,
-            attacked_this_turn: false,
+            attacks_this_turn: 0,
+            destroyed_by_battle: None,
             equipped_to: None,
             counter: 0,
             properly_summoned: false,
@@ -229,6 +239,12 @@ pub struct PlayerState {
     /// Card names this player may not activate, as cards or effects, for the
     /// rest of the turn (the card Sangan or Witch added).
     pub names_locked: Vec<CardId>,
+    /// This player's next draw in a Draw Phase is skipped (Time Seal).
+    pub skip_draw: bool,
+    /// This player's next Standby Phase is skipped (Solomon's Lawbook).
+    pub skip_standby: bool,
+    /// This player's next turn is skipped (Gamble).
+    pub skip_turn: bool,
 }
 
 impl PlayerState {
@@ -248,6 +264,9 @@ impl PlayerState {
             monsters_entered: 0,
             names_used: Vec::new(),
             names_locked: Vec::new(),
+            skip_draw: false,
+            skip_standby: false,
+            skip_turn: false,
         }
     }
 

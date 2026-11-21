@@ -114,7 +114,7 @@ fn attack_position_higher_atk_destroys_and_damages_by_the_difference() {
         Phase::Battle(BattleStep::Battle),
         "back to the Battle Step"
     );
-    assert!(g.instance(fish).attacked_this_turn);
+    assert_eq!(g.instance(fish).attacks_this_turn, 1);
 }
 
 #[test]

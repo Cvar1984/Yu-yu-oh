@@ -90,6 +90,11 @@ pub enum Event {
         turn: u32,
         player: PlayerId,
     },
+    /// `player`'s turn number `turn` was skipped (Gamble).
+    TurnSkipped {
+        turn: u32,
+        player: PlayerId,
+    },
     PhaseEntered {
         phase: Phase,
     },

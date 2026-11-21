@@ -18,6 +18,11 @@ pub const CHAIN_DESTRUCTION: CardId = CardId(1248895);
 pub const DRIVING_SNOW: CardId = CardId(473469);
 pub const EARTHSHAKER: CardId = CardId(60866277);
 pub const FORCED_REQUISITION: CardId = CardId(74923978);
+pub const GAMBLE: CardId = CardId(37313786);
+pub const MAJOR_RIOT: CardId = CardId(9074847);
+pub const RESPECT_PLAY: CardId = CardId(8951260);
+pub const SOLOMONS_LAWBOOK: CardId = CardId(23471572);
+pub const TIME_SEAL: CardId = CardId(35316708);
 pub const GRAVITY_BIND: CardId = CardId(85742772);
 pub const GUST: CardId = CardId(73079365);
 pub const INFINITE_DISMISSAL: CardId = CardId(54109233);
@@ -596,6 +601,49 @@ pub fn register(r: &mut Registry) {
             })
         }),
     );
+    // Only while your opponent has 6 or more cards in hand and you have 2
+    // or less: call a coin toss; if right, draw until you hold 5 cards, if
+    // wrong, skip your next turn.
+    r.register(
+        GAMBLE,
+        single(Effect {
+            timing: |g, s, _| {
+                g.hand(s.controller.opponent()).len() >= 6 && g.hand(s.controller).len() <= 2
+            },
+            ..Effect::activate(2, |_g, _ctx| Flow::Ask {
+                options: vec!["Call heads", "Call tails"],
+                then: |g, ctx, option| {
+                    let heads = g.coin(ctx.controller);
+                    if heads == (option == 0) {
+                        let n = 5usize.saturating_sub(g.hand(ctx.controller).len());
+                        g.draw(ctx.controller, n);
+                    } else {
+                        g.skip_next_turn(ctx.controller);
+                    }
+                    Flow::Done
+                },
+            })
+        }),
+    );
+    // When your monster is returned from the field to your hand by your
+    // opponent's effect: return every monster on the field to the hand;
+    // then each player Special Summons from their hand, face-down, as many
+    // monsters as they had on the field (as many as they can).
+    r.register(
+        MAJOR_RIOT,
+        single(Effect {
+            timing: bounced_by_opponent,
+            ..Effect::activate(2, |g, ctx| {
+                let mine = g.monsters_controlled(ctx.controller).len() as i32;
+                let theirs = g.monsters_controlled(ctx.controller.opponent()).len() as i32;
+                for m in all_monsters(g) {
+                    g.add_to_hand(m);
+                }
+                ctx.value = mine.min(0xff) | theirs.min(0xff) << 8;
+                riot_next(g, ctx)
+            })
+        }),
+    );
     // Activate only while your opponent has 3000 or less LP. During each
     // of their Standby Phases, inflict 500 damage to them.
     r.register(
@@ -734,6 +782,30 @@ pub fn register(r: &mut Registry) {
             })
         }]),
     );
+    // Each player shows their hand to the opponent during their own turn.
+    r.register(
+        RESPECT_PLAY,
+        CardScript {
+            tags: vec![ygo_engine::Tag::RevealTurnPlayerHand],
+            effects: vec![Effect::activate(2, ygo_engine::nothing)],
+        },
+    );
+    // Skip your next Standby Phase.
+    r.register(
+        SOLOMONS_LAWBOOK,
+        single(Effect::activate(2, |g, ctx| {
+            g.skip_next_standby(ctx.controller);
+            Flow::Done
+        })),
+    );
+    // Skip the Draw Phase of your opponent's next turn (its draw).
+    r.register(
+        TIME_SEAL,
+        single(Effect::activate(2, |g, ctx| {
+            g.skip_next_draw(ctx.controller.opponent());
+            Flow::Done
+        })),
+    );
     // Each time you draw a card (or cards), gain 500 LP.
     r.register(
         SOLEMN_WISHES,
@@ -764,6 +836,63 @@ pub fn register(r: &mut Registry) {
             })
         }]),
     );
+}
+
+/// Major Riot: one of your monsters went from the field to your hand
+/// while a card your opponent controls resolved.
+fn bounced_by_opponent(g: &Game, s: Source, w: &Window) -> bool {
+    let bounced = w.events.iter().any(|e| {
+        matches!(e, Event::AddedToHand { player, from: Location::MonsterZone(_), .. }
+            if *player == s.controller)
+    });
+    bounced
+        && w.events.iter().any(|e| {
+            matches!(e, Event::Resolved { card, .. } if g.instance(*card).controller != s.controller)
+        })
+}
+
+fn riot_options(g: &Game, player: PlayerId) -> Vec<InstanceId> {
+    if !g.can_special_summon(player) {
+        return Vec::new();
+    }
+    g.hand(player)
+        .iter()
+        .copied()
+        .filter(|&c| g.stats(c).is_monster() && g.special_summonable(c))
+        .collect()
+}
+
+/// Major Riot: `value` holds how many monsters each player still Special
+/// Summons, yours in the low byte and your opponent's in the next.
+fn riot_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
+    for (shift, player) in [(0, ctx.controller), (8, ctx.controller.opponent())] {
+        let left = (ctx.value >> shift) & 0xff;
+        if left == 0 {
+            continue;
+        }
+        let options = riot_options(g, player);
+        if options.is_empty() {
+            ctx.value &= !(0xff << shift);
+            continue;
+        }
+        let then = |g: &mut Game, ctx: &mut EffectCtx, card: InstanceId| {
+            let player = g.instance(card).controller;
+            let shift = if player == ctx.controller { 0 } else { 8 };
+            g.special_summon(card, player, Position::FaceDownDefense);
+            ctx.value -= 1 << shift;
+            riot_next(g, ctx)
+        };
+        return if player == ctx.controller {
+            Flow::Choose { options, then }
+        } else {
+            Flow::ChooseBy {
+                chooser: player,
+                options,
+                then,
+            }
+        };
+    }
+    Flow::Done
 }
 
 /// Mirror Wall remembers each attacker it halves.

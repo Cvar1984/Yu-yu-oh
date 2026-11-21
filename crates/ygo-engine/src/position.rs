@@ -14,7 +14,7 @@ impl Game {
         let inst = &self.instances[card.index()];
         inst.turn_entered_field != Some(self.turn)
             && !inst.position_changed_this_turn
-            && !inst.attacked_this_turn
+            && inst.attacks_this_turn == 0
             && !self.position_locked(card)
     }
 

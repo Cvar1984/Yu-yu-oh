@@ -96,6 +96,7 @@ impl Game {
         self.for_each_face_up_script(|controller, script| {
             if script.has(Tag::RevealHands)
                 || (controller != player && script.has(Tag::RevealOpponentHand))
+                || (player == self.turn_player && script.has(Tag::RevealTurnPlayerHand))
             {
                 revealed = true;
             }
@@ -556,7 +557,7 @@ impl Game {
         inst.turn_entered_field = Some(turn);
         inst.turn_set = None;
         inst.position_changed_this_turn = false;
-        inst.attacked_this_turn = false;
+        inst.attacks_this_turn = 0;
         inst.counter = 0;
         self.emit(Event::SpecialSummoned {
             player,
@@ -584,7 +585,7 @@ impl Game {
         inst.controller = to;
         inst.turn_entered_field = Some(turn);
         inst.position_changed_this_turn = false;
-        inst.attacked_this_turn = false;
+        inst.attacks_this_turn = 0;
         self.emit(Event::ControlChanged { card, to });
         true
     }
@@ -638,6 +639,8 @@ impl Game {
                     self.destroy(card, l.source);
                 }
                 LingeringKind::Stats { .. }
+                | LingeringKind::PositionLocked { .. }
+                | LingeringKind::NoSpellsOrTraps
                 | LingeringKind::CannotAttack { .. }
                 | LingeringKind::DamageCalcStats { .. }
                 | LingeringKind::Marked { .. }
@@ -878,15 +881,74 @@ impl Game {
         self.instances[card.index()].location == Location::Hand
     }
 
-    /// Whether a continuous effect forbids changing `card`'s position.
+    /// Whether a continuous or lingering effect forbids changing `card`'s
+    /// position.
     pub fn position_locked(&self, card: InstanceId) -> bool {
-        let mut locked = false;
+        let mut locked = self
+            .lingering
+            .iter()
+            .any(|l| matches!(l.kind, LingeringKind::PositionLocked { card: c } if c == card));
         self.for_each_continuous(|source, effect| {
             if !locked && effect.lock_position.is_some_and(|f| f(self, source, card)) {
                 locked = true;
             }
         });
         locked
+    }
+
+    /// Skips `player`'s next draw in a Draw Phase (Time Seal).
+    pub fn skip_next_draw(&mut self, player: PlayerId) {
+        self.players[player.index()].skip_draw = true;
+    }
+
+    /// Skips `player`'s next Standby Phase (Solomon's Lawbook).
+    pub fn skip_next_standby(&mut self, player: PlayerId) {
+        self.players[player.index()].skip_standby = true;
+    }
+
+    /// Skips `player`'s next turn (Gamble).
+    pub fn skip_next_turn(&mut self, player: PlayerId) {
+        self.players[player.index()].skip_turn = true;
+    }
+
+    /// `card`'s controller cannot change its battle position until the End
+    /// Phase of turn `turn`.
+    pub fn lock_position_until(&mut self, source: InstanceId, card: InstanceId, turn: u32) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::PositionLocked { card },
+            expires_turn: turn,
+        });
+    }
+
+    /// Neither player may activate or Set a Spell or Trap Card until the End
+    /// Phase of turn `turn` (Cold Wave).
+    pub fn forbid_spells_and_traps_until(&mut self, source: InstanceId, turn: u32) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::NoSpellsOrTraps,
+            expires_turn: turn,
+        });
+    }
+
+    pub(crate) fn spells_and_traps_forbidden(&self) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::NoSpellsOrTraps)
+    }
+
+    /// Whether `action` activates or Sets a Spell or Trap Card (from the hand
+    /// or face-down), as opposed to using a face-up card's effect.
+    pub(crate) fn plays_spell_or_trap(&self, action: &crate::Action) -> bool {
+        match action {
+            crate::Action::SetSpellTrap { .. } => true,
+            crate::Action::Activate { card, .. } => {
+                let inst = &self.instances[card.index()];
+                !self.stats(*card).is_monster()
+                    && (inst.location == Location::Hand || inst.position == Position::FaceDown)
+            }
+            _ => false,
+        }
     }
 
     /// Lets `player` enter a second Battle Phase from Main Phase 2 of turn
@@ -916,7 +978,7 @@ impl Game {
             inst.controller = to;
             inst.turn_entered_field = Some(turn);
             inst.position_changed_this_turn = false;
-            inst.attacked_this_turn = false;
+            inst.attacks_this_turn = 0;
             self.emit(Event::ControlChanged { card, to });
         }
         true

@@ -48,6 +48,11 @@ pub enum Tag {
     /// While face-up on the field, its controller's opponent keeps their
     /// hand revealed (The Eye of Truth).
     RevealOpponentHand,
+    /// While face-up on the field, each player shows their hand during
+    /// their own turn (Respect Play).
+    RevealTurnPlayerHand,
+    /// May attack twice in each Battle Phase (Hayabusa Knight).
+    SecondAttack,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
