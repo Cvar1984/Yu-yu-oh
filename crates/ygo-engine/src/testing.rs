@@ -38,11 +38,7 @@ pub fn with_rules(base: &Shared, change: impl FnOnce(&mut Rules)) -> Arc<Shared>
     let mut rules = base.rules.clone();
     change(&mut rules);
     rules.validate().expect("changed rules stay valid");
-    Arc::new(Shared {
-        rules,
-        pool: base.pool.clone(),
-        scripts: base.scripts.clone(),
-    })
+    Arc::new(base.with_rules(rules))
 }
 
 /// The committed rules with one change applied and no scripts.
@@ -204,11 +200,16 @@ pub fn check_invariants(g: &Game) {
                 assert!(seen.insert(id), "{id:?} is in two places");
                 let inst = g.instance(id);
                 assert_eq!(inst.location, zone, "{id:?}");
-                assert_eq!(
-                    inst.controller, p,
+                assert_eq!(inst.controller, p, "{id:?}");
+                // Off-field cards are with their owner, except a card put
+                // face-up into the opponent's Deck (Parasite Paracide) and
+                // then drawn by them.
+                let lent = inst.position == Position::FaceUp
+                    && matches!(zone, Location::Deck | Location::Hand);
+                assert!(
+                    inst.owner == p || lent,
                     "{id:?} off-field cards are with their owner"
                 );
-                assert_eq!(inst.owner, p);
             }
         }
         assert_eq!(s.monster_zones.len(), rules.field.monster_zones);

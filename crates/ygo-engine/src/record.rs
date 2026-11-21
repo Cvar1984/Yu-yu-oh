@@ -218,11 +218,7 @@ impl GameRecord {
 
     /// The game as it stood before any action, under the record's rules.
     pub fn start(&self, shared: &Shared) -> Result<Game, RecordError> {
-        let shared = Arc::new(Shared {
-            rules: self.header.rules.clone(),
-            pool: shared.pool.clone(),
-            scripts: shared.scripts.clone(),
-        });
+        let shared = Arc::new(shared.with_rules(self.header.rules.clone()));
         Ok(Game::new(shared, &self.header.setup)?)
     }
 

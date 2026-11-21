@@ -14,6 +14,9 @@ pub const BITE_SHOES: CardId = CardId(50122883);
 pub const BOMBARDMENT_BEETLE: CardId = CardId(57409948);
 pub const BUBONIC_VERMIN: CardId = CardId(6104968);
 pub const BUSTER_BLADER: CardId = CardId(78193831);
+pub const DEEPSEA_WARRIOR: CardId = CardId(24128274);
+pub const JINZO: CardId = CardId(77585513);
+pub const THE_LEGENDARY_FISHERMAN: CardId = CardId(3643300);
 pub const GOBLIN_ATTACK_FORCE: CardId = CardId(78658564);
 pub const HAYABUSA_KNIGHT: CardId = CardId(21015833);
 pub const MORPHING_JAR_2: CardId = CardId(79106360);
@@ -66,12 +69,12 @@ fn dragons_for_buster_blader(g: &Game, s: Source) -> i32 {
     let on_field = g
         .monsters_controlled(opponent)
         .into_iter()
-        .filter(|&m| face_up(g, m) && g.stats(m).race == "Dragon")
+        .filter(|&m| face_up(g, m) && g.race(m) == "Dragon")
         .count();
     let in_graveyard = g
         .graveyard(opponent)
         .iter()
-        .filter(|&&c| g.stats(c).is_monster() && g.stats(c).race == "Dragon")
+        .filter(|&&c| g.stats(c).is_monster() && g.race(c) == "Dragon")
         .count();
     (on_field + in_graveyard) as i32
 }
@@ -107,6 +110,15 @@ fn vermin_in_deck(g: &Game, player: PlayerId) -> Option<InstanceId> {
         .iter()
         .copied()
         .find(|&c| g.stats(c).id == BUBONIC_VERMIN)
+}
+
+/// "Umi" is face-up on the field.
+fn umi_on_field(g: &Game) -> bool {
+    PlayerId::BOTH.into_iter().any(|p| {
+        g.field_spell(p).is_some_and(|f| {
+            g.stats(f).id == crate::continuous::UMI && g.instance(f).position.is_face_up()
+        })
+    })
 }
 
 /// The End of the Battle Phase was just entered.
@@ -183,6 +195,78 @@ pub fn register(r: &mut Registry) {
                 g.lock_position_until(ctx.source, ctx.source, turn);
                 Flow::Done
             })
+        }),
+    );
+    // While "Umi" is face-up on the field, this card is unaffected by
+    // Spell Cards.
+    r.register(
+        DEEPSEA_WARRIOR,
+        single(Effect {
+            spell_immune: Some(|g, _| umi_on_field(g)),
+            ..Effect::continuous()
+        }),
+    );
+    // Trap Cards and their effects on the field cannot be activated;
+    // negate all Trap effects on the field.
+    r.register(
+        JINZO,
+        single(Effect {
+            negate: Some(|g, _, card| g.stats(card).kind == CardKind::Trap),
+            ..Effect::continuous()
+        }),
+    );
+    // FLIP: put this card face-up into your opponent's Deck. When they draw
+    // it, it is Special Summoned to their field in face-up Defense Position
+    // and inflicts 1000 damage to them; then, while it is face-up, every
+    // monster they control is an Insect.
+    r.register(
+        PARASITE_PARACIDE,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![
+                Effect::flip(|g, ctx| {
+                    if g.on_field(ctx.source) {
+                        g.put_face_up_in_deck(ctx.source, ctx.controller.opponent());
+                    }
+                    Flow::Done
+                }),
+                Effect {
+                    timing: |g, s, w| {
+                        g.instance(s.card).location == Location::Hand
+                            && g.instance(s.card).owner != s.controller
+                            && w.events
+                                .iter()
+                                .any(|e| matches!(e, Event::Drew { card, .. } if *card == s.card))
+                    },
+                    ..Effect::trigger(true, |g, ctx| {
+                        if g.instance(ctx.source).location == Location::Hand
+                            && g.special_summon(ctx.source, ctx.controller, Position::FaceUpDefense)
+                        {
+                            g.take_damage(ctx.controller, 1000);
+                        }
+                        Flow::Done
+                    })
+                },
+                Effect {
+                    race: Some(|g, s, t| {
+                        (g.instance(s.card).owner != s.controller
+                            && g.instance(t).controller == s.controller)
+                            .then_some("Insect")
+                    }),
+                    ..Effect::continuous()
+                },
+            ],
+        },
+    );
+    // While "Umi" is on the field, this card is unaffected by Spell
+    // effects and cannot be targeted for attacks (an attack may go
+    // directly to you instead).
+    r.register(
+        THE_LEGENDARY_FISHERMAN,
+        single(Effect {
+            spell_immune: Some(|g, _| umi_on_field(g)),
+            unattackable: Some(|g, _| umi_on_field(g)),
+            ..Effect::continuous()
         }),
     );
     r.register(

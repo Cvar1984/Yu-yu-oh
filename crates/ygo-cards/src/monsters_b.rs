@@ -575,7 +575,7 @@ pub fn register(r: &mut Registry) {
         single(Effect {
             on_attack: Some(|g, s, attacker| {
                 let attacked = g.current_attack().is_some_and(|(_, t)| t == Some(s.card));
-                if attacked && g.stats(attacker).race != "Machine" {
+                if attacked && g.race(attacker) != "Machine" {
                     let turn = g.turn() + 4;
                     g.destroy_at_end_of_turn(s.card, attacker, turn);
                 }
@@ -590,7 +590,7 @@ pub fn register(r: &mut Registry) {
         single(Effect {
             on_attack: Some(|g, s, attacker| {
                 let attacked = g.current_attack().is_some_and(|(_, t)| t == Some(s.card));
-                if attacked && g.stats(attacker).race != "Zombie" {
+                if attacked && g.race(attacker) != "Zombie" {
                     let turn = g.turn() + 2;
                     g.forbid_attacks_until(s.card, attacker, turn);
                 }

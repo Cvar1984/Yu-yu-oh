@@ -100,9 +100,9 @@ pub fn register(r: &mut Registry) {
             tags: Vec::new(),
             effects: vec![
                 Effect {
-                    targets: Some(|g, _| face_up_monsters(g, |g, m| g.stats(m).race == "Warrior")),
+                    targets: Some(|g, _| face_up_monsters(g, |g, m| g.race(m) == "Warrior")),
                     timing: |g, _, _| {
-                        !face_up_monsters(g, |g, m| g.stats(m).race == "Warrior").is_empty()
+                        !face_up_monsters(g, |g, m| g.race(m) == "Warrior").is_empty()
                     },
                     ..Effect::activate(1, equip_resolve)
                 },
@@ -122,7 +122,7 @@ pub fn register(r: &mut Registry) {
             effects: vec![
                 Effect::activate(1, ygo_engine::nothing),
                 Effect {
-                    modify: Some(|g, _, t| match g.stats(t).race.as_str() {
+                    modify: Some(|g, _, t| match g.race(t) {
                         "Fish" | "Sea Serpent" | "Thunder" | "Aqua" => {
                             StatMod { atk: 200, def: 200 }
                         }

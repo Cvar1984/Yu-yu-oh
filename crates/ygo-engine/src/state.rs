@@ -114,6 +114,8 @@ pub enum LingeringKind {
     PositionLocked { card: InstanceId },
     /// Neither player may activate or Set a Spell or Trap Card (Cold Wave).
     NoSpellsOrTraps,
+    /// `card`'s effects are negated (Armored Glass, World Suppression).
+    Negated { card: InstanceId },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.

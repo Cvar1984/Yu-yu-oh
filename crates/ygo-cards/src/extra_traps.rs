@@ -179,13 +179,13 @@ pub fn register(r: &mut Registry) {
             timing: |g, s, _| {
                 g.monsters_controlled(s.controller)
                     .into_iter()
-                    .any(|m| g.stats(m).race == "Dragon")
+                    .any(|m| g.race(m) == "Dragon")
             },
             cost_choices: Some(|g, s| {
                 singles(
                     g.monsters_controlled(s.controller)
                         .into_iter()
-                        .filter(|&m| g.stats(m).race == "Dragon"),
+                        .filter(|&m| g.race(m) == "Dragon"),
                 )
             }),
             cost: Some(|g, ctx| {

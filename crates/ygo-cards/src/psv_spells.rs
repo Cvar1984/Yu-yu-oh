@@ -3,8 +3,8 @@
 
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
-    CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Location, Phase, PlayerId,
-    Position, Registry, Source, StatMod, TargetSets, WindowKind,
+    Action, CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Location, Phase,
+    PlayerId, Position, Registry, Source, StatMod, TargetSets, WindowKind,
 };
 
 use crate::positions::{FACE_UP, face_up};
@@ -17,6 +17,7 @@ pub const INSPECTION: CardId = CardId(16227556);
 pub const LIMITER_REMOVAL: CardId = CardId(23171610);
 pub const MONSTER_RECOVERY: CardId = CardId(93108433);
 pub const NOBLEMAN_OF_EXTERMINATION: CardId = CardId(17449108);
+pub const PROHIBITION: CardId = CardId(43711255);
 pub const RAIN_OF_MERCY: CardId = CardId(66719324);
 pub const SEVEN_COMPLETED: CardId = CardId(86198326);
 pub const THE_SHALLOW_GRAVE: CardId = CardId(43434803);
@@ -48,7 +49,7 @@ pub(crate) fn standby_began(g: &Game, events: &[Event], kind: WindowKind) -> boo
 fn face_up_machines(g: &Game, player: PlayerId) -> Vec<InstanceId> {
     g.monsters_controlled(player)
         .into_iter()
-        .filter(|&m| face_up_on_field(g, m) && g.stats(m).race == "Machine")
+        .filter(|&m| face_up_on_field(g, m) && g.race(m) == "Machine")
         .collect()
 }
 
@@ -62,6 +63,44 @@ fn imitations(g: &Game, player: PlayerId, level: u8) -> Vec<InstanceId> {
             s.is_monster() && s.race == "Insect" && s.level == level + 1 && g.special_summonable(c)
         })
         .collect()
+}
+
+/// Prohibition: one card for each name the activating player can see
+/// now (face-up on the field, in a Graveyard, banished, or in their own
+/// hand), so declaring never reveals a hidden card.
+fn declarable_names(g: &Game, player: PlayerId) -> Vec<InstanceId> {
+    let mut seen = Vec::new();
+    let mut out = Vec::new();
+    for p in PlayerId::BOTH {
+        let visible = g
+            .monsters_controlled(p)
+            .into_iter()
+            .chain(g.spells_traps_controlled(p))
+            .filter(|&c| g.instance(c).position.is_face_up())
+            .chain(g.graveyard(p).iter().copied())
+            .chain(g.banished(p).iter().copied())
+            .chain(if p == player {
+                g.hand(p).to_vec()
+            } else {
+                Vec::new()
+            });
+        for c in visible {
+            let id = g.stats(c).id;
+            if id != PROHIBITION && !seen.contains(&id) {
+                seen.push(id);
+                out.push(c);
+            }
+        }
+    }
+    out
+}
+
+/// The card whose name Prohibition declared (kept as id + 1 in its counter).
+fn declared(g: &Game, prohibition: InstanceId) -> Option<CardId> {
+    match g.counter(prohibition) {
+        0 => None,
+        n => Some(g.stats(InstanceId(n - 1)).id),
+    }
 }
 
 fn revivable(g: &Game, player: PlayerId) -> Vec<InstanceId> {
@@ -143,7 +182,7 @@ pub fn register(r: &mut Registry) {
                 Effect::activate(1, ygo_engine::nothing),
                 Effect {
                     restrict: Some(|g, s, t| {
-                        g.instance(t).controller != s.controller && g.stats(t).race == "Insect"
+                        g.instance(t).controller != s.controller && g.race(t) == "Insect"
                     }),
                     ..Effect::continuous()
                 },
@@ -308,6 +347,45 @@ pub fn register(r: &mut Registry) {
                 Flow::Done
             })
         }),
+    );
+    // Declare 1 card name; cards with that name cannot be used, except
+    // those already on the field. The name is declared on resolution,
+    // among the names you can see.
+    r.register(
+        PROHIBITION,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![
+                Effect::activate(1, |g, ctx| {
+                    let options = declarable_names(g, ctx.controller);
+                    if options.is_empty() {
+                        return Flow::Done;
+                    }
+                    Flow::Choose {
+                        options,
+                        then: |g, ctx, card| {
+                            if g.on_field(ctx.source) {
+                                g.set_counter(ctx.source, card.0.wrapping_add(1));
+                            }
+                            Flow::Done
+                        },
+                    }
+                }),
+                Effect {
+                    forbid: Some(|g, s, action| {
+                        let card = match action {
+                            Action::Summon { card, .. }
+                            | Action::SetSpellTrap { card }
+                            | Action::Activate { card, .. }
+                            | Action::ProcedureSummon { card, .. } => *card,
+                            _ => return false,
+                        };
+                        !g.on_field(card) && declared(g, s.card) == Some(g.stats(card).id)
+                    }),
+                    ..Effect::continuous()
+                },
+            ],
+        },
     );
     r.register(
         RAIN_OF_MERCY,

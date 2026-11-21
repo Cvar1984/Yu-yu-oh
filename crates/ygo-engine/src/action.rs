@@ -90,6 +90,10 @@ pub enum Event {
         turn: u32,
         player: PlayerId,
     },
+    /// A chain link resolved without effect: its card's effects are negated.
+    EffectNegated {
+        card: InstanceId,
+    },
     /// `player`'s turn number `turn` was skipped (Gamble).
     TurnSkipped {
         turn: u32,

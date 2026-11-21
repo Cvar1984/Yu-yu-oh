@@ -14,6 +14,9 @@ use crate::{
 /// A continuous modifier on the field: its source and its function.
 pub(crate) type Modifier = (Source, fn(&Game, Source, InstanceId) -> StatMod);
 
+/// A continuous negation on the field: its source and its function.
+pub(crate) type Negator = (Source, fn(&Game, Source, InstanceId) -> bool);
+
 impl Game {
     pub(crate) fn emit(&mut self, event: Event) {
         self.events.push(event.clone());
@@ -105,6 +108,7 @@ impl Game {
     }
 
     fn for_each_face_up_script(&self, mut f: impl FnMut(PlayerId, &crate::CardScript)) {
+        let negators = self.negators();
         for p in PlayerId::BOTH {
             let state = &self.players[p.index()];
             let cards = state
@@ -117,6 +121,7 @@ impl Game {
             for card in cards {
                 let inst = &self.instances[card.index()];
                 if inst.position.is_face_up()
+                    && !self.negated_with(&negators, card)
                     && let Some(script) = self.shared.script(inst.card)
                 {
                     f(inst.controller, script);
@@ -351,7 +356,10 @@ impl Game {
 
     /// Sends a card on the field to the Graveyard by a card effect.
     pub fn destroy(&mut self, card: InstanceId, source: InstanceId) {
-        if !self.on_field(card) || self.shielded.contains(&card) {
+        if !self.on_field(card)
+            || self.shielded.contains(&card)
+            || (card != source && self.is_spell(source) && self.unaffected_by_spells(card))
+        {
             return;
         }
         self.send_to_graveyard(card);
@@ -641,6 +649,7 @@ impl Game {
                 LingeringKind::Stats { .. }
                 | LingeringKind::PositionLocked { .. }
                 | LingeringKind::NoSpellsOrTraps
+                | LingeringKind::Negated { .. }
                 | LingeringKind::CannotAttack { .. }
                 | LingeringKind::DamageCalcStats { .. }
                 | LingeringKind::Marked { .. }
@@ -658,6 +667,7 @@ impl Game {
     /// Calls `f` for every continuous effect of a face-up card on the
     /// field, without allocating.
     fn for_each_continuous(&self, mut f: impl FnMut(Source, &Effect)) {
+        let negators = self.negators();
         for p in PlayerId::BOTH {
             let state = &self.players[p.index()];
             let cards = state
@@ -669,7 +679,7 @@ impl Game {
                 .chain(state.field_zone);
             for card in cards {
                 let inst = &self.instances[card.index()];
-                if !inst.position.is_face_up() {
+                if !inst.position.is_face_up() || self.negated_with(&negators, card) {
                     continue;
                 }
                 let Some(script) = self.shared.script(inst.card) else {
@@ -688,6 +698,173 @@ impl Game {
         }
     }
 
+    /// Every continuous negation of a face-up card on the field, whether or
+    /// not that card is negated itself. Empty, and free, without negators.
+    pub(crate) fn negators(&self) -> Vec<Negator> {
+        let mut out = Vec::new();
+        if self.hooks & crate::pool::HOOK_NEGATE == 0 {
+            return out;
+        }
+        for p in PlayerId::BOTH {
+            let state = &self.players[p.index()];
+            let cards = state
+                .monster_zones
+                .iter()
+                .chain(state.spell_trap_zones.iter())
+                .flatten()
+                .copied()
+                .chain(state.field_zone);
+            for card in cards {
+                let inst = &self.instances[card.index()];
+                if !inst.position.is_face_up() {
+                    continue;
+                }
+                let Some(script) = self.shared.script(inst.card) else {
+                    continue;
+                };
+                for effect in &script.effects {
+                    if let Some(negate) = effect.negate {
+                        let source = Source {
+                            card,
+                            controller: inst.controller,
+                        };
+                        out.push((source, negate));
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    fn negated_this_turn(&self, card: InstanceId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::Negated { card })
+    }
+
+    /// Whether `card`'s effects are negated (and it cannot be activated).
+    /// A negator counts unless it is negated itself, looked at one level
+    /// deep: Jinzo turns off Imperial Order, so Imperial Order no longer
+    /// negates Spells.
+    pub fn negated(&self, card: InstanceId) -> bool {
+        self.negated_with(&self.negators(), card)
+    }
+
+    pub(crate) fn negated_with(&self, negators: &[Negator], card: InstanceId) -> bool {
+        if self.negated_this_turn(card) {
+            return true;
+        }
+        let active = |s: Source| {
+            !self.negated_this_turn(s.card)
+                && !negators.iter().any(|&(t, g)| {
+                    t.card != s.card && !self.negated_this_turn(t.card) && g(self, t, s.card)
+                })
+        };
+        negators
+            .iter()
+            .any(|&(s, f)| s.card != card && f(self, s, card) && active(s))
+    }
+
+    /// Negates `card`'s effects until this turn's End Phase.
+    pub fn negate_until_end_of_turn(&mut self, source: InstanceId, card: InstanceId) {
+        let turn = self.turn;
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::Negated { card },
+            expires_turn: turn,
+        });
+    }
+
+    /// Whether a continuous effect forbids `action` (Prohibition).
+    pub(crate) fn action_forbidden(&self, action: &crate::Action) -> bool {
+        if self.hooks & crate::pool::HOOK_FORBID == 0 {
+            return false;
+        }
+        let mut forbidden = false;
+        self.for_each_continuous(|source, effect| {
+            if !forbidden && effect.forbid.is_some_and(|f| f(self, source, action)) {
+                forbidden = true;
+            }
+        });
+        forbidden
+    }
+
+    /// `card`'s current Type: a face-up monster's may be changed by a
+    /// continuous effect (the last one found wins); otherwise its own.
+    pub fn race(&self, card: InstanceId) -> &str {
+        let inst = &self.instances[card.index()];
+        let mut changed = None;
+        if self.hooks & crate::pool::HOOK_RACE != 0
+            && matches!(inst.location, Location::MonsterZone(_))
+            && inst.position.is_face_up()
+        {
+            self.for_each_continuous(|source, effect| {
+                if let Some(f) = effect.race
+                    && let Some(r) = f(self, source, card)
+                {
+                    changed = Some(r);
+                }
+            });
+        }
+        changed.unwrap_or(&self.stats(card).race)
+    }
+
+    /// Whether one of `card`'s own continuous effects holds that it is
+    /// `hook`'s property now (it must be face-up on the field and not negated).
+    fn own_property(&self, card: InstanceId, hook: fn(&Effect) -> Option<crate::SelfHook>) -> bool {
+        let inst = &self.instances[card.index()];
+        if self.hooks & crate::pool::HOOK_SELF == 0
+            || !inst.location.on_field()
+            || !inst.position.is_face_up()
+        {
+            return false;
+        }
+        let Some(script) = self.script(card) else {
+            return false;
+        };
+        let source = Source {
+            card,
+            controller: inst.controller,
+        };
+        script
+            .effects
+            .iter()
+            .any(|e| hook(e).is_some_and(|f| f(self, source)))
+            && !self.negated(card)
+    }
+
+    /// Whether `card` is unaffected by Spell effects right now.
+    pub fn unaffected_by_spells(&self, card: InstanceId) -> bool {
+        self.own_property(card, |e| e.spell_immune)
+    }
+
+    /// Whether `card` cannot be targeted for attacks right now.
+    pub fn cannot_be_attacked(&self, card: InstanceId) -> bool {
+        self.own_property(card, |e| e.unattackable)
+    }
+
+    /// Puts `card` face-up into `player`'s Deck and shuffles it (Parasite
+    /// Paracide); it stays its owner's card.
+    pub fn put_face_up_in_deck(&mut self, card: InstanceId, player: PlayerId) {
+        let from = self.instances[card.index()].location;
+        self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Deck;
+        inst.position = Position::FaceUp;
+        inst.controller = player;
+        inst.turn_set = None;
+        inst.properly_summoned = false;
+        inst.turn_entered_field = None;
+        inst.equipped_to = None;
+        inst.counter = 0;
+        self.players[player.index()].deck.insert(0, card);
+        self.emit(Event::ReturnedToDeck { player, card });
+        self.shuffle_deck(player);
+    }
+
     /// The continuous modifiers currently on the field, collected once so
     /// many cards' stats can be computed without rescanning.
     pub(crate) fn modifiers(&self) -> Vec<Modifier> {
@@ -703,8 +880,12 @@ impl Game {
     /// ATK and DEF of `card` under the given modifiers.
     pub(crate) fn stats_with(&self, modifiers: &[Modifier], card: InstanceId) -> (i32, i32) {
         let base = self.stats(card);
-        let mut total = self.temporary_mod(card);
+        let immune = self.unaffected_by_spells(card);
+        let mut total = self.temporary_mod(card, immune);
         for (source, modify) in modifiers {
+            if immune && self.is_spell(source.card) {
+                continue;
+            }
             let m = modify(self, *source, card);
             total.atk += m.atk;
             total.def += m.def;
@@ -712,9 +893,18 @@ impl Game {
         ((base.atk + total.atk).max(0), (base.def + total.def).max(0))
     }
 
-    fn temporary_mod(&self, card: InstanceId) -> StatMod {
+    fn is_spell(&self, card: InstanceId) -> bool {
+        self.stats(card).kind == CardKind::Spell
+    }
+
+    /// Lingering ATK/DEF changes; a card unaffected by Spells ignores those
+    /// a Spell gave.
+    fn temporary_mod(&self, card: InstanceId, immune: bool) -> StatMod {
         let mut total = StatMod::default();
         for l in &self.lingering {
+            if immune && self.is_spell(l.source) {
+                continue;
+            }
             match l.kind {
                 LingeringKind::Stats { card: c, atk, def }
                 | LingeringKind::DamageCalcStats { card: c, atk, def }
@@ -730,8 +920,12 @@ impl Game {
     }
 
     fn stat_mod(&self, card: InstanceId) -> StatMod {
-        let mut total = self.temporary_mod(card);
+        let immune = self.unaffected_by_spells(card);
+        let mut total = self.temporary_mod(card, immune);
         self.for_each_continuous(|source, effect| {
+            if immune && self.is_spell(source.card) {
+                return;
+            }
             if let Some(modify) = effect.modify {
                 let m = modify(self, source, card);
                 total.atk += m.atk;
@@ -1406,8 +1600,9 @@ impl Game {
         if !matches!(inst.location, Location::MonsterZone(_)) {
             return false;
         }
-        self.shared.rules.turn.spell_target_monster_set_this_turn
-            || inst.turn_set != Some(self.turn)
+        (self.shared.rules.turn.spell_target_monster_set_this_turn
+            || inst.turn_set != Some(self.turn))
+            && !self.unaffected_by_spells(card)
     }
 
     // ----- internals shared with the turn machine -----

@@ -116,9 +116,7 @@ fn any_face_up(g: &Game, _s: Source) -> TargetSets {
 }
 
 fn non_machine(g: &Game, _s: Source) -> TargetSets {
-    face_up_monsters(g, |g, m| {
-        g.spell_targetable(m) && g.stats(m).race != "Machine"
-    })
+    face_up_monsters(g, |g, m| g.spell_targetable(m) && g.race(m) != "Machine")
 }
 
 fn bonus(atk: i32, def: i32) -> Effect {

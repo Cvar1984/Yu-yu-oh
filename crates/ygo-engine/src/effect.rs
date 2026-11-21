@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use ygo_data::CardId;
 
-use crate::{Event, Game, InstanceId, PlayerId, WindowKind};
+use crate::{Action, Event, Game, InstanceId, PlayerId, WindowKind};
 
 /// Static facts about a card that are not effects.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -77,6 +77,12 @@ pub enum EffectKind {
 
 /// Spell speed 1, 2 or 3.
 pub type Speed = u8;
+
+/// A continuous hook giving a monster another Type (DNA Surgery).
+pub type RaceHook = fn(&Game, Source, InstanceId) -> Option<&'static str>;
+
+/// A continuous hook about the source card itself (Deepsea Warrior).
+pub type SelfHook = fn(&Game, Source) -> bool;
 
 /// A continuous hook naming the only monster an attacker may attack.
 pub type AttackLock = fn(&Game, Source, InstanceId) -> Option<InstanceId>;
@@ -148,6 +154,11 @@ impl Effect {
             lock_position: None,
             misses_timing: false,
             pierce: None,
+            negate: None,
+            forbid: None,
+            race: None,
+            spell_immune: None,
+            unattackable: None,
         }
     }
 
@@ -322,6 +333,21 @@ pub struct Effect {
     /// Continuous: `attacker` inflicts piercing battle damage when it
     /// attacks a Defense Position monster (Fairy Meteor Crush).
     pub pierce: Option<fn(&Game, Source, InstanceId) -> bool>,
+    /// Continuous: while the source is active, `card`'s effects are negated
+    /// and it cannot be activated (Jinzo, Imperial Order).
+    pub negate: Option<fn(&Game, Source, InstanceId) -> bool>,
+    /// Continuous: while the source is active, this action is illegal
+    /// (Prohibition).
+    pub forbid: Option<fn(&Game, Source, &Action) -> bool>,
+    /// Continuous: the Type `card` has instead of its own, if this effect
+    /// changes it (DNA Surgery, Parasite Paracide).
+    pub race: Option<RaceHook>,
+    /// Continuous: the source itself is unaffected by Spell effects while
+    /// this holds (Deepsea Warrior, The Legendary Fisherman).
+    pub spell_immune: Option<SelfHook>,
+    /// Continuous: the source cannot be targeted for attacks while this
+    /// holds (The Legendary Fisherman).
+    pub unattackable: Option<SelfHook>,
 }
 
 impl std::fmt::Debug for Effect {

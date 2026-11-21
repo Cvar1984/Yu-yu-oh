@@ -279,6 +279,7 @@ pub fn event(obs: &Observation, pool: &CardPool, e: &Event) -> Option<String> {
         Event::TurnStarted { turn, player } => {
             format!("Turn {turn}: {} turn", who_possessive(obs, *player))
         }
+        Event::EffectNegated { card } => format!("{}'s effect was negated", c(*card)),
         Event::TurnSkipped { turn, player } => {
             format!(
                 "Turn {turn}: {} turn is skipped",

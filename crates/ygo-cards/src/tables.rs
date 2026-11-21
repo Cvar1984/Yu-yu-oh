@@ -78,7 +78,7 @@ fn race_of_equip(g: &Game, s: Source) -> &'static str {
 
 fn type_equip_targets(g: &Game, s: Source) -> ygo_engine::TargetSets {
     let race = race_of_equip(g, s);
-    face_up_monsters(g, |g, m| g.stats(m).race == race)
+    face_up_monsters(g, |g, m| g.race(m) == race)
 }
 
 fn type_field_modify(g: &Game, s: Source, target: InstanceId) -> StatMod {
@@ -87,7 +87,7 @@ fn type_field_modify(g: &Game, s: Source, target: InstanceId) -> StatMod {
         .iter()
         .find(|(i, _, _)| *i == id)
         .expect("a type Field Spell's row");
-    let race = g.stats(target).race.as_str();
+    let race = g.race(target);
     if gains.contains(&race) {
         StatMod { atk: 200, def: 200 }
     } else if loses.contains(&race) {
