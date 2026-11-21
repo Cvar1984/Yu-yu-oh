@@ -77,7 +77,7 @@ fn all_535_cards_load_with_the_handoff_counts() {
 #[test]
 fn both_saves_collections_load() {
     let a = collection("collection.json");
-    assert_eq!((a.unique_cards(), a.total_copies()), (465, 1197));
+    assert_eq!((a.unique_cards(), a.total_copies()), (485, 1873));
     let b = collection("collection_save_b.json");
     assert_eq!((b.unique_cards(), b.total_copies()), (201, 421));
 }

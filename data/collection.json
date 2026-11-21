@@ -1,19 +1,19 @@
 {
  "schema_version": 1,
  "owner": "player",
- "read_from": "save A: set screens 2026-11-19 + 'All' list (386/440 owned; 385 read, one card unidentified); Pharaoh's Servant screen 2026-11-21 (90/105 owned, copy counts not read: 1 each)",
+ "read_from": "save A: set screens 2026-11-19 + 'All' list (386/440 owned; 385 read, one card unidentified); Pharaoh's Servant screen 2026-11-21 (90/105 owned, copy counts not read: 1 each); 'All' card list screenshots 2026-11-22 (407/440 owned; copy counts read for the 367 cards shown, the game's page 16 missing; cards wholly in the Dark Summoner deck are not listed and keep at least their deck count)",
  "totals": {
-  "ALL": "466/535",
+  "ALL": "407/440",
   "PSV": "90/105",
-  "note": "copy counts >= 3 are only exact where re-read; decks never need more than 3; PSV copies are recorded as 1 each until read"
+  "note": "ALL copies are read from the card list of 2026-11-22 where shown; PSV copies are recorded as 1 each until read"
  },
- "unique": 465,
- "copies": 1197,
+ "unique": 485,
+ "copies": 1873,
  "cards": [
   {
    "id": 76184692,
    "name": "Hitotsu-Me Giant",
-   "copies": 4
+   "copies": 6
   },
   {
    "id": 32274490,
@@ -28,37 +28,37 @@
   {
    "id": 89091579,
    "name": "Basic Insect",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 40374923,
    "name": "Mammoth Graveyard",
-   "copies": 2
+   "copies": 4
   },
   {
    "id": 90357090,
    "name": "Silver Fang",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 9159938,
    "name": "Dark Gray",
-   "copies": 5
+   "copies": 8
   },
   {
    "id": 77827521,
    "name": "Trial of Nightmare",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 90963488,
    "name": "Nemuriko",
-   "copies": 5
+   "copies": 9
   },
   {
    "id": 32864,
    "name": "The 13th Grave",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 37421579,
@@ -68,17 +68,17 @@
   {
    "id": 34460851,
    "name": "Flame Manipulator",
-   "copies": 4
+   "copies": 8
   },
   {
    "id": 36121917,
    "name": "Monster Egg",
-   "copies": 5
+   "copies": 10
   },
   {
    "id": 53293545,
    "name": "Firegrass",
-   "copies": 7
+   "copies": 14
   },
   {
    "id": 17881964,
@@ -88,32 +88,32 @@
   {
    "id": 53375573,
    "name": "Dark King of the Abyss",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 2863439,
    "name": "Fiend Reflection #2",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 37313348,
    "name": "Turtle Tiger",
-   "copies": 6
+   "copies": 9
   },
   {
    "id": 75356564,
    "name": "Petit Dragon",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 38142739,
    "name": "Petit Angel",
-   "copies": 4
+   "copies": 7
   },
   {
    "id": 96851799,
    "name": "Hinotama Soul",
-   "copies": 3
+   "copies": 7
   },
   {
    "id": 85639257,
@@ -123,7 +123,7 @@
   {
    "id": 15401633,
    "name": "Kagemusha of the Blue Flame",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 58528964,
@@ -133,32 +133,32 @@
   {
    "id": 57305373,
    "name": "Two-Mouth Darkruler",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 40826495,
    "name": "Dissolverock",
-   "copies": 7
+   "copies": 8
   },
   {
    "id": 39004808,
    "name": "Root Water",
-   "copies": 5
+   "copies": 8
   },
   {
    "id": 18710707,
    "name": "The Furious Sea King",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 22910685,
    "name": "Green Phantom King",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 85309439,
    "name": "Ray & Temperature",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 84686841,
@@ -168,22 +168,22 @@
   {
    "id": 83464209,
    "name": "Mystical Sheep #2",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 44287299,
    "name": "Masaki the Legendary Swordsman",
-   "copies": 6
+   "copies": 11
   },
   {
    "id": 85705804,
    "name": "Kurama",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 61854111,
    "name": "Legendary Sword",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 46009906,
@@ -193,17 +193,17 @@
   {
    "id": 15052462,
    "name": "Violet Crystal",
-   "copies": 4
+   "copies": 6
   },
   {
    "id": 91595718,
    "name": "Book of Secret Arts",
-   "copies": 5
+   "copies": 8
   },
   {
    "id": 77027445,
    "name": "Power of Kaishin",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 50045299,
@@ -213,27 +213,27 @@
   {
    "id": 87430998,
    "name": "Forest",
-   "copies": 4
+   "copies": 7
   },
   {
    "id": 23424603,
    "name": "Wasteland",
-   "copies": 1
+   "copies": 5
   },
   {
    "id": 50913601,
    "name": "Mountain",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 86318356,
    "name": "Sogen",
-   "copies": 2
+   "copies": 4
   },
   {
    "id": 22702055,
    "name": "Umi",
-   "copies": 7
+   "copies": 9
   },
   {
    "id": 59197169,
@@ -248,7 +248,7 @@
   {
    "id": 38199696,
    "name": "Red Medicine",
-   "copies": 4
+   "copies": 10
   },
   {
    "id": 76103675,
@@ -273,12 +273,12 @@
   {
    "id": 51482758,
    "name": "Remove Trap",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 83887306,
    "name": "Two-Pronged Attack",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 15025844,
@@ -288,7 +288,7 @@
   {
    "id": 72842870,
    "name": "Tyhone",
-   "copies": 6
+   "copies": 8
   },
   {
    "id": 32452818,
@@ -303,12 +303,12 @@
   {
    "id": 54541900,
    "name": "Karbonala Warrior",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 1784619,
    "name": "Uraby",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 74677422,
@@ -323,12 +323,12 @@
   {
    "id": 36304921,
    "name": "Witty Phantom",
-   "copies": 4
+   "copies": 9
   },
   {
    "id": 94675535,
    "name": "Larvas",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 20060230,
@@ -338,7 +338,7 @@
   {
    "id": 93553943,
    "name": "Man Eater",
-   "copies": 4
+   "copies": 6
   },
   {
    "id": 56342351,
@@ -348,7 +348,7 @@
   {
    "id": 92731455,
    "name": "M-Warrior #2",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 80770678,
@@ -358,52 +358,52 @@
   {
    "id": 53153481,
    "name": "Armaill",
-   "copies": 6
+   "copies": 9
   },
   {
    "id": 63308047,
    "name": "Terra the Terrible",
-   "copies": 2
+   "copies": 4
   },
   {
    "id": 98818516,
    "name": "Frenzied Panda",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 56283725,
    "name": "Kumootoko",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 76211194,
    "name": "Meda Bat",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 75376965,
    "name": "Enchanting Mermaid",
-   "copies": 5
+   "copies": 10
   },
   {
    "id": 33064647,
    "name": "One-Eyed Shield Dragon",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 4614116,
    "name": "Dark Energy",
-   "copies": 4
+   "copies": 8
   },
   {
    "id": 77007920,
    "name": "Laser Cannon Armor",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 39774685,
    "name": "Vile Germs",
-   "copies": 1
+   "copies": 4
   },
   {
    "id": 1557499,
@@ -413,42 +413,42 @@
   {
    "id": 1435851,
    "name": "Dragon Treasure",
-   "copies": 5
+   "copies": 10
   },
   {
    "id": 37820550,
    "name": "Electro-Whip",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 36607978,
    "name": "Mystical Moon",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 63102017,
    "name": "Stop Defense",
-   "copies": 1
+   "copies": 2
   },
   {
    "id": 25769732,
    "name": "Machine Conversion Factory",
-   "copies": 5
+   "copies": 7
   },
   {
    "id": 51267887,
    "name": "Raise Body Heat",
-   "copies": 7
+   "copies": 13
   },
   {
    "id": 98252586,
    "name": "Follow Wind",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 11868825,
    "name": "Goblin's Secret Remedy",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 72302403,
@@ -458,7 +458,7 @@
   {
    "id": 9293977,
    "name": "Metal Dragon",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 85326399,
@@ -468,12 +468,12 @@
   {
    "id": 45042329,
    "name": "Tripwire Beast",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 10202894,
    "name": "Skull Red Bird",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 9076207,
@@ -483,12 +483,12 @@
   {
    "id": 95952802,
    "name": "Flower Wolf",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 73051941,
    "name": "Sand Stone",
-   "copies": 4
+   "copies": 8
   },
   {
    "id": 7089711,
@@ -498,32 +498,32 @@
   {
    "id": 33178416,
    "name": "Misairuzame",
-   "copies": 3
+   "copies": 7
   },
   {
    "id": 29172562,
    "name": "Steel Ogre Grotto #1",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 55444629,
    "name": "Lesser Dragon",
-   "copies": 3
+   "copies": 8
   },
   {
    "id": 43500484,
    "name": "Darkworld Thorns",
-   "copies": 3
+   "copies": 7
   },
   {
    "id": 16353197,
    "name": "Drooling Lizard",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 17535588,
    "name": "Armored Starfish",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 55291359,
@@ -548,12 +548,12 @@
   {
    "id": 41392891,
    "name": "Feral Imp",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 87796900,
    "name": "Winged Dragon, Guardian of the Fortress #1",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 70781052,
@@ -563,7 +563,7 @@
   {
    "id": 68846917,
    "name": "Rock Ogre Grotto #1",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 15480588,
@@ -573,17 +573,17 @@
   {
    "id": 88979991,
    "name": "Killer Needle",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 87756343,
    "name": "Larvae Moth",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 76812113,
    "name": "Harpie Lady",
-   "copies": 4
+   "copies": 6
   },
   {
    "id": 12206212,
@@ -593,32 +593,32 @@
   {
    "id": 1184620,
    "name": "Kojikocy",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 40240595,
    "name": "Cocoon of Evolution",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 67494157,
    "name": "Crawling Dragon",
-   "copies": 5
+   "copies": 9
   },
   {
    "id": 20277860,
    "name": "Armored Zombie",
-   "copies": 5
+   "copies": 8
   },
   {
    "id": 28933734,
    "name": "Mask of Darkness",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 16972957,
    "name": "Doma The Angel of Silence",
-   "copies": 5
+   "copies": 7
   },
   {
    "id": 16768387,
@@ -633,17 +633,17 @@
   {
    "id": 19066538,
    "name": "Roaring Ocean Snake",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 2483611,
    "name": "Water Omotics",
-   "copies": 6
+   "copies": 7
   },
   {
    "id": 58314394,
    "name": "Ground Attacker Bugroth",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 58192742,
@@ -673,7 +673,7 @@
   {
    "id": 13599884,
    "name": "Steel Scorpion",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 86088138,
@@ -688,7 +688,7 @@
   {
    "id": 58861941,
    "name": "Ooguchi",
-   "copies": 4
+   "copies": 8
   },
   {
    "id": 10538007,
@@ -698,7 +698,7 @@
   {
    "id": 70138455,
    "name": "Blast Juggler",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 32809211,
@@ -708,7 +708,7 @@
   {
    "id": 93221206,
    "name": "Ancient Elf",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 28593363,
@@ -718,17 +718,17 @@
   {
    "id": 81386177,
    "name": "Bottom Dweller",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 73481154,
    "name": "Destroyer Golem",
-   "copies": 4
+   "copies": 6
   },
   {
    "id": 9653271,
    "name": "Kaminari Attack",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 21347810,
@@ -743,12 +743,12 @@
   {
    "id": 21817254,
    "name": "Mega Thunderball",
-   "copies": 6
+   "copies": 7
   },
   {
    "id": 69572024,
    "name": "Tongyo",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 15237615,
@@ -763,17 +763,17 @@
   {
    "id": 55875323,
    "name": "Electric Lizard",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 80141480,
    "name": "Hunter Spider",
-   "copies": 6
+   "copies": 8
   },
   {
    "id": 43230671,
    "name": "Ancient Lizard Warrior",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 5901497,
@@ -783,17 +783,17 @@
   {
    "id": 78780140,
    "name": "Trent",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 76446915,
    "name": "Disk Magician",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 2118022,
    "name": "Hyosube",
-   "copies": 4
+   "copies": 7
   },
   {
    "id": 64501875,
@@ -813,12 +813,12 @@
   {
    "id": 5758500,
    "name": "Soul Release",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 41142615,
    "name": "The Cheerful Coffin",
-   "copies": 5
+   "copies": 8
   },
   {
    "id": 4031928,
@@ -828,22 +828,22 @@
   {
    "id": 88819587,
    "name": "Baby Dragon",
-   "copies": 8
+   "copies": 9
   },
   {
    "id": 87564352,
    "name": "Blackland Fire Dragon",
-   "copies": 6
+   "copies": 9
   },
   {
    "id": 40453765,
    "name": "Swamp Battleguard",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 18246479,
    "name": "Battle Steer",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 71625222,
@@ -858,12 +858,12 @@
   {
    "id": 55763552,
    "name": "Dragon Piper",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 28546905,
    "name": "Illusionist Faceless Mage",
-   "copies": 6
+   "copies": 9
   },
   {
    "id": 26202165,
@@ -883,7 +883,7 @@
   {
    "id": 14851496,
    "name": "Jellyfish",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 62121,
@@ -893,22 +893,22 @@
   {
    "id": 69455834,
    "name": "King of Yamimakai",
-   "copies": 4
+   "copies": 6
   },
   {
    "id": 68516705,
    "name": "Mystic Horseman",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 94905343,
    "name": "Rabid Horseman",
-   "copies": 6
+   "copies": 7
   },
   {
    "id": 93889755,
    "name": "Crass Clown",
-   "copies": 4
+   "copies": 8
   },
   {
    "id": 29155212,
@@ -918,7 +918,7 @@
   {
    "id": 13215230,
    "name": "Dream Clown",
-   "copies": 9
+   "copies": 7
   },
   {
    "id": 28725004,
@@ -928,12 +928,12 @@
   {
    "id": 42431843,
    "name": "Ancient Brain",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 89272878,
    "name": "Guardian of the Labyrinth",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 549481,
@@ -943,7 +943,7 @@
   {
    "id": 25109950,
    "name": "The Little Swordsman of Aile",
-   "copies": 9
+   "copies": 8
   },
   {
    "id": 51371017,
@@ -963,7 +963,7 @@
   {
    "id": 94773007,
    "name": "Jirai Gumo",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 30778711,
@@ -988,47 +988,47 @@
   {
    "id": 51828629,
    "name": "Giltia the D. Knight",
-   "copies": 9
+   "copies": 11
   },
   {
    "id": 87322377,
    "name": "Launcher Spider",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 8471389,
    "name": "Giga-Tech Wolf",
-   "copies": 4
+   "copies": 6
   },
   {
    "id": 31786629,
    "name": "Thunder Dragon",
-   "copies": 6
+   "copies": 7
   },
   {
    "id": 23771716,
    "name": "7 Colored Fish",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 84926738,
    "name": "The Immortal of Thunder",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 74703140,
    "name": "Punished Eagle",
-   "copies": 6
+   "copies": 9
   },
   {
    "id": 7019529,
    "name": "Insect Soldiers of the Sky",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 56907389,
    "name": "Musician King",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 29380133,
@@ -1038,22 +1038,22 @@
   {
    "id": 89112729,
    "name": "Cyber Saurus",
-   "copies": 3
+   "copies": 2
   },
   {
    "id": 46657337,
    "name": "Muka Muka",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 71107816,
    "name": "The Bistro Butcher",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 8201910,
    "name": "Star Boy",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 7489323,
@@ -1063,7 +1063,7 @@
   {
    "id": 60862676,
    "name": "Flame Cerebrus",
-   "copies": 5
+   "copies": 4
   },
   {
    "id": 7805359,
@@ -1083,7 +1083,7 @@
   {
    "id": 20394040,
    "name": "Lava Battleguard",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 78010363,
@@ -1093,12 +1093,12 @@
   {
    "id": 68658728,
    "name": "Little Chimera",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 28470714,
    "name": "Bladefly",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 17358176,
@@ -1123,7 +1123,7 @@
   {
    "id": 2504891,
    "name": "Skull Knight",
-   "copies": 5
+   "copies": 6
   },
   {
    "id": 5818798,
@@ -1158,37 +1158,37 @@
   {
    "id": 52097679,
    "name": "Shield & Sword",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 98495314,
    "name": "Sword of Deep-Seated",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 25880422,
    "name": "Block Attack",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 51275027,
    "name": "The Unhappy Maiden",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 24668830,
    "name": "Germ Infection",
-   "copies": 3
+   "copies": 4
   },
   {
    "id": 50152549,
    "name": "Paralyzing Potion",
-   "copies": 6
+   "copies": 10
   },
   {
    "id": 20436034,
    "name": "Ring of Magnetism",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 56830749,
@@ -1198,22 +1198,22 @@
   {
    "id": 83225447,
    "name": "Stim-Pack",
-   "copies": 4
+   "copies": 5
   },
   {
    "id": 36039163,
    "name": "Penguin Knight",
-   "copies": 2
+   "copies": 7
   },
   {
    "id": 38552107,
    "name": "Horn of Light",
-   "copies": 3
+   "copies": 9
   },
   {
    "id": 99597615,
    "name": "Malevolent Nuzzler",
-   "copies": 3
+   "copies": 8
   },
   {
    "id": 18807108,
@@ -1223,27 +1223,27 @@
   {
    "id": 55998462,
    "name": "Metal Fish",
-   "copies": 4
+   "copies": 10
   },
   {
    "id": 11324436,
    "name": "Electric Snake",
-   "copies": 1
+   "copies": 8
   },
   {
    "id": 73081602,
    "name": "Queen Bird",
-   "copies": 4
+   "copies": 11
   },
   {
    "id": 20624263,
    "name": "Peacock",
-   "copies": 4
+   "copies": 9
   },
   {
    "id": 93013676,
    "name": "Maha Vailo",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 47879985,
@@ -1253,12 +1253,12 @@
   {
    "id": 46534755,
    "name": "Fire Kraken",
-   "copies": 3
+   "copies": 10
   },
   {
    "id": 32539892,
    "name": "Minar",
-   "copies": 2
+   "copies": 7
   },
   {
    "id": 95744531,
@@ -1268,47 +1268,47 @@
   {
    "id": 56789759,
    "name": "Tyhone #2",
-   "copies": 4
+   "copies": 7
   },
   {
    "id": 14015067,
    "name": "Ancient One of the Deep Forest",
-   "copies": 3
+   "copies": 8
   },
   {
    "id": 35565537,
    "name": "Dark Witch",
-   "copies": 2
+   "copies": 7
   },
   {
    "id": 72053645,
    "name": "Weather Report",
-   "copies": 4
+   "copies": 13
   },
   {
    "id": 34442949,
    "name": "Mechanical Snail",
-   "copies": 3
+   "copies": 13
   },
   {
    "id": 96981563,
    "name": "Giant Turtle Who Feeds on Flames",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 93108297,
    "name": "Liquid Beast",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 81863068,
    "name": "Hiro's Shadow Scout",
-   "copies": 2
+   "copies": 4
   },
   {
    "id": 54579801,
    "name": "High Tide Gyojin",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 3056267,
@@ -1323,47 +1323,47 @@
   {
    "id": 3797883,
    "name": "Slot Machine",
-   "copies": 4
+   "copies": 9
   },
   {
    "id": 64631466,
    "name": "Relinquished",
-   "copies": 1
+   "copies": 2
   },
   {
    "id": 65570596,
    "name": "Red Archery Girl",
-   "copies": 5
+   "copies": 7
   },
   {
    "id": 16762927,
    "name": "Gravekeeper's Servant",
-   "copies": 3
+   "copies": 11
   },
   {
    "id": 12470447,
    "name": "Curse of Fiend",
-   "copies": 4
+   "copies": 10
   },
   {
    "id": 70368879,
    "name": "Upstart Goblin",
-   "copies": 3
+   "copies": 7
   },
   {
    "id": 82003859,
    "name": "Toll",
-   "copies": 2
+   "copies": 10
   },
   {
    "id": 18591904,
    "name": "Final Destiny",
-   "copies": 1
+   "copies": 9
   },
   {
    "id": 81380218,
    "name": "Chorus of Sanctuary",
-   "copies": 1
+   "copies": 8
   },
   {
    "id": 44763025,
@@ -1373,17 +1373,17 @@
   {
    "id": 80168720,
    "name": "Darkness Approaches",
-   "copies": 3
+   "copies": 13
   },
   {
    "id": 17653779,
    "name": "Fairy's Hand Mirror",
-   "copies": 3
+   "copies": 8
   },
   {
    "id": 43641473,
    "name": "Tailor of the Fickle",
-   "copies": 6
+   "copies": 12
   },
   {
    "id": 70046172,
@@ -1393,157 +1393,157 @@
   {
    "id": 16430187,
    "name": "The Reliable Guardian",
-   "copies": 2
+   "copies": 6
   },
   {
    "id": 79323590,
    "name": "Chain Energy",
-   "copies": 4
+   "copies": 11
   },
   {
    "id": 596051,
    "name": "Snake Fang",
-   "copies": 6
+   "copies": 17
   },
   {
    "id": 74637266,
    "name": "Octoberser",
-   "copies": 4
+   "copies": 7
   },
   {
    "id": 64047146,
    "name": "Horn of the Unicorn",
-   "copies": 2
+   "copies": 4
   },
   {
    "id": 67284908,
    "name": "Labyrinth Wall",
-   "copies": 3
+   "copies": 10
   },
   {
    "id": 63162310,
    "name": "Wall Shadow",
-   "copies": 2
+   "copies": 6
   },
   {
    "id": 29692206,
    "name": "Twin Long Rods #2",
-   "copies": 2
+   "copies": 5
   },
   {
    "id": 15023985,
    "name": "Stone Ogre Grotto",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 64389297,
    "name": "Magical Labyrinth",
-   "copies": 4
+   "copies": 9
   },
   {
    "id": 95051344,
    "name": "Eternal Rest",
-   "copies": 4
+   "copies": 9
   },
   {
    "id": 43417563,
    "name": "Commencement Dance",
-   "copies": 2
+   "copies": 10
   },
   {
    "id": 80811661,
    "name": "Hamburger Recipe",
-   "copies": 2
+   "copies": 5
   },
   {
    "id": 15083728,
    "name": "House of Adhesive Tape",
-   "copies": 3
+   "copies": 12
   },
   {
    "id": 42578427,
    "name": "Eatgaboon",
-   "copies": 5
+   "copies": 12
   },
   {
    "id": 76806714,
    "name": "Turtle Oath",
-   "copies": 2
+   "copies": 9
   },
   {
    "id": 4849037,
    "name": "Performance of Sword",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 30243636,
    "name": "Hungry Burger",
-   "copies": 3
+   "copies": 8
   },
   {
    "id": 91782219,
    "name": "Crab Turtle",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 2964201,
    "name": "Ryu-Ran",
-   "copies": 1
+   "copies": 7
   },
   {
    "id": 90020065,
    "name": "Jigen Bakudan",
-   "copies": 2
+   "copies": 9
   },
   {
    "id": 62397231,
    "name": "Hyozanryu",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 15259703,
    "name": "Toon World",
-   "copies": 1
+   "copies": 2
   },
   {
    "id": 34124316,
    "name": "Cyber Jar",
-   "copies": 4
+   "copies": 6
   },
   {
    "id": 97017120,
    "name": "Giant Rat",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 23401839,
    "name": "Senju of the Thousand Hands",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 60806437,
    "name": "UFO Turtle",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 96890582,
    "name": "Flash Assailant",
-   "copies": 1
+   "copies": 5
   },
   {
    "id": 23289281,
    "name": "Karate Man",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 59784896,
    "name": "Dark Zebra",
-   "copies": 5
+   "copies": 13
   },
   {
    "id": 95178994,
    "name": "Giant Germ",
-   "copies": 2
+   "copies": 4
   },
   {
    "id": 58551308,
@@ -1553,52 +1553,52 @@
   {
    "id": 95956346,
    "name": "Shining Angel",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 21340051,
    "name": "Boar Soldier",
-   "copies": 2
+   "copies": 3
   },
   {
    "id": 20228463,
    "name": "Ceremonial Bell",
-   "copies": 3
+   "copies": 5
   },
   {
    "id": 57617178,
    "name": "Sonic Bird",
-   "copies": 3
+   "copies": 6
   },
   {
    "id": 19406822,
    "name": "Kotodama",
-   "copies": 2
+   "copies": 11
   },
   {
    "id": 56594520,
    "name": "Gaia Power",
-   "copies": 2
+   "copies": 9
   },
   {
    "id": 82999629,
    "name": "Umiiruka",
-   "copies": 5
+   "copies": 12
   },
   {
    "id": 19384334,
    "name": "Molten Destruction",
-   "copies": 5
+   "copies": 13
   },
   {
    "id": 45778932,
    "name": "Rising Air Current",
-   "copies": 2
+   "copies": 8
   },
   {
    "id": 18161786,
    "name": "Mystic Plasma Zone",
-   "copies": 1
+   "copies": 3
   },
   {
    "id": 17375316,
@@ -2334,6 +2334,106 @@
    "id": 23615409,
    "name": "Insect Barrier",
    "copies": 1
+  },
+  {
+   "id": 39111158,
+   "name": "Tri-Horned Dragon",
+   "copies": 1
+  },
+  {
+   "id": 6368038,
+   "name": "Gaia The Fierce Knight",
+   "copies": 1
+  },
+  {
+   "id": 1641882,
+   "name": "Fusionist",
+   "copies": 1
+  },
+  {
+   "id": 28279543,
+   "name": "Curse of Dragon",
+   "copies": 1
+  },
+  {
+   "id": 71407486,
+   "name": "Fireyarou",
+   "copies": 3
+  },
+  {
+   "id": 70681994,
+   "name": "Dragoness the Wicked Knight",
+   "copies": 1
+  },
+  {
+   "id": 73134081,
+   "name": "Final Flame",
+   "copies": 1
+  },
+  {
+   "id": 54652250,
+   "name": "Man-Eater Bug",
+   "copies": 1
+  },
+  {
+   "id": 66889139,
+   "name": "Gaia the Dragon Champion",
+   "copies": 1
+  },
+  {
+   "id": 95727991,
+   "name": "Catapult Turtle",
+   "copies": 1
+  },
+  {
+   "id": 53183600,
+   "name": "Blue-Eyes Toon Dragon",
+   "copies": 2
+  },
+  {
+   "id": 40619825,
+   "name": "Axe of Despair",
+   "copies": 1
+  },
+  {
+   "id": 95174353,
+   "name": "Ameba",
+   "copies": 4
+  },
+  {
+   "id": 42703248,
+   "name": "Giant Trunade",
+   "copies": 1
+  },
+  {
+   "id": 38369349,
+   "name": "Manga Ryu-Ran",
+   "copies": 2
+  },
+  {
+   "id": 65458948,
+   "name": "Toon Mermaid",
+   "copies": 1
+  },
+  {
+   "id": 22567609,
+   "name": "Nimble Momonga",
+   "copies": 1
+  },
+  {
+   "id": 84834865,
+   "name": "Flying Kamakiri #1",
+   "copies": 3
+  },
+  {
+   "id": 83011277,
+   "name": "Mystic Tomato",
+   "copies": 3
+  },
+  {
+   "id": 81777047,
+   "name": "Luminous Spark",
+   "copies": 7
   }
  ]
 }
