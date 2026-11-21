@@ -10,6 +10,7 @@ use ygo_engine::{
 use crate::positions::{FACE_UP, face_up};
 
 pub const BURNING_LAND: CardId = CardId(24294108);
+pub const COLD_WAVE: CardId = CardId(60682203);
 pub const INSECT_BARRIER: CardId = CardId(23615409);
 pub const INSECT_IMITATION: CardId = CardId(96965364);
 pub const INSPECTION: CardId = CardId(16227556);
@@ -118,6 +119,20 @@ pub fn register(r: &mut Registry) {
                 },
             ],
         },
+    );
+    // At the start of Main Phase 1: until your next turn, neither player
+    // can activate or Set Spell or Trap Cards. "At the start" is read as
+    // "in Main Phase 1, with no chain".
+    r.register(
+        COLD_WAVE,
+        single(Effect {
+            timing: |g, s, _| g.phase() == Phase::Main1 && g.turn_player() == s.controller,
+            ..Effect::activate(1, |g, ctx| {
+                let until = g.turn() + 1;
+                g.forbid_spells_and_traps_until(ctx.source, until);
+                Flow::Done
+            })
+        }),
     );
     // Insect monsters your opponent controls cannot declare an attack.
     r.register(

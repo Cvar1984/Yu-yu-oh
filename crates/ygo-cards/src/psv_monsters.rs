@@ -3,14 +3,23 @@
 
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
-    CardScript, Effect, Event, Flow, Game, InstanceId, Location, Phase, PlayerId, Position,
-    Registry, Source, StatMod, TargetSets, WindowKind,
+    BattleStep, CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Location, Phase,
+    PlayerId, Position, Registry, Source, StatMod, Tag, TargetSets, Window, WindowKind,
 };
+
+use crate::positions::{FACE_UP, face_up as face_up_position};
+use crate::ritual::{absorb_one, absorbed_instead, absorbed_stats};
 
 pub const BITE_SHOES: CardId = CardId(50122883);
 pub const BOMBARDMENT_BEETLE: CardId = CardId(57409948);
 pub const BUBONIC_VERMIN: CardId = CardId(6104968);
 pub const BUSTER_BLADER: CardId = CardId(78193831);
+pub const GOBLIN_ATTACK_FORCE: CardId = CardId(78658564);
+pub const HAYABUSA_KNIGHT: CardId = CardId(21015833);
+pub const MORPHING_JAR_2: CardId = CardId(79106360);
+pub const SWORD_HUNTER: CardId = CardId(51345461);
+pub const THOUSAND_EYES_RESTRICT: CardId = CardId(63519819);
+pub const VAMPIRE_BABY: CardId = CardId(56387350);
 pub const DRILL_BUG: CardId = CardId(88733579);
 pub const FOUR_STARRED_LADYBUG_OF_DOOM: CardId = CardId(83994646);
 pub const GEARFRIED_THE_IRON_KNIGHT: CardId = CardId(423705);
@@ -100,7 +109,210 @@ fn vermin_in_deck(g: &Game, player: PlayerId) -> Option<InstanceId> {
         .find(|&c| g.stats(c).id == BUBONIC_VERMIN)
 }
 
+/// The End of the Battle Phase was just entered.
+fn battle_phase_ends(g: &Game, w: &Window) -> bool {
+    let end = Phase::Battle(BattleStep::End);
+    w.kind == WindowKind::Open
+        && g.phase() == end
+        && w.events.contains(&Event::PhaseEntered { phase: end })
+}
+
+/// Monsters `s.card` destroyed by battle this turn that are in a Graveyard.
+fn destroyed_by(g: &Game, s: Source) -> Vec<InstanceId> {
+    let turn = g.turn();
+    PlayerId::BOTH
+        .into_iter()
+        .flat_map(|p| g.graveyard(p).iter().copied())
+        .filter(|&c| g.instance(c).destroyed_by_battle == Some((s.card, turn)))
+        .collect()
+}
+
+/// Morphing Jar #2: each player excavates from the top of their Deck
+/// until `n` monsters are revealed; Level 4 or lower monsters among them
+/// are Special Summoned face-down, the rest go to the Graveyard.
+fn excavate(g: &mut Game, player: PlayerId, n: usize) {
+    let mut cards = Vec::new();
+    let mut monsters = 0;
+    for c in g.top_of_deck(player, g.deck_size(player)) {
+        if monsters == n {
+            break;
+        }
+        if g.stats(c).is_monster() {
+            monsters += 1;
+        }
+        cards.push(c);
+    }
+    if cards.is_empty() {
+        return;
+    }
+    g.reveal(player, &cards);
+    for c in cards {
+        let stats = g.stats(c);
+        let summonable = stats.is_monster() && stats.level <= 4 && g.special_summonable(c);
+        if !(summonable && g.special_summon(c, player, Position::FaceDownDefense)) {
+            g.mill(c);
+        }
+    }
+}
+
+fn vampire_baby_summon(g: &mut Game, ctx: &mut EffectCtx, option: usize) -> Flow {
+    let target = ctx.targets[0];
+    if g.instance(target).location == Location::Graveyard {
+        g.special_summon(target, ctx.controller, face_up_position(option));
+    }
+    Flow::Done
+}
+
 pub fn register(r: &mut Registry) {
+    // If this card attacks, it changes to Defense Position at the end of
+    // the Battle Phase, and its position cannot be changed until the End
+    // Phase of your next turn.
+    r.register(
+        GOBLIN_ATTACK_FORCE,
+        single(Effect {
+            timing: |g, s, w| {
+                battle_phase_ends(g, w)
+                    && g.instance(s.card).attacks_this_turn > 0
+                    && g.instance(s.card).position == Position::FaceUpAttack
+            },
+            ..Effect::trigger(true, |g, ctx| {
+                if g.instance(ctx.source).position == Position::FaceUpAttack {
+                    g.set_position(ctx.source, Position::FaceUpDefense);
+                }
+                let turn = g.turn() + 2;
+                g.lock_position_until(ctx.source, ctx.source, turn);
+                Flow::Done
+            })
+        }),
+    );
+    r.register(
+        HAYABUSA_KNIGHT,
+        CardScript {
+            tags: vec![Tag::SecondAttack],
+            effects: Vec::new(),
+        },
+    );
+    // FLIP: shuffle every monster on the field into the Deck; then each
+    // player excavates until as many monsters as they shuffled into their
+    // Main Deck, Special Summons the Level 4 or lower ones among them face-
+    // down and sends the rest to the Graveyard.
+    r.register(
+        MORPHING_JAR_2,
+        single(Effect::flip(|g, _ctx| {
+            let mut counts = [0usize; 2];
+            for m in all_monsters(g) {
+                let owner = g.instance(m).owner;
+                if !g.stats(m).is_extra_deck() {
+                    counts[owner.index()] += 1;
+                }
+                g.return_to_deck(m);
+            }
+            for p in PlayerId::BOTH {
+                g.shuffle_deck(p);
+            }
+            let first = g.turn_player();
+            for p in [first, first.opponent()] {
+                excavate(g, p, counts[p.index()]);
+            }
+            Flow::Done
+        })),
+    );
+    // At the end of the Battle Phase, equip every monster this card
+    // destroyed by battle this turn from the Graveyard to it; it gains 200
+    // ATK for each.
+    r.register(
+        SWORD_HUNTER,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![
+                Effect {
+                    timing: |g, s, w| {
+                        battle_phase_ends(g, w)
+                            && face_up(g, s.card)
+                            && !destroyed_by(g, s).is_empty()
+                    },
+                    ..Effect::trigger(true, |g, ctx| {
+                        let s = Source {
+                            card: ctx.source,
+                            controller: ctx.controller,
+                        };
+                        for m in destroyed_by(g, s) {
+                            if !face_up(g, ctx.source)
+                                || !g.absorb_as_equip(m, ctx.controller, ctx.source)
+                            {
+                                break;
+                            }
+                        }
+                        Flow::Done
+                    })
+                },
+                Effect {
+                    modify: Some(|g, s, t| {
+                        if t != s.card {
+                            return StatMod::default();
+                        }
+                        let equipped = PlayerId::BOTH
+                            .into_iter()
+                            .flat_map(|p| g.spells_traps_controlled(p))
+                            .filter(|&c| {
+                                g.equip_target(c) == Some(s.card) && g.stats(c).is_monster()
+                            })
+                            .count() as i32;
+                        StatMod {
+                            atk: 200 * equipped,
+                            def: 0,
+                        }
+                    }),
+                    ..Effect::continuous()
+                },
+            ],
+        },
+    );
+    // "Relinquished" + "Thousand-Eyes Idol". Other monsters cannot change
+    // their positions or attack. Once per turn, it equips 1 opponent's
+    // monster (one at most) and takes its ATK and DEF; if it would be
+    // destroyed by battle, the equipped monster is destroyed instead.
+    r.register(
+        THOUSAND_EYES_RESTRICT,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![
+                absorb_one(),
+                Effect {
+                    modify: Some(absorbed_stats),
+                    replace_battle_destruction: Some(absorbed_instead),
+                    restrict: Some(|_, s, t| t != s.card),
+                    lock_position: Some(|_, s, t| t != s.card),
+                    ..Effect::continuous()
+                },
+            ],
+        },
+    );
+    // At the end of the Battle Phase, if this card destroyed a monster by
+    // battle this turn and sent it to the Graveyard: you can Special Summon
+    // that monster to your field.
+    r.register(
+        VAMPIRE_BABY,
+        single(Effect {
+            timing: |g, s, w| {
+                battle_phase_ends(g, w)
+                    && face_up(g, s.card)
+                    && g.can_special_summon(s.controller)
+                    && destroyed_by(g, s).iter().any(|&c| g.special_summonable(c))
+            },
+            targets: Some(|g, s| {
+                singles(
+                    destroyed_by(g, s)
+                        .into_iter()
+                        .filter(|&c| g.special_summonable(c)),
+                )
+            }),
+            ..Effect::trigger(false, |_g, _ctx| Flow::Ask {
+                options: FACE_UP.to_vec(),
+                then: vampire_baby_summon,
+            })
+        }),
+    );
     // FLIP: change the battle position of 1 face-up monster on the field
     // (chosen on resolution: the text does not target).
     r.register(

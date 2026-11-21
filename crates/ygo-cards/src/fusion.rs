@@ -1,4 +1,4 @@
-//! Polymerization and the 25 Fusion Monsters. A Fusion Monster's script
+//! Polymerization and the 26 Fusion Monsters. A Fusion Monster's script
 //! is its material list; Polymerization reads it to find legal summons.
 
 use ygo_data::CardId;
@@ -11,7 +11,7 @@ pub const POLYMERIZATION: CardId = CardId(24094653);
 /// (Fusion Monster, its materials by card id). Rabid Horseman and Cyber
 /// Saurus need a material outside these three sets, so they can never be
 /// summoned from this pool; their rows stay complete anyway.
-pub const FUSIONS: [(CardId, &[CardId]); 25] = [
+pub const FUSIONS: [(CardId, &[CardId]); 26] = [
     (CardId(45231177), &[CardId(34460851), CardId(44287299)]), // Flame Swordsman
     (CardId(37421579), &[CardId(36121917), CardId(96851799)]), // Charubin the Fire Knight
     (CardId(17881964), &[CardId(53293545), CardId(75356564)]), // Darkfire Dragon
@@ -37,6 +37,7 @@ pub const FUSIONS: [(CardId, &[CardId]); 25] = [
     (CardId(54752875), &[CardId(31786629), CardId(31786629)]), // Twin-Headed Thunder Dragon
     (CardId(2504891), &[CardId(28725004), CardId(42431843)]),  // Skull Knight
     (CardId(41462083), &[CardId(71625222), CardId(88819587)]), // Thousand Dragon
+    (CardId(63519819), &[CardId(64631466), CardId(27125110)]), // Thousand-Eyes Restrict (PSV; its effects are in psv_monsters)
 ];
 
 pub fn materials_of(fusion: CardId) -> Option<&'static [CardId]> {
@@ -90,6 +91,9 @@ fn assign(
 
 pub fn register(r: &mut Registry) {
     for (id, _) in FUSIONS {
+        if id == crate::psv_monsters::THOUSAND_EYES_RESTRICT {
+            continue;
+        }
         r.register(
             id,
             CardScript {

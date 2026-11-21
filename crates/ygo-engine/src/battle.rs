@@ -18,7 +18,7 @@ impl Game {
         for attacker in self.players[player.index()].monsters() {
             let inst = &self.instances[attacker.index()];
             if inst.position != Position::FaceUpAttack
-                || inst.attacked_this_turn
+                || inst.attacks_this_turn >= self.attacks_per_battle_phase(attacker)
                 || self.attack_restricted(attacker)
             {
                 continue;
@@ -70,10 +70,23 @@ impl Game {
         }
     }
 
+    /// How many attacks `attacker` may declare each Battle Phase.
+    fn attacks_per_battle_phase(&self, attacker: InstanceId) -> u8 {
+        if self
+            .script(attacker)
+            .is_some_and(|s| s.has(crate::Tag::SecondAttack))
+        {
+            2
+        } else {
+            1
+        }
+    }
+
     /// Marks the attack, runs the attack costs of continuous effects and
     /// opens the window Mirror Force lives in.
     pub(crate) fn declare_attack(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
-        self.instances[attacker.index()].attacked_this_turn = true;
+        let inst = &mut self.instances[attacker.index()];
+        inst.attacks_this_turn = inst.attacks_this_turn.saturating_add(1);
         self.current_attack = Some((attacker, target));
         self.emit(Event::AttackDeclared { attacker, target });
         self.run_attack_hooks(attacker);
@@ -199,8 +212,13 @@ impl Game {
         }
         for card in destroyed {
             let controller = self.instances[card.index()].controller;
+            let by = if card == attacker {
+                target.unwrap_or(attacker)
+            } else {
+                attacker
+            };
             if !self.battle_shielded(controller) {
-                self.destroy_by_battle(card);
+                self.destroy_by_battle(card, by);
             }
         }
         self.damage_prevented = [false, false];
@@ -219,9 +237,10 @@ impl Game {
 
     /// Destroys `card` by battle, or the card a continuous effect names in
     /// its place (Relinquished's absorbed monster).
-    fn destroy_by_battle(&mut self, card: InstanceId) {
+    fn destroy_by_battle(&mut self, card: InstanceId, by: InstanceId) {
         let victim = self.battle_destruction_replacement(card).unwrap_or(card);
         self.send_to_graveyard(victim);
+        self.instances[victim.index()].destroyed_by_battle = Some((by, self.turn));
         self.emit(Event::DestroyedByBattle { card: victim });
     }
 

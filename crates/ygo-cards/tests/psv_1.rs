@@ -1,8 +1,6 @@
 //! Rulings tests for Pharaoh's Servant, batch 1 (docs/psv-plan.md): one
 //! scenario per card, on the modern text.
 
-use std::sync::Arc;
-
 use ygo_cards::continuous::{LEGENDARY_SWORD, UMI};
 use ygo_cards::extra_spells::GRACEFUL_CHARITY;
 use ygo_cards::monsters::MAN_EATER_BUG;
@@ -12,156 +10,13 @@ use ygo_cards::psv_spells::*;
 use ygo_cards::psv_traps::*;
 use ygo_cards::spells::{DARK_HOLE, POT_OF_GREED};
 use ygo_cards::traps::{MYSTICAL_SPACE_TYPHOON as MST, TRAP_HOLE};
-use ygo_data::{CardId, Rules};
 use ygo_engine::testing::{
-    CELTIC_GUARDIAN, MAMMOTH_GRAVEYARD, MYSTICAL_ELF, in_hand, next_turn, pass_all, play,
-    shared_from, stacked, summon, with_rules,
+    CELTIC_GUARDIAN, MYSTICAL_ELF, in_hand, next_turn, pass_all, play, stacked, summon, with_rules,
 };
-use ygo_engine::{
-    Action, DecisionKind, Event, Game, InstanceId, Location, PlayerId, Position, Shared,
-};
+use ygo_engine::{Action, DecisionKind, Event, Game, Location, Position};
 
-const P0: PlayerId = PlayerId(0);
-const P1: PlayerId = PlayerId(1);
-const PAD: CardId = MAMMOTH_GRAVEYARD; // Level 3, 1200/800 EARTH Dinosaur
-const KOUMORI_DRAGON: CardId = CardId(67724379); // Level 4 DARK Dragon
-const CYBER_FALCON: CardId = CardId(30655537); // Level 4 WIND Machine, 1400 ATK
-const GIROCHIN_KUWAGATA: CardId = CardId(84620194); // Level 4 Insect
-
-/// Ten-card opening hands, five Normal Summons a turn and no hand limit
-/// to speak of, so one turn can set up a board.
-fn rules(r: &mut Rules) {
-    r.summon.normal_or_tribute_per_turn = 5;
-    r.hand.opening_size = 10;
-    r.hand.max_size = 30;
-}
-
-fn shared() -> Arc<Shared> {
-    with_rules(&shared_from(ygo_cards::registry()), rules)
-}
-
-fn game(p0: &[CardId], p1: &[CardId]) -> Game {
-    Game::new(shared(), &stacked([p0, p1], PAD)).unwrap()
-}
-
-/// `hand` in the opening hand, then the pads drawn in this player's next
-/// two Draw Phases, then `deck` in draw order.
-fn with_deck(hand: &[CardId], deck: &[CardId]) -> Vec<CardId> {
-    let mut cards = hand.to_vec();
-    cards.resize(12, PAD);
-    cards.extend_from_slice(deck);
-    cards
-}
-
-fn activations(g: &Game, id: CardId) -> Vec<Action> {
-    g.legal_actions()
-        .into_iter()
-        .filter(|a| matches!(a, Action::Activate { card, .. } if g.stats(*card).id == id))
-        .collect()
-}
-
-/// Activates card `id` (the first activation offered) and passes.
-fn activate(g: &mut Game, id: CardId) {
-    let a = activations(g, id)
-        .into_iter()
-        .next()
-        .unwrap_or_else(|| panic!("{id} not offered: {:?}", g.legal_actions()));
-    play(g, a);
-    pass_all(g);
-}
-
-/// Activates card `id` with exactly these targets and passes.
-fn activate_on(g: &mut Game, id: CardId, targets: &[InstanceId]) {
-    let a = activations(g, id)
-        .into_iter()
-        .find(|a| matches!(a, Action::Activate { targets: t, .. } if t == targets))
-        .unwrap_or_else(|| panic!("{id} not offered on {targets:?}: {:?}", g.legal_actions()));
-    play(g, a);
-    pass_all(g);
-}
-
-/// Passes response windows until `player` may activate `id` (on `targets`
-/// if given), then activates it and passes.
-fn respond(g: &mut Game, player: PlayerId, id: CardId, targets: Option<&[InstanceId]>) {
-    loop {
-        let d = g
-            .pending_decision()
-            .unwrap_or_else(|| panic!("no decision before {id}"));
-        assert_eq!(d.kind, DecisionKind::Respond, "waiting for {id}: {d:?}");
-        let offer = activations(g, id).into_iter().find(|a| {
-            matches!(a, Action::Activate { targets: t, .. } if targets.is_none_or(|x| x == t.as_slice()))
-        });
-        match offer {
-            Some(a) if d.player == player => {
-                play(g, a);
-                pass_all(g);
-                return;
-            }
-            _ => {
-                play(g, Action::Pass);
-            }
-        }
-    }
-}
-
-fn set_card(g: &mut Game, player: PlayerId, id: CardId) -> InstanceId {
-    let card = in_hand(g, player, id);
-    play(g, Action::SetSpellTrap { card });
-    pass_all(g);
-    card
-}
-
-fn summon_now(g: &mut Game, player: PlayerId, id: CardId) -> InstanceId {
-    let card = in_hand(g, player, id);
-    play(g, summon(card));
-    pass_all(g);
-    card
-}
-
-fn set_monster(g: &mut Game, player: PlayerId, id: CardId) -> InstanceId {
-    let card = in_hand(g, player, id);
-    play(
-        g,
-        Action::Summon {
-            card,
-            tributes: vec![],
-            face_down: true,
-        },
-    );
-    pass_all(g);
-    card
-}
-
-fn flip_summon(g: &mut Game, card: InstanceId) {
-    play(g, Action::FlipSummon { card });
-    pass_all(g);
-}
-
-fn attack(g: &mut Game, attacker: InstanceId, target: Option<InstanceId>) {
-    if g.legal_actions().contains(&Action::EnterBattlePhase) {
-        play(g, Action::EnterBattlePhase);
-        pass_all(g);
-    }
-    play(g, Action::Attack { attacker, target });
-}
-
-fn choose(g: &mut Game, card: InstanceId) {
-    play(g, Action::Choose { card });
-    pass_all(g);
-}
-
-fn answer(g: &mut Game, option: u8) {
-    play(g, Action::Answer { option });
-    pass_all(g);
-}
-
-fn lp(g: &Game, p: PlayerId) -> u32 {
-    g.player(p).lp
-}
-
-fn in_deck(g: &Game, p: PlayerId, id: CardId) -> usize {
-    g.deck(p).iter().filter(|&&c| g.stats(c).id == id).count()
-}
+mod psv_common;
+use psv_common::*;
 
 // ----- monsters -----
 

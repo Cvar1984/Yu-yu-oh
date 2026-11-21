@@ -193,7 +193,7 @@ impl Game {
                 inst.turn_entered_field = Some(turn);
                 inst.turn_set = face_down.then_some(turn);
                 inst.position_changed_this_turn = false;
-                inst.attacked_this_turn = false;
+                inst.attacks_this_turn = 0;
                 inst.counter = 0;
                 self.emit(Event::Summoned {
                     player,

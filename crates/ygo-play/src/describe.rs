@@ -279,6 +279,12 @@ pub fn event(obs: &Observation, pool: &CardPool, e: &Event) -> Option<String> {
         Event::TurnStarted { turn, player } => {
             format!("Turn {turn}: {} turn", who_possessive(obs, *player))
         }
+        Event::TurnSkipped { turn, player } => {
+            format!(
+                "Turn {turn}: {} turn is skipped",
+                who_possessive(obs, *player)
+            )
+        }
         Event::PhaseEntered {
             phase: phase @ (Phase::Main1 | Phase::Main2 | Phase::End | Phase::Standby),
         } => phase_name(*phase).to_string(),

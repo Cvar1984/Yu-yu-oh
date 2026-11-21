@@ -102,6 +102,57 @@ fn subsets(items: &[InstanceId], k: usize) -> TargetSets {
 }
 
 /// The monster Relinquished has absorbed, if any.
+/// Relinquished and Thousand-Eyes Restrict: once per turn, target 1
+/// monster your opponent controls and equip it to this card (one at most).
+pub(crate) fn absorb_one() -> Effect {
+    Effect {
+        once_per_turn: true,
+        timing: |g, s, _| {
+            g.on_field(s.card)
+                && absorbed(g, s.card).is_none()
+                && g.free_spell_trap_zone(s.controller).is_some()
+                && !g.monsters_controlled(s.controller.opponent()).is_empty()
+        },
+        targets: Some(|g, s| {
+            g.monsters_controlled(s.controller.opponent())
+                .into_iter()
+                .map(|m| vec![m])
+                .collect()
+        }),
+        ..Effect::ignition(|g, ctx| {
+            let target = ctx.targets[0];
+            if g.on_field(target) && g.on_field(ctx.source) {
+                g.absorb_as_equip(target, ctx.controller, ctx.source);
+            }
+            Flow::Done
+        })
+    }
+}
+
+/// The absorbing card's ATK and DEF become the equipped monster's.
+pub(crate) fn absorbed_stats(g: &Game, s: Source, t: InstanceId) -> StatMod {
+    if t != s.card {
+        return StatMod::default();
+    }
+    match absorbed(g, s.card) {
+        Some(a) => StatMod {
+            atk: g.stats(a).atk - g.stats(s.card).atk,
+            def: g.stats(a).def - g.stats(s.card).def,
+        },
+        None => StatMod::default(),
+    }
+}
+
+/// If the absorbing card would be destroyed by battle, the equipped
+/// monster is destroyed instead.
+pub(crate) fn absorbed_instead(g: &Game, s: Source, card: InstanceId) -> Option<InstanceId> {
+    if card == s.card {
+        absorbed(g, s.card)
+    } else {
+        None
+    }
+}
+
 fn absorbed(g: &Game, relinquished: InstanceId) -> Option<InstanceId> {
     let holder = g.instance(relinquished).controller;
     g.spells_traps_controlled(holder)
@@ -174,48 +225,10 @@ pub fn register(r: &mut Registry) {
         CardScript {
             tags: Vec::new(),
             effects: vec![
+                absorb_one(),
                 Effect {
-                    once_per_turn: true,
-                    timing: |g, s, _| {
-                        g.on_field(s.card)
-                            && absorbed(g, s.card).is_none()
-                            && g.free_spell_trap_zone(s.controller).is_some()
-                            && !g.monsters_controlled(s.controller.opponent()).is_empty()
-                    },
-                    targets: Some(|g, s| {
-                        g.monsters_controlled(s.controller.opponent())
-                            .into_iter()
-                            .map(|m| vec![m])
-                            .collect()
-                    }),
-                    ..Effect::ignition(|g, ctx| {
-                        let target = ctx.targets[0];
-                        if g.on_field(target) && g.on_field(ctx.source) {
-                            g.absorb_as_equip(target, ctx.controller, ctx.source);
-                        }
-                        Flow::Done
-                    })
-                },
-                Effect {
-                    modify: Some(|g, s, t| {
-                        if t != s.card {
-                            return StatMod::default();
-                        }
-                        match absorbed(g, s.card) {
-                            Some(a) => StatMod {
-                                atk: g.stats(a).atk - g.stats(s.card).atk,
-                                def: g.stats(a).def - g.stats(s.card).def,
-                            },
-                            None => StatMod::default(),
-                        }
-                    }),
-                    replace_battle_destruction: Some(|g, s, card| {
-                        if card == s.card {
-                            absorbed(g, s.card)
-                        } else {
-                            None
-                        }
-                    }),
+                    modify: Some(absorbed_stats),
+                    replace_battle_destruction: Some(absorbed_instead),
                     on_battle_damage: Some(|g, s, d| {
                         let involved = d.attacker == s.card || d.target == Some(s.card);
                         if involved && d.damaged == s.controller && absorbed(g, s.card).is_some() {
