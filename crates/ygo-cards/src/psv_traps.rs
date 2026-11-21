@@ -26,6 +26,9 @@ pub const DRIVING_SNOW: CardId = CardId(473469);
 pub const EARTHSHAKER: CardId = CardId(60866277);
 pub const FORCED_REQUISITION: CardId = CardId(74923978);
 pub const GAMBLE: CardId = CardId(37313786);
+pub const GRAVEROBBER: CardId = CardId(61705417);
+pub const LIGHTFORCE_SWORD: CardId = CardId(49587034);
+pub const MAGICAL_HATS: CardId = CardId(81210420);
 pub const MAJOR_RIOT: CardId = CardId(9074847);
 pub const RESPECT_PLAY: CardId = CardId(8951260);
 pub const SOLOMONS_LAWBOOK: CardId = CardId(23471572);
@@ -875,6 +878,83 @@ pub fn register(r: &mut Registry) {
             })
         }),
     );
+    // Choose 1 Spell in your opponent's Graveyard; you may use it as part
+    // of your hand until the End Phase, and take 2000 damage if you do.
+    r.register(
+        GRAVEROBBER,
+        single(Effect {
+            timing: |g, s, _| !opponents_spells(g, s).is_empty(),
+            ..Effect::activate(2, |g, ctx| {
+                let options = opponents_spells(
+                    g,
+                    Source {
+                        card: ctx.source,
+                        controller: ctx.controller,
+                    },
+                );
+                if options.is_empty() {
+                    return Flow::Done;
+                }
+                Flow::Choose {
+                    options,
+                    then: |g, ctx, spell| {
+                        g.borrow_to_hand(ctx.source, spell, ctx.controller);
+                        Flow::Done
+                    },
+                }
+            })
+        }),
+    );
+    // Banish 1 random card from your opponent's hand face-down; it returns
+    // to their hand in their 4th Standby Phase after this activation.
+    r.register(
+        LIGHTFORCE_SWORD,
+        single(Effect {
+            timing: |g, s, _| !g.hand(s.controller.opponent()).is_empty(),
+            ..Effect::activate(2, |g, ctx| {
+                let opponent = ctx.controller.opponent();
+                let hand = g.hand(opponent).to_vec();
+                if hand.is_empty() {
+                    return Flow::Done;
+                }
+                let card = hand[g.random_index(hand.len())];
+                g.banish_face_down(card);
+                g.return_to_hand_after_standbys(ctx.source, card, opponent, 4);
+                Flow::Done
+            })
+        }),
+    );
+    // During your opponent's Battle Phase: choose 1 monster in your Main
+    // Monster Zone and 2 Spells/Traps in your Deck. The two become Normal
+    // Monsters (0 ATK, 0 DEF) Set beside it, the monster is Set too, and the
+    // three are shuffled. The two are destroyed at the end of the Battle
+    // Phase.
+    r.register(
+        MAGICAL_HATS,
+        single(Effect {
+            timing: |g, s, _| {
+                matches!(g.phase(), Phase::Battle(_))
+                    && g.turn_player() != s.controller
+                    && !g.monsters_controlled(s.controller).is_empty()
+                    && hat_options(g, s.controller, &[]).len() >= 2
+                    && free_monster_zones(g, s.controller) >= 2
+            },
+            ..Effect::activate(2, |g, ctx| {
+                let monsters = g.monsters_controlled(ctx.controller);
+                if monsters.is_empty() {
+                    return Flow::Done;
+                }
+                ctx.targets.clear();
+                Flow::Choose {
+                    options: monsters,
+                    then: |g, ctx, monster| {
+                        ctx.targets.push(monster);
+                        hats_next(g, ctx)
+                    },
+                }
+            })
+        }),
+    );
     // Activate only while your opponent has 3000 or less LP. During each
     // of their Standby Phases, inflict 500 damage to them.
     r.register(
@@ -1122,6 +1202,67 @@ fn riot_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
                 then,
             }
         };
+    }
+    Flow::Done
+}
+
+fn opponents_spells(g: &Game, s: Source) -> Vec<InstanceId> {
+    g.graveyard(s.controller.opponent())
+        .iter()
+        .copied()
+        .filter(|&c| g.stats(c).kind == CardKind::Spell)
+        .collect()
+}
+
+/// Magical Hats: Spells and Traps in the Deck not yet picked.
+fn hat_options(g: &Game, player: PlayerId, taken: &[InstanceId]) -> Vec<InstanceId> {
+    g.deck(player)
+        .iter()
+        .copied()
+        .filter(|&c| !g.stats(c).is_monster() && !taken.contains(&c))
+        .collect()
+}
+
+fn free_monster_zones(g: &Game, player: PlayerId) -> usize {
+    let zones = &g.player(player).monster_zones;
+    (0..zones.len())
+        .filter(|&i| zones[i].is_none() && !g.zone_locked(player, i))
+        .count()
+}
+
+/// Magical Hats picks the monster, then two cards from the Deck, then
+/// puts them out and shuffles the three.
+fn hats_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
+    if ctx.targets.len() < 3 {
+        let options = hat_options(g, ctx.controller, &ctx.targets);
+        if options.is_empty() {
+            return Flow::Done;
+        }
+        return Flow::Choose {
+            options,
+            then: |g, ctx, card| {
+                ctx.targets.push(card);
+                hats_next(g, ctx)
+            },
+        };
+    }
+    let (monster, hats) = (ctx.targets[0], [ctx.targets[1], ctx.targets[2]]);
+    if !g.on_field(monster) || free_monster_zones(g, ctx.controller) < 2 {
+        return Flow::Done;
+    }
+    for hat in hats {
+        g.set_as_monster(hat, ctx.controller);
+    }
+    g.shuffle_deck(ctx.controller);
+    if g.instance(monster).position.is_face_up() {
+        g.set_position(monster, Position::FaceDownDefense);
+    }
+    let three = [monster, hats[0], hats[1]];
+    g.shuffle_set_monsters(&three);
+    for card in three {
+        if !g.stats(card).is_monster() {
+            g.mark_hat(ctx.source, card);
+        }
     }
     Flow::Done
 }

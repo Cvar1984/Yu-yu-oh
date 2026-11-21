@@ -61,7 +61,17 @@ these hooks a game's cards have, so games without them pay nothing:
 before (Toon against Removal, one core).
 
 Batch 4 adds zone locks, delayed returns and borrowed cards: Ground
-Collapse, Dimensionhole, Lightforce Sword, Graverobber, Magical Hats.
+Collapse, Dimensionhole, Lightforce Sword, Graverobber, Magical Hats. Done:
+5 cards, `tests/psv_4.rs`. Engine: lingering `ZoneLocked` (lifted when
+its source leaves the field; `free_monster_zone` and summons skip locked
+zones), `ReturnToHand` and `ReturnToField` (run as a Standby Phase
+starts), `Borrowed` and `HatMonster`; `banish_face_down` (seen only by
+its owner, redealt by the sampler like a hand card), `borrow_to_hand`,
+`set_as_monster`, `mark_hat`, `shuffle_set_monsters`;
+`Event::ReturnedToField`.
+
+All 70 are scripted: the registry's pending list holds only the 8 EXTRA
+cards of `docs/pool-440-plan.md`.
 
 ## Simplifications
 
@@ -125,3 +135,18 @@ Batch 3:
   modifiers (Equips, Field Spells, a Spell's temporary change) do not
   apply to it. With Umi, an attack goes directly to The Legendary
   Fisherman's controller only when it is the only monster there.
+
+Batch 4:
+
+- Ground Collapse chooses its two zones on resolution.
+- Dimensionhole returns the monster in the position it had, to its own
+  zone.
+- Graverobber's Spell goes to your hand face-up (both players know it);
+  it can be activated but not Set; activating it costs 2000 LP; unused, it
+  goes back to its owner's Graveyard in the End Phase.
+- Magical Hats: the three face-down monsters trade identities (their
+  instance ids), so the opponent cannot follow which is which; an attack
+  under way goes on against its target instance, now any of the three.
+  The hats have no effects and are destroyed when the Battle Phase ends,
+  however it ends (or in the End Phase, if their destruction was
+  prevented).

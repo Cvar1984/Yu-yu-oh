@@ -11,6 +11,8 @@ use crate::positions::{FACE_UP, face_up};
 
 pub const BURNING_LAND: CardId = CardId(24294108);
 pub const COLD_WAVE: CardId = CardId(60682203);
+pub const DIMENSIONHOLE: CardId = CardId(22959079);
+pub const GROUND_COLLAPSE: CardId = CardId(90502999);
 pub const INSECT_BARRIER: CardId = CardId(23615409);
 pub const INSECT_IMITATION: CardId = CardId(96965364);
 pub const INSPECTION: CardId = CardId(16227556);
@@ -103,6 +105,67 @@ fn declared(g: &Game, prohibition: InstanceId) -> Option<CardId> {
     }
 }
 
+/// Ground Collapse's choices: your five Main Monster Zones, then your
+/// opponent's.
+const ZONE_LABELS: [&str; 10] = [
+    "Your Monster Zone 1",
+    "Your Monster Zone 2",
+    "Your Monster Zone 3",
+    "Your Monster Zone 4",
+    "Your Monster Zone 5",
+    "Opponent's Monster Zone 1",
+    "Opponent's Monster Zone 2",
+    "Opponent's Monster Zone 3",
+    "Opponent's Monster Zone 4",
+    "Opponent's Monster Zone 5",
+];
+
+/// The zones Ground Collapse may choose (empty and not locked), as
+/// `ZONE_LABELS` indices, without `except`.
+fn collapsible(g: &Game, player: PlayerId, except: Option<usize>) -> Vec<usize> {
+    (0..ZONE_LABELS.len())
+        .filter(|&i| Some(i) != except)
+        .filter(|&i| {
+            let (p, zone) = zone_of(player, i);
+            g.player(p)
+                .monster_zones
+                .get(zone)
+                .is_some_and(|z| z.is_none() && !g.zone_locked(p, zone))
+        })
+        .collect()
+}
+
+fn zone_of(player: PlayerId, label: usize) -> (PlayerId, usize) {
+    if label < 5 {
+        (player, label)
+    } else {
+        (player.opponent(), label - 5)
+    }
+}
+
+/// Asks for a zone among `collapsible` (without `except`); `then` gets
+/// the `ZONE_LABELS` index through `ctx.value`.
+fn ask_zone(
+    g: &Game,
+    ctx: &EffectCtx,
+    except: Option<usize>,
+    then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
+) -> Flow {
+    let options: Vec<&'static str> = collapsible(g, ctx.controller, except)
+        .into_iter()
+        .map(|i| ZONE_LABELS[i])
+        .collect();
+    if options.is_empty() {
+        return Flow::Done;
+    }
+    Flow::Ask { options, then }
+}
+
+/// The `ZONE_LABELS` index of option `option` among the choosable zones.
+fn picked_zone(g: &Game, ctx: &EffectCtx, except: Option<usize>, option: usize) -> usize {
+    collapsible(g, ctx.controller, except)[option]
+}
+
 fn revivable(g: &Game, player: PlayerId) -> Vec<InstanceId> {
     g.graveyard(player)
         .iter()
@@ -170,6 +233,48 @@ pub fn register(r: &mut Registry) {
                 let until = g.turn() + 1;
                 g.forbid_spells_and_traps_until(ctx.source, until);
                 Flow::Done
+            })
+        }),
+    );
+    // Target 1 monster you control; banish it until your next Standby
+    // Phase, when it returns to its zone. Its zone cannot be used meanwhile.
+    r.register(
+        DIMENSIONHOLE,
+        single(Effect {
+            timing: |g, s, _| !g.monsters_controlled(s.controller).is_empty(),
+            targets: Some(|g, s| singles(g.monsters_controlled(s.controller))),
+            damage_step: false,
+            ..Effect::activate(1, |g, ctx| {
+                let target = ctx.targets[0];
+                if g.on_field(target) && g.instance(target).controller == ctx.controller {
+                    g.banish_until_next_standby(ctx.source, target);
+                }
+                Flow::Done
+            })
+        }),
+    );
+    // Choose 2 empty Main Monster Zones on the field; neither player can
+    // use them while this card is on the field.
+    r.register(
+        GROUND_COLLAPSE,
+        single(Effect {
+            timing: |g, s, _| collapsible(g, s.controller, None).len() >= 2,
+            ..Effect::activate(1, |g, ctx| {
+                ask_zone(g, ctx, None, |g, ctx, option| {
+                    let first = picked_zone(g, ctx, None, option);
+                    ctx.value = first as i32;
+                    ask_zone(g, ctx, Some(first), |g, ctx, option| {
+                        let first = ctx.value as usize;
+                        let second = picked_zone(g, ctx, Some(first), option);
+                        if g.on_field(ctx.source) {
+                            for label in [first, second] {
+                                let (p, zone) = zone_of(ctx.controller, label);
+                                g.lock_zone(ctx.source, p, zone);
+                            }
+                        }
+                        Flow::Done
+                    })
+                })
             })
         }),
     );

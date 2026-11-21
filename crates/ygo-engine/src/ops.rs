@@ -323,6 +323,7 @@ impl Game {
             self.emit(Event::PhaseEntered {
                 phase: crate::Phase::Battle(crate::BattleStep::End),
             });
+            self.destroy_hats();
         }
     }
 
@@ -646,10 +647,28 @@ impl Game {
                 LingeringKind::Destroy { card } => {
                     self.destroy(card, l.source);
                 }
+                // A hat still standing (its destruction was prevented) goes
+                // too: it cannot remain outside that Battle Phase.
+                LingeringKind::HatMonster { card } => {
+                    if matches!(
+                        self.instances[card.index()].location,
+                        Location::MonsterZone(_)
+                    ) {
+                        self.send_to_graveyard(card);
+                    }
+                }
+                LingeringKind::Borrowed { card, player } => {
+                    if self.players[player.index()].hand.contains(&card) {
+                        self.send_to_graveyard(card);
+                    }
+                }
                 LingeringKind::Stats { .. }
                 | LingeringKind::PositionLocked { .. }
                 | LingeringKind::NoSpellsOrTraps
                 | LingeringKind::Negated { .. }
+                | LingeringKind::ZoneLocked { .. }
+                | LingeringKind::ReturnToHand { .. }
+                | LingeringKind::ReturnToField { .. }
                 | LingeringKind::CannotAttack { .. }
                 | LingeringKind::DamageCalcStats { .. }
                 | LingeringKind::Marked { .. }
@@ -1507,6 +1526,9 @@ impl Game {
             }
         }
         self.send_equips_to_graveyard(card);
+        // A zone lock ends when its source leaves the field (Ground Collapse).
+        self.lingering
+            .retain(|l| !(l.source == card && matches!(l.kind, LingeringKind::ZoneLocked { .. })));
     }
 
     fn send_equips_to_graveyard(&mut self, card: InstanceId) {
@@ -1583,7 +1605,253 @@ impl Game {
         self.players[player.index()]
             .monster_zones
             .iter()
-            .position(|z| z.is_none())
+            .enumerate()
+            .position(|(i, z)| z.is_none() && !self.zone_locked(player, i))
+    }
+
+    /// Whether an effect forbids using `player`'s Monster Zone `zone`.
+    pub fn zone_locked(&self, player: PlayerId, zone: usize) -> bool {
+        self.lingering.iter().any(|l| {
+            l.kind
+                == LingeringKind::ZoneLocked {
+                    player,
+                    zone: zone as u8,
+                }
+        })
+    }
+
+    /// Locks `player`'s Monster Zone `zone` while `source` is on the field
+    /// (or, for a banished source, until the lock is lifted).
+    pub fn lock_zone(&mut self, source: InstanceId, player: PlayerId, zone: usize) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::ZoneLocked {
+                player,
+                zone: zone as u8,
+            },
+            expires_turn: u32::MAX,
+        });
+    }
+
+    /// Banishes `card` face-down: only its owner knows it (Lightforce Sword).
+    pub fn banish_face_down(&mut self, card: InstanceId) {
+        self.banish(card);
+        if self.instances[card.index()].location == Location::Banished {
+            self.instances[card.index()].position = Position::FaceDown;
+        }
+    }
+
+    /// Returns the banished `card` to its owner's hand in `player`'s
+    /// Standby Phase after `standbys` of them (counting that one).
+    pub fn return_to_hand_after_standbys(
+        &mut self,
+        source: InstanceId,
+        card: InstanceId,
+        player: PlayerId,
+        standbys: u8,
+    ) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::ReturnToHand {
+                card,
+                player,
+                standbys,
+            },
+            expires_turn: u32::MAX,
+        });
+    }
+
+    /// Banishes `player`'s monster `card` until `player`'s next Standby
+    /// Phase; its zone cannot be used meanwhile (Dimensionhole).
+    pub fn banish_until_next_standby(&mut self, source: InstanceId, card: InstanceId) {
+        let inst = &self.instances[card.index()];
+        let (player, position) = (inst.controller, inst.position);
+        let Location::MonsterZone(zone) = inst.location else {
+            return;
+        };
+        self.banish(card);
+        self.lock_zone(card, player, usize::from(zone));
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::ReturnToField {
+                card,
+                player,
+                zone,
+                position,
+            },
+            expires_turn: u32::MAX,
+        });
+    }
+
+    /// Runs the returns due in `player`'s Standby Phase.
+    pub(crate) fn standby_returns(&mut self, player: PlayerId) {
+        let mut due = Vec::new();
+        for l in self.lingering.iter_mut() {
+            match &mut l.kind {
+                LingeringKind::ReturnToHand {
+                    player: p,
+                    standbys,
+                    ..
+                } if *p == player => {
+                    *standbys = standbys.saturating_sub(1);
+                    if *standbys == 0 {
+                        due.push(*l);
+                    }
+                }
+                LingeringKind::ReturnToField { player: p, .. } if *p == player => due.push(*l),
+                _ => {}
+            }
+        }
+        self.lingering.retain(|l| !due.contains(l));
+        for l in due {
+            match l.kind {
+                LingeringKind::ReturnToHand { card, .. } => {
+                    if self.instances[card.index()].location == Location::Banished {
+                        self.add_to_hand(card);
+                    }
+                }
+                LingeringKind::ReturnToField {
+                    card,
+                    player,
+                    zone,
+                    position,
+                } => {
+                    self.lingering.retain(|x| {
+                        !(x.source == card && matches!(x.kind, LingeringKind::ZoneLocked { .. }))
+                    });
+                    let zone = usize::from(zone);
+                    if self.instances[card.index()].location == Location::Banished
+                        && self.players[player.index()].monster_zones[zone].is_none()
+                    {
+                        self.remove_from_current_place(card);
+                        self.players[player.index()].monster_zones[zone] = Some(card);
+                        let turn = self.turn;
+                        let inst = &mut self.instances[card.index()];
+                        inst.location = Location::MonsterZone(zone as u8);
+                        inst.position = position;
+                        inst.controller = player;
+                        inst.turn_entered_field = Some(turn);
+                        inst.attacks_this_turn = 0;
+                        inst.position_changed_this_turn = false;
+                        inst.counter = 0;
+                        self.emit(Event::ReturnedToField { card });
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Moves a Spell from the opponent's Graveyard into `player`'s hand
+    /// until the End Phase (Graverobber); playing it costs 2000 LP.
+    pub fn borrow_to_hand(&mut self, source: InstanceId, card: InstanceId, player: PlayerId) {
+        let from = self.instances[card.index()].location;
+        self.remove_from_current_place(card);
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Hand;
+        inst.position = Position::FaceUp;
+        inst.controller = player;
+        self.players[player.index()].hand.push(card);
+        self.emit(Event::AddedToHand { player, card, from });
+        let turn = self.turn;
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::Borrowed { card, player },
+            expires_turn: turn,
+        });
+    }
+
+    /// Whether `card` is a borrowed card in `player`'s hand.
+    pub(crate) fn borrowed_by(&self, card: InstanceId, player: PlayerId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::Borrowed { card, player })
+    }
+
+    /// Puts a Spell or Trap `card` in `player`'s Monster Zone face-down as a
+    /// Normal Monster with 0 ATK and DEF (Magical Hats). Mark it with
+    /// `mark_hat` once the hats are shuffled.
+    pub fn set_as_monster(&mut self, card: InstanceId, player: PlayerId) -> bool {
+        let Some(zone) = self.free_monster_zone(player) else {
+            return false;
+        };
+        self.remove_from_current_place(card);
+        self.players[player.index()].monster_zones[zone] = Some(card);
+        let turn = self.turn;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::MonsterZone(zone as u8);
+        inst.position = Position::FaceDownDefense;
+        inst.controller = player;
+        inst.turn_entered_field = Some(turn);
+        inst.attacks_this_turn = 0;
+        inst.counter = 0;
+        self.emit(Event::SpecialSummoned {
+            player,
+            card,
+            position: Position::FaceDownDefense,
+        });
+        true
+    }
+
+    /// Makes `card` a hat: no effects, destroyed when the Battle Phase ends.
+    pub fn mark_hat(&mut self, source: InstanceId, card: InstanceId) {
+        let turn = self.turn;
+        for kind in [
+            LingeringKind::HatMonster { card },
+            LingeringKind::Negated { card },
+        ] {
+            self.lingering.push(Lingering {
+                source,
+                kind,
+                expires_turn: turn,
+            });
+        }
+    }
+
+    /// Whether `card` is a Spell or Trap standing in as a monster.
+    pub fn is_hat(&self, card: InstanceId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::HatMonster { card })
+    }
+
+    /// Destroys the hats on the field (the end of the Battle Phase).
+    pub(crate) fn destroy_hats(&mut self) {
+        let hats: Vec<(InstanceId, InstanceId)> = self
+            .lingering
+            .iter()
+            .filter_map(|l| match l.kind {
+                LingeringKind::HatMonster { card } => Some((card, l.source)),
+                _ => None,
+            })
+            .collect();
+        for (card, source) in hats {
+            if matches!(
+                self.instances[card.index()].location,
+                Location::MonsterZone(_)
+            ) {
+                self.destroy(card, source);
+            }
+        }
+    }
+
+    /// Shuffles which of these face-down monsters of one player is which:
+    /// each keeps its zone, the cards trade places (Magical Hats).
+    pub fn shuffle_set_monsters(&mut self, cards: &[InstanceId]) {
+        let before: Vec<crate::CardInstance> = cards
+            .iter()
+            .map(|c| self.instances[c.index()].clone())
+            .collect();
+        let mut order: Vec<usize> = (0..cards.len()).collect();
+        for i in (1..order.len()).rev() {
+            let j = self.random_index(i + 1);
+            order.swap(i, j);
+        }
+        for (i, &card) in cards.iter().enumerate() {
+            let mut inst = before[order[i]].clone();
+            inst.location = before[i].location;
+            self.instances[card.index()] = inst;
+        }
     }
 
     pub fn free_spell_trap_zone(&self, player: PlayerId) -> Option<usize> {

@@ -116,6 +116,30 @@ pub enum LingeringKind {
     NoSpellsOrTraps,
     /// `card`'s effects are negated (Armored Glass, World Suppression).
     Negated { card: InstanceId },
+    /// `player`'s Monster Zone `zone` cannot be used (Ground Collapse while
+    /// its source is on the field; Dimensionhole until its monster returns).
+    ZoneLocked { player: PlayerId, zone: u8 },
+    /// The banished `card` returns to its owner's hand in `player`'s
+    /// Standby Phase once `standbys` more have passed (Lightforce Sword).
+    ReturnToHand {
+        card: InstanceId,
+        player: PlayerId,
+        standbys: u8,
+    },
+    /// The banished `card` returns to `player`'s Monster Zone `zone` in
+    /// `player`'s next Standby Phase (Dimensionhole).
+    ReturnToField {
+        card: InstanceId,
+        player: PlayerId,
+        zone: u8,
+        position: Position,
+    },
+    /// `player` holds the opponent's `card` as part of their hand this turn
+    /// (Graverobber): using it costs 2000 LP; it goes back in the End Phase.
+    Borrowed { card: InstanceId, player: PlayerId },
+    /// The Spell or Trap `card` is a Normal Monster with 0 ATK and DEF until
+    /// the end of this Battle Phase, then destroyed (Magical Hats).
+    HatMonster { card: InstanceId },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.

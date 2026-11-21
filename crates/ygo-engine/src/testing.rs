@@ -220,7 +220,7 @@ pub fn check_invariants(g: &Game) {
                 let inst = g.instance(*id);
                 assert_eq!(inst.location, Location::MonsterZone(i as u8));
                 assert_eq!(inst.controller, p);
-                assert!(g.stats(*id).is_monster());
+                assert!(g.stats(*id).is_monster() || g.is_hat(*id), "{id:?}");
                 assert_ne!(
                     inst.position,
                     Position::FaceDown,
