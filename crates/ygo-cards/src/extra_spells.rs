@@ -106,7 +106,7 @@ fn flute_dragons(g: &Game, player: PlayerId) -> Vec<InstanceId> {
     g.hand(player)
         .iter()
         .copied()
-        .filter(|&c| g.stats(c).race == "Dragon" && g.special_summonable(c))
+        .filter(|&c| g.race(c) == "Dragon" && g.special_summonable(c))
         .collect()
 }
 

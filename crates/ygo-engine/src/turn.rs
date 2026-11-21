@@ -74,6 +74,7 @@ impl Game {
         if self.spells_and_traps_forbidden() {
             actions.retain(|a| !self.plays_spell_or_trap(a));
         }
+        actions.retain(|a| !self.action_forbidden(a));
         self.decision = Some(decision);
         self.actions = actions;
     }

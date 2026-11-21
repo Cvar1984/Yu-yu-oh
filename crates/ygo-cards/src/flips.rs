@@ -86,7 +86,7 @@ fn own_standby(g: &Game, s: Source, w: &Window) -> bool {
 }
 
 fn is_dragon(g: &Game, m: InstanceId) -> bool {
-    g.stats(m).race == "Dragon"
+    g.race(m) == "Dragon"
 }
 
 fn face_up_dragons(g: &Game) -> Vec<InstanceId> {
@@ -310,7 +310,7 @@ pub fn register(r: &mut Registry) {
             Effect::flip(|g, ctx| {
                 g.clear_marks(ctx.source);
                 for z in all_monsters(g) {
-                    if g.stats(z).race == "Zombie" {
+                    if g.race(z) == "Zombie" {
                         g.add_lingering(Lingering {
                             source: ctx.source,
                             kind: LingeringKind::Marked { card: z },

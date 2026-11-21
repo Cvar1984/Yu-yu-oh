@@ -258,10 +258,11 @@ impl Game {
         let moved: Vec<InstanceId> = events
             .iter()
             .filter_map(|e| match e {
-                Event::SentToGraveyard { card, .. } => Some(*card),
+                Event::SentToGraveyard { card, .. } | Event::Drew { card, .. } => Some(*card),
                 _ => None,
             })
             .collect();
+        let negators = self.negators();
         for player in [self.turn_player, self.turn_player.opponent()] {
             let state = &self.players[player.index()];
             let cards = state
@@ -272,13 +273,19 @@ impl Game {
                 .copied()
                 .chain(state.field_zone)
                 .chain(moved.iter().copied().filter(|c| {
-                    self.instances[c.index()].location == Location::Graveyard
-                        && self.instances[c.index()].owner == player
+                    let inst = &self.instances[c.index()];
+                    (inst.location == Location::Graveyard && inst.owner == player)
+                        || (inst.location == Location::Hand && inst.controller == player)
                 }));
             for card in cards {
                 let Some(script) = self.script(card) else {
                     continue;
                 };
+                if self.instances[card.index()].location.on_field()
+                    && self.negated_with(&negators, card)
+                {
+                    continue;
+                }
                 let controller = self.instances[card.index()].controller;
                 if controller != player {
                     continue;
@@ -441,6 +448,9 @@ impl Game {
         let Some(script) = self.script(card) else {
             return;
         };
+        if self.negated(card) {
+            return;
+        }
         let source = Source {
             card,
             controller: player,
@@ -768,6 +778,12 @@ impl Game {
     pub(crate) fn resolve_top_link(&mut self) {
         let link = self.chain.pop().expect("called with a non-empty chain");
         if link.negated {
+            self.finish_link(&link);
+            return;
+        }
+        // An effect negated since its activation resolves without effect.
+        if self.negated(link.card) {
+            self.emit(Event::EffectNegated { card: link.card });
             self.finish_link(&link);
             return;
         }

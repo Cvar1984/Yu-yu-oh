@@ -49,7 +49,16 @@ table.
 Batch 3 adds effect negation and current Types: Jinzo, Imperial Order,
 Armored Glass, World Suppression, Mystic Probe, Metal Detector,
 Prohibition, DNA Surgery, The Regulation of Tribe, Parasite Paracide,
-The Legendary Fisherman, Deepsea Warrior.
+The Legendary Fisherman, Deepsea Warrior. Done: 12 cards, `tests/psv_3.rs`. Engine:
+continuous hooks `negate` (with `Game::negated`; a negator that is
+negated itself stops, one level deep), `forbid`, `race` (with
+`Game::race`, which every script's Type check now uses), `spell_immune`
+and `unattackable`; lingering `Negated` for "this turn";
+`put_face_up_in_deck`; Drew cards join the trigger scan;
+`Event::EffectNegated`. `Shared.hooks` and `Game.hooks` record which of
+these hooks a game's cards have, so games without them pay nothing:
+`ygo sim` stays at 1,734 to 1,890 random games/s against 1,836 to 1,966
+before (Toon against Removal, one core).
 
 Batch 4 adds zone locks, delayed returns and borrowed cards: Ground
 Collapse, Dimensionhole, Lightforce Sword, Graverobber, Magical Hats.
@@ -96,3 +105,23 @@ Batch 2:
 - Sword Hunter equips as many of its monsters as there are free
   Spell/Trap Zones.
 - Vampire Baby asks the position (face-up Attack or Defense).
+
+Batch 3:
+
+- Imperial Order and Jinzo also stop the activation of the cards they
+  negate (a Spell under Imperial Order is not offered), instead of
+  letting it start and resolve without effect.
+- Armored Glass, World Suppression, Mystic Probe and Metal Detector
+  negate the cards on the field when they resolve, until the End Phase.
+- Prohibition declares the name on resolution, among the names its
+  player can see (face-up cards, Graveyards, banished cards, their own
+  hand), so a declaration never names a hidden card. Cards with that name
+  cannot be summoned, Set or activated unless already on the field.
+- Parasite Paracide's Insect effect holds while it is face-up on the
+  field of the player who drew it; a Draw Phase draw summons it in the
+  Standby Phase window.
+- "Unaffected by Spell effects" (The Legendary Fisherman, Deepsea
+  Warrior with Umi): Spells cannot target it or destroy it, and Spell
+  modifiers (Equips, Field Spells, a Spell's temporary change) do not
+  apply to it. With Umi, an attack goes directly to The Legendary
+  Fisherman's controller only when it is the only monster there.

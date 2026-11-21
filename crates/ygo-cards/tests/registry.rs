@@ -83,23 +83,11 @@ const PENDING: &[(u32, &str)] = &[
     (68005187, "Soul Exchange"),
     (80604092, "Ultimate Offering"),
     // Pharaoh's Servant (2026-11-21), in set order; see `docs/psv-plan.md`.
-    (77585513, "Jinzo"),
-    (27911549, "Parasite Paracide"),
     (49587034, "Lightforce Sword"),
     (61705417, "Graverobber"),
-    (36868108, "Armored Glass"),
-    (12253117, "World Suppression"),
-    (49251811, "Mystic Probe"),
-    (75646520, "Metal Detector"),
-    (74701381, "DNA Surgery"),
-    (296499, "The Regulation of Tribe"),
     (81210420, "Magical Hats"),
-    (43711255, "Prohibition"),
     (22959079, "Dimensionhole"),
     (90502999, "Ground Collapse"),
-    (3643300, "The Legendary Fisherman"),
-    (24128274, "Deepsea Warrior"),
-    (61740673, "Imperial Order"),
 ];
 
 #[test]

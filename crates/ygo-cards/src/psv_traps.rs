@@ -11,6 +11,13 @@ use crate::psv_monsters::is_effect_monster;
 use crate::psv_spells::standby_began;
 
 pub const APPROPRIATE: CardId = CardId(48539234);
+pub const ARMORED_GLASS: CardId = CardId(36868108);
+pub const DNA_SURGERY: CardId = CardId(74701381);
+pub const IMPERIAL_ORDER: CardId = CardId(61740673);
+pub const METAL_DETECTOR: CardId = CardId(75646520);
+pub const MYSTIC_PROBE: CardId = CardId(49251811);
+pub const THE_REGULATION_OF_TRIBE: CardId = CardId(296499);
+pub const WORLD_SUPPRESSION: CardId = CardId(12253117);
 pub const ATTACK_AND_RECEIVE: CardId = CardId(63689843);
 pub const CALL_OF_THE_HAUNTED: CardId = CardId(97077563);
 pub const CEASEFIRE: CardId = CardId(36468556);
@@ -35,6 +42,80 @@ pub const SHADOW_OF_EYES: CardId = CardId(58621589);
 pub const SKULL_INVITATION: CardId = CardId(98139712);
 pub const SOLEMN_WISHES: CardId = CardId(35346968);
 pub const TYPE_ZERO_MAGIC_CRUSHER: CardId = CardId(21237481);
+
+/// The monster Types a card may declare (every Type in the pool).
+pub const RACES: [&str; 20] = [
+    "Aqua",
+    "Beast",
+    "Beast-Warrior",
+    "Dinosaur",
+    "Dragon",
+    "Fairy",
+    "Fiend",
+    "Fish",
+    "Insect",
+    "Machine",
+    "Plant",
+    "Pyro",
+    "Reptile",
+    "Rock",
+    "Sea Serpent",
+    "Spellcaster",
+    "Thunder",
+    "Warrior",
+    "Winged Beast",
+    "Zombie",
+];
+
+/// The Type a card declared (kept as index + 1 in its counter).
+fn declared_race(g: &Game, card: InstanceId) -> Option<&'static str> {
+    match g.counter(card) {
+        0 => None,
+        n => RACES.get(usize::from(n) - 1).copied(),
+    }
+}
+
+/// Declares a Type on resolution and keeps it in the card's counter.
+fn declare_race(_g: &mut Game, _ctx: &mut EffectCtx) -> Flow {
+    Flow::Ask {
+        options: RACES.to_vec(),
+        then: |g, ctx, option| {
+            if g.on_field(ctx.source) {
+                g.set_counter(ctx.source, option as u8 + 1);
+            }
+            Flow::Done
+        },
+    }
+}
+
+/// The last chain link activates a card of this kind and subtype.
+fn activates(g: &Game, kind: CardKind, subtype: ygo_engine::SpellTrapType) -> bool {
+    g.last_link().is_some_and(|l| {
+        let s = g.stats(l.card);
+        l.card_activation && !l.negated && s.kind == kind && s.subtype == subtype
+    })
+}
+
+/// Negates every face-up card of this kind and subtype on the field for
+/// the rest of the turn.
+fn negate_all(
+    g: &mut Game,
+    source: InstanceId,
+    kind: CardKind,
+    subtype: ygo_engine::SpellTrapType,
+) {
+    let cards: Vec<_> = PlayerId::BOTH
+        .into_iter()
+        .flat_map(|p| g.spells_traps_controlled(p))
+        .filter(|&c| {
+            let s = g.stats(c);
+            g.instance(c).position.is_face_up() && s.kind == kind && s.subtype == subtype
+        })
+        .collect();
+    for c in cards {
+        g.negate_until_end_of_turn(source, c);
+    }
+}
 
 /// The Monster Card Attributes Earthshaker names.
 pub const ATTRIBUTES: [&str; 6] = ["LIGHT", "DARK", "EARTH", "WATER", "FIRE", "WIND"];
@@ -320,6 +401,156 @@ pub fn register(r: &mut Registry) {
                 },
             ],
         },
+    );
+    // When a monster is equipped with an Equip Card: negate the effects of
+    // every Equip Card on the field this turn.
+    r.register(
+        ARMORED_GLASS,
+        single(Effect {
+            timing: |_, _, w| w.events.iter().any(|e| matches!(e, Event::Equipped { .. })),
+            ..Effect::activate(2, |g, ctx| {
+                let equips: Vec<_> = PlayerId::BOTH
+                    .into_iter()
+                    .flat_map(|p| g.spells_traps_controlled(p))
+                    .filter(|&c| g.equip_target(c).is_some())
+                    .collect();
+                for e in equips {
+                    g.negate_until_end_of_turn(ctx.source, e);
+                }
+                Flow::Done
+            })
+        }),
+    );
+    // Declare 1 Type: every face-up monster on the field becomes that Type.
+    r.register(
+        DNA_SURGERY,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![
+                Effect::activate(2, declare_race),
+                Effect {
+                    race: Some(|g, s, _| declared_race(g, s.card)),
+                    ..Effect::continuous()
+                },
+            ],
+        },
+    );
+    // Negate all Spell effects on the field (Spells cannot be activated
+    // either, see docs/psv-plan.md). In each Standby Phase pay 700 LP, or
+    // this card is destroyed.
+    r.register(
+        IMPERIAL_ORDER,
+        continuous_trap(vec![
+            Effect {
+                negate: Some(|g, _, card| g.stats(card).kind == CardKind::Spell),
+                ..Effect::continuous()
+            },
+            Effect {
+                timing: |g, s, w| {
+                    standby_began(g, w.events, w.kind)
+                        && g.turn_player() == s.controller
+                        && face_up_on_field(g, s.card)
+                },
+                ..Effect::trigger(true, |g, ctx| {
+                    if g.can_pay_lp(ctx.controller, 700) {
+                        g.pay_lp(ctx.controller, 700);
+                    } else {
+                        g.destroy(ctx.source, ctx.source);
+                    }
+                    Flow::Done
+                })
+            },
+        ]),
+    );
+    // When a Continuous Trap Card is activated: negate all Continuous Trap
+    // Cards this turn.
+    r.register(
+        METAL_DETECTOR,
+        single(Effect {
+            timing: |g, _, _| activates(g, CardKind::Trap, ygo_engine::SpellTrapType::Continuous),
+            ..Effect::activate(2, |g, ctx| {
+                negate_all(
+                    g,
+                    ctx.source,
+                    CardKind::Trap,
+                    ygo_engine::SpellTrapType::Continuous,
+                );
+                Flow::Done
+            })
+        }),
+    );
+    // When a Continuous Spell Card is activated: negate all Continuous
+    // Spell Cards this turn.
+    r.register(
+        MYSTIC_PROBE,
+        single(Effect {
+            timing: |g, _, _| activates(g, CardKind::Spell, ygo_engine::SpellTrapType::Continuous),
+            ..Effect::activate(2, |g, ctx| {
+                negate_all(
+                    g,
+                    ctx.source,
+                    CardKind::Spell,
+                    ygo_engine::SpellTrapType::Continuous,
+                );
+                Flow::Done
+            })
+        }),
+    );
+    // Declare 1 Type; monsters of that Type cannot attack. In each of your
+    // Standby Phases, Tribute 1 monster or this card is destroyed.
+    r.register(
+        THE_REGULATION_OF_TRIBE,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![
+                Effect::activate(2, declare_race),
+                Effect {
+                    restrict: Some(|g, s, t| declared_race(g, s.card) == Some(g.race(t))),
+                    ..Effect::continuous()
+                },
+                Effect {
+                    timing: |g, s, w| {
+                        standby_began(g, w.events, w.kind)
+                            && g.turn_player() == s.controller
+                            && face_up_on_field(g, s.card)
+                    },
+                    ..Effect::trigger(true, |g, ctx| {
+                        if g.monsters_controlled(ctx.controller).is_empty() {
+                            g.destroy(ctx.source, ctx.source);
+                            return Flow::Done;
+                        }
+                        Flow::Ask {
+                            options: vec!["Tribute a monster", "Destroy this card"],
+                            then: |g, ctx, option| {
+                                if option != 0 {
+                                    g.destroy(ctx.source, ctx.source);
+                                    return Flow::Done;
+                                }
+                                Flow::Choose {
+                                    options: g.monsters_controlled(ctx.controller),
+                                    then: |g, _ctx, m| {
+                                        g.tribute(m);
+                                        Flow::Done
+                                    },
+                                }
+                            },
+                        }
+                    })
+                },
+            ],
+        },
+    );
+    // When a Field Spell Card is activated: negate it this turn.
+    r.register(
+        WORLD_SUPPRESSION,
+        single(Effect {
+            timing: |g, _, _| activates(g, CardKind::Spell, ygo_engine::SpellTrapType::Field),
+            targets: Some(|g, _| g.last_link().map(|l| vec![l.card]).into_iter().collect()),
+            ..Effect::activate(2, |g, ctx| {
+                g.negate_until_end_of_turn(ctx.source, ctx.targets[0]);
+                Flow::Done
+            })
+        }),
     );
     // When you take damage: 700 damage to your opponent, plus 300 for each
     // "Attack and Receive" in your Graveyard.

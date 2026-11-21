@@ -56,6 +56,7 @@ impl Game {
                 direct = false;
             }
         }
+        targets.retain(|&t| !self.cannot_be_attacked(t));
         if targets.is_empty() || direct {
             actions.push(Action::Attack {
                 attacker,

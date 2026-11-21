@@ -149,6 +149,31 @@ pub struct Shared {
     pub pool: CardPool,
     /// One slot per pool index; `None` for cards without a script.
     pub scripts: Vec<Option<CardScript>>,
+    /// One slot per pool index: which rarely used hooks the card's script
+    /// has (`HOOK_*` bits), so a game without them never scans for them.
+    pub(crate) hooks: Vec<u8>,
+}
+
+/// A script with a `negate` hook.
+pub(crate) const HOOK_NEGATE: u8 = 1;
+/// A script with a `forbid` hook.
+pub(crate) const HOOK_FORBID: u8 = 2;
+/// A script with a `race` hook.
+pub(crate) const HOOK_RACE: u8 = 4;
+/// A script with a `spell_immune` or `unattackable` hook.
+pub(crate) const HOOK_SELF: u8 = 8;
+
+fn hooks_of(script: &CardScript) -> u8 {
+    script.effects.iter().fold(0, |bits, e| {
+        bits | if e.negate.is_some() { HOOK_NEGATE } else { 0 }
+            | if e.forbid.is_some() { HOOK_FORBID } else { 0 }
+            | if e.race.is_some() { HOOK_RACE } else { 0 }
+            | if e.spell_immune.is_some() || e.unattackable.is_some() {
+                HOOK_SELF
+            } else {
+                0
+            }
+    })
 }
 
 impl PartialEq for Shared {
@@ -162,15 +187,30 @@ impl PartialEq for Shared {
 impl Shared {
     pub fn new(rules: Rules, db: &CardDb, registry: Registry) -> Self {
         let pool = CardPool::from_db(db);
-        let scripts = pool
+        let scripts: Vec<Option<CardScript>> = pool
             .cards
             .iter()
             .map(|c| registry.get(c.id).cloned())
+            .collect();
+        let hooks = scripts
+            .iter()
+            .map(|s| s.as_ref().map_or(0, hooks_of))
             .collect();
         Self {
             rules,
             pool,
             scripts,
+            hooks,
+        }
+    }
+
+    /// The same pool and scripts under other rules.
+    pub fn with_rules(&self, rules: Rules) -> Self {
+        Self {
+            rules,
+            pool: self.pool.clone(),
+            scripts: self.scripts.clone(),
+            hooks: self.hooks.clone(),
         }
     }
 
