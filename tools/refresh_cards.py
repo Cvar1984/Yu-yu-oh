@@ -4,7 +4,8 @@ Keeps the schema of data/cards.json. Does not touch banlist.json (the game's lim
 import json, os, re, sys, time, urllib.parse, urllib.request
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
 API = "https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset="
-SETS = {"Legend of Blue Eyes White Dragon": "LOB", "Metal Raiders": "MRD", "Spell Ruler": "SRL"}
+SETS = {"Legend of Blue Eyes White Dragon": "LOB", "Metal Raiders": "MRD", "Spell Ruler": "SRL",
+        "Pharaoh's Servant": "PSV"}
 IMG_HOST = "https://images.ygoprodeck.com/"
 
 def get(url):
@@ -32,7 +33,7 @@ for set_name, code in SETS.items():
 for e in cards.values():
     e["in_game_index"] = min(e["printings"], key=lambda p: (list(SETS.values()).index(p["set"]), p["number"]))["set"]
 out = sorted(cards.values(), key=lambda e: min((list(SETS.values()).index(p["set"]), p["number"]) for p in e["printings"]))
-# EXTRA: cards the game lists outside the three set tabs (names in data/extra_cards.txt), fetched by name
+# EXTRA: cards the game lists outside the set tabs (names in data/extra_cards.txt), fetched by name
 extra_path = f"{ROOT}/data/extra_cards.txt"
 if os.path.exists(extra_path):
     names = [l.strip() for l in open(extra_path) if l.strip()]

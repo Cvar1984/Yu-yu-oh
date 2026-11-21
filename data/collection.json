@@ -1,13 +1,14 @@
 {
  "schema_version": 1,
  "owner": "player",
- "read_from": "save A: set screens 2026-11-19 + 'All' list (386/440 owned; 385 read, one card unidentified)",
+ "read_from": "save A: set screens 2026-11-19 + 'All' list (386/440 owned; 385 read, one card unidentified); Pharaoh's Servant screen 2026-11-21 (90/105 owned, copy counts not read: 1 each)",
  "totals": {
-  "ALL": "386/440",
-  "note": "copy counts >= 3 are only exact where re-read; decks never need more than 3"
+  "ALL": "466/535",
+  "PSV": "90/105",
+  "note": "copy counts >= 3 are only exact where re-read; decks never need more than 3; PSV copies are recorded as 1 each until read"
  },
- "unique": 385,
- "copies": 1117,
+ "unique": 465,
+ "copies": 1197,
  "cards": [
   {
    "id": 76184692,
@@ -1932,6 +1933,406 @@
   {
    "id": 9786492,
    "name": "White Dragon Ritual",
+   "copies": 1
+  },
+  {
+   "id": 90908427,
+   "name": "Steel Ogre Grotto #2",
+   "copies": 1
+  },
+  {
+   "id": 78423643,
+   "name": "Three-Headed Geedo",
+   "copies": 1
+  },
+  {
+   "id": 27911549,
+   "name": "Parasite Paracide",
+   "copies": 1
+  },
+  {
+   "id": 86198326,
+   "name": "7 Completed",
+   "copies": 1
+  },
+  {
+   "id": 49587034,
+   "name": "Lightforce Sword",
+   "copies": 1
+  },
+  {
+   "id": 1248895,
+   "name": "Chain Destruction",
+   "copies": 1
+  },
+  {
+   "id": 35316708,
+   "name": "Time Seal",
+   "copies": 1
+  },
+  {
+   "id": 23471572,
+   "name": "Solomon's Lawbook",
+   "copies": 1
+  },
+  {
+   "id": 60866277,
+   "name": "Earthshaker",
+   "copies": 1
+  },
+  {
+   "id": 22359980,
+   "name": "Mirror Wall",
+   "copies": 1
+  },
+  {
+   "id": 73079365,
+   "name": "Gust",
+   "copies": 1
+  },
+  {
+   "id": 473469,
+   "name": "Driving Snow",
+   "copies": 1
+  },
+  {
+   "id": 36868108,
+   "name": "Armored Glass",
+   "copies": 1
+  },
+  {
+   "id": 12253117,
+   "name": "World Suppression",
+   "copies": 1
+  },
+  {
+   "id": 49251811,
+   "name": "Mystic Probe",
+   "copies": 1
+  },
+  {
+   "id": 75646520,
+   "name": "Metal Detector",
+   "copies": 1
+  },
+  {
+   "id": 2130625,
+   "name": "Numinous Healer",
+   "copies": 1
+  },
+  {
+   "id": 48539234,
+   "name": "Appropriate",
+   "copies": 1
+  },
+  {
+   "id": 74701381,
+   "name": "DNA Surgery",
+   "copies": 1
+  },
+  {
+   "id": 296499,
+   "name": "The Regulation of Tribe",
+   "copies": 1
+  },
+  {
+   "id": 9074847,
+   "name": "Major Riot",
+   "copies": 1
+  },
+  {
+   "id": 8951260,
+   "name": "Respect Play",
+   "copies": 1
+  },
+  {
+   "id": 43434803,
+   "name": "The Shallow Grave",
+   "copies": 1
+  },
+  {
+   "id": 16227556,
+   "name": "Inspection",
+   "copies": 1
+  },
+  {
+   "id": 43711255,
+   "name": "Prohibition",
+   "copies": 1
+  },
+  {
+   "id": 79106360,
+   "name": "Morphing Jar #2",
+   "copies": 1
+  },
+  {
+   "id": 42599677,
+   "name": "Flame Champion",
+   "copies": 1
+  },
+  {
+   "id": 78984772,
+   "name": "Twin-Headed Fire Dragon",
+   "copies": 1
+  },
+  {
+   "id": 5388481,
+   "name": "Darkfire Soldier #1",
+   "copies": 1
+  },
+  {
+   "id": 31477025,
+   "name": "Mr. Volcano",
+   "copies": 1
+  },
+  {
+   "id": 78861134,
+   "name": "Darkfire Soldier #2",
+   "copies": 1
+  },
+  {
+   "id": 4266839,
+   "name": "Kiseitai",
+   "copies": 1
+  },
+  {
+   "id": 30655537,
+   "name": "Cyber Falcon",
+   "copies": 1
+  },
+  {
+   "id": 3134241,
+   "name": "Flying Kamakiri #2",
+   "copies": 1
+  },
+  {
+   "id": 30532390,
+   "name": "Sky Scout",
+   "copies": 1
+  },
+  {
+   "id": 78193831,
+   "name": "Buster Blader",
+   "copies": 1
+  },
+  {
+   "id": 37580756,
+   "name": "Michizure",
+   "copies": 1
+  },
+  {
+   "id": 1918087,
+   "name": "Minor Goblin Official",
+   "copies": 1
+  },
+  {
+   "id": 37313786,
+   "name": "Gamble",
+   "copies": 1
+  },
+  {
+   "id": 63689843,
+   "name": "Attack and Receive",
+   "copies": 1
+  },
+  {
+   "id": 35346968,
+   "name": "Solemn Wishes",
+   "copies": 1
+  },
+  {
+   "id": 6104968,
+   "name": "Bubonic Vermin",
+   "copies": 1
+  },
+  {
+   "id": 67049542,
+   "name": "Dark Bat",
+   "copies": 1
+  },
+  {
+   "id": 66927994,
+   "name": "Oni Tank T-34",
+   "copies": 1
+  },
+  {
+   "id": 24294108,
+   "name": "Burning Land",
+   "copies": 1
+  },
+  {
+   "id": 60682203,
+   "name": "Cold Wave",
+   "copies": 1
+  },
+  {
+   "id": 23171610,
+   "name": "Limiter Removal",
+   "copies": 1
+  },
+  {
+   "id": 66719324,
+   "name": "Rain of Mercy",
+   "copies": 1
+  },
+  {
+   "id": 93108433,
+   "name": "Monster Recovery",
+   "copies": 1
+  },
+  {
+   "id": 96965364,
+   "name": "Insect Imitation",
+   "copies": 1
+  },
+  {
+   "id": 22959079,
+   "name": "Dimensionhole",
+   "copies": 1
+  },
+  {
+   "id": 90502999,
+   "name": "Ground Collapse",
+   "copies": 1
+  },
+  {
+   "id": 59344077,
+   "name": "Magic Drain",
+   "copies": 1
+  },
+  {
+   "id": 54109233,
+   "name": "Infinite Dismissal",
+   "copies": 1
+  },
+  {
+   "id": 85742772,
+   "name": "Gravity Bind",
+   "copies": 1
+  },
+  {
+   "id": 21237481,
+   "name": "Type Zero Magic Crusher",
+   "copies": 1
+  },
+  {
+   "id": 58621589,
+   "name": "Shadow of Eyes",
+   "copies": 1
+  },
+  {
+   "id": 51345461,
+   "name": "Sword Hunter",
+   "copies": 1
+  },
+  {
+   "id": 88733579,
+   "name": "Drill Bug",
+   "copies": 1
+  },
+  {
+   "id": 24128274,
+   "name": "Deepsea Warrior",
+   "copies": 1
+  },
+  {
+   "id": 50122883,
+   "name": "Bite Shoes",
+   "copies": 1
+  },
+  {
+   "id": 87511987,
+   "name": "Spikebot",
+   "copies": 1
+  },
+  {
+   "id": 52675689,
+   "name": "Invitation to a Dark Sleep",
+   "copies": 1
+  },
+  {
+   "id": 27125110,
+   "name": "Thousand-Eyes Idol",
+   "copies": 1
+  },
+  {
+   "id": 84620194,
+   "name": "Girochin Kuwagata",
+   "copies": 1
+  },
+  {
+   "id": 21015833,
+   "name": "Hayabusa Knight",
+   "copies": 1
+  },
+  {
+   "id": 57409948,
+   "name": "Bombardment Beetle",
+   "copies": 1
+  },
+  {
+   "id": 83994646,
+   "name": "4-Starred Ladybug of Doom",
+   "copies": 1
+  },
+  {
+   "id": 10992251,
+   "name": "Gradius",
+   "copies": 1
+  },
+  {
+   "id": 79870141,
+   "name": "Mad Sword Beast",
+   "copies": 1
+  },
+  {
+   "id": 5265750,
+   "name": "Skull Mariner",
+   "copies": 1
+  },
+  {
+   "id": 32269855,
+   "name": "The All-Seeing White Tiger",
+   "copies": 1
+  },
+  {
+   "id": 78658564,
+   "name": "Goblin Attack Force",
+   "copies": 1
+  },
+  {
+   "id": 4042268,
+   "name": "Island Turtle",
+   "copies": 1
+  },
+  {
+   "id": 31447217,
+   "name": "Wingweaver",
+   "copies": 1
+  },
+  {
+   "id": 67532912,
+   "name": "Science Soldier",
+   "copies": 1
+  },
+  {
+   "id": 4920010,
+   "name": "Souls of the Forgotten",
+   "copies": 1
+  },
+  {
+   "id": 30325729,
+   "name": "Dokuroyaiba",
+   "copies": 1
+  },
+  {
+   "id": 423705,
+   "name": "Gearfried the Iron Knight",
+   "copies": 1
+  },
+  {
+   "id": 23615409,
+   "name": "Insect Barrier",
    "copies": 1
   }
  ]
