@@ -981,6 +981,19 @@ impl Game {
         true
     }
 
+    /// Turns a face-down Defense Position monster face-up in `position`
+    /// without flipping it: its FLIP effect does not activate (Ceasefire,
+    /// Shadow of Eyes).
+    pub fn turn_face_up_quietly(&mut self, card: InstanceId, position: Position) -> bool {
+        let inst = &mut self.instances[card.index()];
+        if inst.position != Position::FaceDownDefense || !position.is_face_up() {
+            return false;
+        }
+        inst.position = position;
+        self.emit(Event::PositionChanged { card, position });
+        true
+    }
+
     pub fn equip_target(&self, equip: InstanceId) -> Option<InstanceId> {
         self.instances[equip.index()].equipped_to
     }
