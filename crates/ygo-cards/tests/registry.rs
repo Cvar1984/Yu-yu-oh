@@ -71,7 +71,8 @@ fn effect_monsters_summon_as_vanilla_but_toons_cannot() {
 
 /// Non-Normal cards whose scripts are still to be written: EXTRA cards
 /// from the 440-card pool (handoff update, 2026-11-20, see
-/// `docs/pool-440-plan.md`) and Pharaoh's Servant (2026-11-21). The list only shrinks: every entry must be
+/// `docs/pool-440-plan.md`). Every Pharaoh's Servant card is scripted
+/// (`docs/psv-plan.md`). The list only shrinks: every entry must be
 /// unscripted, and every unscripted card must be listed.
 const PENDING: &[(u32, &str)] = &[
     (2833249, "D. Tribe"),
@@ -82,12 +83,6 @@ const PENDING: &[(u32, &str)] = &[
     (59560625, "Shift"),
     (68005187, "Soul Exchange"),
     (80604092, "Ultimate Offering"),
-    // Pharaoh's Servant (2026-11-21), in set order; see `docs/psv-plan.md`.
-    (49587034, "Lightforce Sword"),
-    (61705417, "Graverobber"),
-    (81210420, "Magical Hats"),
-    (22959079, "Dimensionhole"),
-    (90502999, "Ground Collapse"),
 ];
 
 #[test]

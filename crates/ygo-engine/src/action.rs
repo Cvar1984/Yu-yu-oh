@@ -90,6 +90,10 @@ pub enum Event {
         turn: u32,
         player: PlayerId,
     },
+    /// A banished monster came back to its zone (Dimensionhole).
+    ReturnedToField {
+        card: InstanceId,
+    },
     /// A chain link resolved without effect: its card's effects are negated.
     EffectNegated {
         card: InstanceId,

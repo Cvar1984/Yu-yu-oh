@@ -212,7 +212,8 @@ impl Game {
                 let inst = &self.instances[id.index()];
                 let revealed = match inst.location {
                     Location::Hand => own || hand_revealed[player.index()] || declared == Some(id),
-                    Location::Graveyard | Location::Banished => true,
+                    Location::Graveyard => true,
+                    Location::Banished => inst.position.is_face_up() || own,
                     _ => inst.position.is_face_up() || own,
                 };
                 let position = if in_hand {

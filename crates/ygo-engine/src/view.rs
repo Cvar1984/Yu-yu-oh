@@ -145,8 +145,9 @@ fn redeal(game: &mut Game, hidden: &[InstanceId], rng: &mut ChaCha8Rng) {
                 Location::MonsterZone(_) => Slot::Monster,
                 Location::SpellTrapZone(_) => Slot::SpellTrap,
                 Location::FieldZone => Slot::Field,
-                Location::Hand | Location::Deck => Slot::Loose,
-                Location::Graveyard | Location::Banished => continue,
+                // Hand, Deck, or banished face-down (Lightforce Sword).
+                Location::Hand | Location::Deck | Location::Banished => Slot::Loose,
+                Location::Graveyard => continue,
             };
             if slot == Slot::Extra {
                 extra.push((id, slot));

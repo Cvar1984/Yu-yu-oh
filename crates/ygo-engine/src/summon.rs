@@ -36,7 +36,9 @@ impl Game {
             return;
         }
         let state = &self.players[player.index()];
-        let free_zones = state.monster_zones.iter().filter(|z| z.is_none()).count();
+        let free_zones = (0..state.monster_zones.len())
+            .filter(|&i| state.monster_zones[i].is_none() && !self.zone_locked(player, i))
+            .count();
         let on_field: Vec<InstanceId> = state.monsters().collect();
         for &card in &state.hand {
             let stats = self.stats(card);
@@ -177,12 +179,10 @@ impl Game {
                     Position::FaceUpAttack
                 };
                 self.remove_from_current_place(card);
-                let state = &mut self.players[player.index()];
-                let zone = state
-                    .monster_zones
-                    .iter()
-                    .position(|z| z.is_none())
+                let zone = self
+                    .free_monster_zone(player)
                     .expect("a free zone was checked when the action was offered");
+                let state = &mut self.players[player.index()];
                 state.monster_zones[zone] = Some(card);
                 state.monsters_entered += 1;
                 let turn = self.turn;

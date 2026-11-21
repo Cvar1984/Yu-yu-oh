@@ -75,6 +75,9 @@ impl Game {
             actions.retain(|a| !self.plays_spell_or_trap(a));
         }
         actions.retain(|a| !self.action_forbidden(a));
+        actions.retain(|a| {
+            !matches!(a, Action::SetSpellTrap { card } if self.borrowed_by(*card, decision.player))
+        });
         self.decision = Some(decision);
         self.actions = actions;
     }
@@ -93,6 +96,19 @@ impl Game {
         let toll = self.hand_play_toll();
         if toll > 0 && self.plays_from_hand(action) {
             self.pay_lp(player, toll);
+        }
+        // Graverobber: using the borrowed Spell costs 2000.
+        if let Action::Activate { card, .. } = action
+            && self.borrowed_by(*card, player)
+        {
+            self.lingering.retain(|l| {
+                l.kind
+                    != crate::LingeringKind::Borrowed {
+                        card: *card,
+                        player,
+                    }
+            });
+            self.take_damage(player, 2000);
         }
         match action {
             Action::Discard { card } => self.discard(*card),
@@ -289,6 +305,12 @@ impl Game {
         self.emit(Event::PhaseEntered { phase });
         if phase == Phase::End {
             self.expire_lingering();
+        }
+        if phase == Phase::Standby {
+            self.standby_returns(self.turn_player);
+        }
+        if phase == Phase::Battle(BattleStep::End) {
+            self.destroy_hats();
         }
         if matches!(
             phase,
