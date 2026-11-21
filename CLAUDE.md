@@ -1,11 +1,11 @@
-# Yu-yu-oh: Rust Yu-Gi-Oh! engine, bot and deck builder (LOB / MRD / SRL + EXTRA)
+# Yu-yu-oh: Rust Yu-Gi-Oh! engine, bot and deck builder (LOB / MRD / SRL / PSV + EXTRA)
 
 Full spec: `docs/handoff.md`. This file holds what every session must know.
 
 ## Decisions already made (change only with the owner)
 
 - Rust for everything: engine, AI, deck builder, CLI and server. One Cargo workspace, edition 2024.
-- Card pool is the 440 cards of the owner's game: the 374 of LOB, MRD and SRL plus 66 EXTRA cards the game lists outside those sets (handoff update, 2026-11-20), shipped as JSON. Card id (the official password) is the key in every file.
+- Card pool is the 535 cards of the owner's game: the 479 of LOB, MRD, SRL and PSV (Pharaoh's Servant, owner 2026-11-21) plus 56 EXTRA cards the game lists outside those sets (handoff update, 2026-11-20), shipped as JSON. Card id (the official password) is the key in every file.
 - Full official chain rules. House rules live in `config/rules.toml`; copy limits live in `data/banlist.json`. Nothing about limits or rules is hard-coded; a rule change must never need a recompile.
 - `ygo-engine` knows nothing about AI or UI, does no I/O, and takes randomness only from a seed, so it also builds to WebAssembly.
 - Card images are Konami-owned and never committed: `images/` is git-ignored.

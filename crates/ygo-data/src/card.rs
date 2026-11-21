@@ -147,7 +147,10 @@ pub enum GameIndex {
     Mrd,
     #[serde(rename = "SRL")]
     Srl,
-    /// Listed in the game's "All" list outside the three set tabs.
+    /// Pharaoh's Servant, the game's fourth set tab (2026-11-21).
+    #[serde(rename = "PSV")]
+    Psv,
+    /// Listed in the game's "All" list outside the four set tabs.
     #[serde(rename = "EXTRA")]
     Extra,
 }

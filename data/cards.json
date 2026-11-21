@@ -1,13 +1,14 @@
 {
  "schema_version": 2,
- "source": "YGOPRODeck API v7; LOB/MRD/SRL fetched 2026-11-16, 66 extra cards fetched 2026-11-19",
+ "source": "YGOPRODeck API v7; LOB/MRD/SRL fetched 2026-11-16, 66 extra cards fetched 2026-11-19, PSV fetched 2026-11-21",
  "sets": [
   "LOB",
   "MRD",
   "SRL",
+  "PSV",
   "EXTRA"
  ],
- "count": 440,
+ "count": 535,
  "cards": [
   {
    "id": 39111158,
@@ -10108,6 +10109,2841 @@
    "in_game_index": "SRL"
   },
   {
+   "id": 77585513,
+   "name": "Jinzo",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "Trap Cards, and their effects on the field, cannot be activated. Negate all Trap effects on the field.",
+   "level": 6,
+   "atk": 2400,
+   "def": 1500,
+   "race": "Machine",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 0,
+     "code": "PSV-000",
+     "rarity": "Secret Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/77585513.jpg",
+    "small": "images/small/77585513.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/77585513.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/77585513.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 90908427,
+   "name": "Steel Ogre Grotto #2",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A mechanized iron doll with tremendous strength.",
+   "level": 6,
+   "atk": 1900,
+   "def": 2200,
+   "race": "Machine",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 1,
+     "code": "PSV-001",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/90908427.jpg",
+    "small": "images/small/90908427.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/90908427.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/90908427.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 78423643,
+   "name": "Three-Headed Geedo",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A three-headed nocturnal monster that is absolutely ruthless when fighting.",
+   "level": 4,
+   "atk": 1200,
+   "def": 1400,
+   "race": "Fiend",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 2,
+     "code": "PSV-002",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/78423643.jpg",
+    "small": "images/small/78423643.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/78423643.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/78423643.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 27911549,
+   "name": "Parasite Paracide",
+   "type": "Flip Effect Monster",
+   "frame_type": "effect",
+   "text": "FLIP: Put this card face-up in your opponent's Deck and shuffle it. When your opponent draws this card, it is Special Summoned to their side of the field in face-up Defense Position, and inflicts 1000 damage to them. Then, while this card is face-up on the field, all monsters your opponent controls become Insect-Type monsters.",
+   "level": 2,
+   "atk": 500,
+   "def": 300,
+   "race": "Insect",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 3,
+     "code": "PSV-003",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/27911549.jpg",
+    "small": "images/small/27911549.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/27911549.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/27911549.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 86198326,
+   "name": "7 Completed",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Activate this card by choosing ATK or DEF; equip only to a Machine monster. It gains 700 ATK or DEF, depending on the choice.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Equip",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 4,
+     "code": "PSV-004",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/86198326.jpg",
+    "small": "images/small/86198326.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/86198326.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/86198326.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 49587034,
+   "name": "Lightforce Sword",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Banish 1 random card from your opponent's hand, face-down. During your opponent's 4th Standby Phase after this card's activation, return that card to their hand.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 5,
+     "code": "PSV-005",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/49587034.jpg",
+    "small": "images/small/49587034.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/49587034.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/49587034.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 1248895,
+   "name": "Chain Destruction",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "When a monster(s) with 2000 or less ATK is Summoned: Target 1 of them; destroy all cards with that name in its controller's hand and Main Deck.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 6,
+     "code": "PSV-006",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/1248895.jpg",
+    "small": "images/small/1248895.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/1248895.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/1248895.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 35316708,
+   "name": "Time Seal",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Skip the Draw Phase of your opponent's next turn.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 7,
+     "code": "PSV-007",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/35316708.jpg",
+    "small": "images/small/35316708.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/35316708.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/35316708.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 61705417,
+   "name": "Graverobber",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Select 1 Spell Card from your opponent's Graveyard. You can use it as your hand until the end of the turn. If you use it, you take 2000 points of damage.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 8,
+     "code": "PSV-008",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/61705417.jpg",
+    "small": "images/small/61705417.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/61705417.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/61705417.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 98299011,
+   "name": "Gift of The Mystical Elf",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Increase your Life Points by 300 points for each monster on the field.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 9,
+     "code": "PSV-009",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/98299011.jpg",
+    "small": "images/small/98299011.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/98299011.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/98299011.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 34694160,
+   "name": "The Eye of Truth",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Your opponent must keep their hand revealed. Once per turn, during your opponent's Standby Phase, if they have a Spell(s) in their hand: They gain 1000 LP if they have a Spell(s) in their hand at resolution.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 10,
+     "code": "PSV-010",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/34694160.jpg",
+    "small": "images/small/34694160.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/34694160.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/34694160.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 60082869,
+   "name": "Dust Tornado",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Target 1 Spell/Trap your opponent controls; destroy that target, then you can Set 1 Spell/Trap from your hand.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 11,
+     "code": "PSV-011",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/60082869.jpg",
+    "small": "images/small/60082869.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/60082869.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/60082869.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 97077563,
+   "name": "Call of the Haunted",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Activate this card by targeting 1 monster in your GY; Special Summon that target in Attack Position. When this card leaves the field, destroy that monster. When that monster is destroyed, destroy this card.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 12,
+     "code": "PSV-012",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/97077563.jpg",
+    "small": "images/small/97077563.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/97077563.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/97077563.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 23471572,
+   "name": "Solomon's Lawbook",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Skip your next Standby Phase.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 13,
+     "code": "PSV-013",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/23471572.jpg",
+    "small": "images/small/23471572.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/23471572.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/23471572.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 60866277,
+   "name": "Earthshaker",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Select 2 Monster Card Attributes. Your opponent then selects 1 of the 2 Attributes and destroys all face-up monsters with that Attribute on the field.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 14,
+     "code": "PSV-014",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/60866277.jpg",
+    "small": "images/small/60866277.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/60866277.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/60866277.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 96355986,
+   "name": "Enchanted Javelin",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Select 1 attacking monster. Gain Life Points equal to its ATK.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 15,
+     "code": "PSV-015",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/96355986.jpg",
+    "small": "images/small/96355986.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/96355986.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/96355986.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 22359980,
+   "name": "Mirror Wall",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Each of your opponent's monsters that conducted an attack while this card was face-up on the field has its ATK halved as long as this card remains on the field. During each of your Standby Phases, pay 2000 LP or destroy this card.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 16,
+     "code": "PSV-016",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/22359980.jpg",
+    "small": "images/small/22359980.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/22359980.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/22359980.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 73079365,
+   "name": "Gust",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can activate this card when 1 or more of your Spell Cards are destroyed and sent from the field to the Graveyard by a card effect your opponent controls. Destroy 1 Spell or Trap Card on the field.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 17,
+     "code": "PSV-017",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/73079365.jpg",
+    "small": "images/small/73079365.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/73079365.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/73079365.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 473469,
+   "name": "Driving Snow",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when 1 or more of your Trap Cards are destroyed and sent from the field to the Graveyard by a card effect your opponent controls. Destroy 1 Spell or Trap Card on the field.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 18,
+     "code": "PSV-018",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/473469.jpg",
+    "small": "images/small/473469.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/473469.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/473469.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 36868108,
+   "name": "Armored Glass",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when a monster is equipped with an Equip Card. Negate the effects of all Equip Cards on the field during the turn this card is activated.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 19,
+     "code": "PSV-019",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/36868108.jpg",
+    "small": "images/small/36868108.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/36868108.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/36868108.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 12253117,
+   "name": "World Suppression",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when a Field Spell Card is activated. Negate the Field Spell Card during the turn this card is activated.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 20,
+     "code": "PSV-020",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/12253117.jpg",
+    "small": "images/small/12253117.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/12253117.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/12253117.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 49251811,
+   "name": "Mystic Probe",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when a Continuous Spell Card is activated. Negate all Continuous Spell Cards during the turn this card is activated.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 21,
+     "code": "PSV-021",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/49251811.jpg",
+    "small": "images/small/49251811.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/49251811.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/49251811.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 75646520,
+   "name": "Metal Detector",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when a Continuous Trap Card is activated. Negate all Continuous Trap Cards during the turn this card is activated.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 22,
+     "code": "PSV-022",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/75646520.jpg",
+    "small": "images/small/75646520.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/75646520.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/75646520.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 2130625,
+   "name": "Numinous Healer",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when you take damage to your Life Points. Increase your Life Points by 1000 points. Also, increase your Life Points by 500 points for each \"Numinous Healer\" card in your Graveyard.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 23,
+     "code": "PSV-023",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/2130625.jpg",
+    "small": "images/small/2130625.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/2130625.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/2130625.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 48539234,
+   "name": "Appropriate",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Activate only when your opponent draws a card(s) outside of either Draw Phase. After that, each time your opponent draws a card(s) outside of either Draw Phase, immediately draw 2 cards.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 24,
+     "code": "PSV-024",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/48539234.jpg",
+    "small": "images/small/48539234.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/48539234.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/48539234.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 74923978,
+   "name": "Forced Requisition",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can activate this card when you discard from your hand. After that, each time you discard from your hand, your opponent must also discard the same number of cards from his/her hand.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 25,
+     "code": "PSV-025",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/74923978.jpg",
+    "small": "images/small/74923978.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/74923978.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/74923978.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 74701381,
+   "name": "DNA Surgery",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Activate this card by declaring 1 Monster Type. All face-up monsters on the field become that Type.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 26,
+     "code": "PSV-026",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/74701381.jpg",
+    "small": "images/small/74701381.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/74701381.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/74701381.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 296499,
+   "name": "The Regulation of Tribe",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Declare 1 Type of monster. Monsters of the declared Type cannot attack. Tribute 1 monster from your side of the field during each of your Standby Phases. If you do not, this card is destroyed.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 27,
+     "code": "PSV-027",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/296499.jpg",
+    "small": "images/small/296499.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/296499.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/296499.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 36280194,
+   "name": "Backup Soldier",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "While there are 5 or more monsters in your Graveyard: Target up to 3 non-Effect Monsters with 1500 or less ATK in your Graveyard; add them to your hand.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 28,
+     "code": "PSV-028",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/36280194.jpg",
+    "small": "images/small/36280194.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/36280194.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/36280194.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 9074847,
+   "name": "Major Riot",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can activate this card when 1 or more of your monsters are returned from the field to your hand by your opponent's effect. Return all Monster Cards on the field to your respective hands. Both you and your opponent then Special Summon from your hand the same number of Monster Cards on the field in face-down Defense Position.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 29,
+     "code": "PSV-029",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/9074847.jpg",
+    "small": "images/small/9074847.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/9074847.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/9074847.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 36468556,
+   "name": "Ceasefire",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "If a face-down Defense Position monster or an Effect Monster is on the field: Change all face-down Defense Position monsters on the field to face-up Defense Position (Flip monsters' effects are not activated at this time), also inflict 500 damage to your opponent for each Effect Monster on the field.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 30,
+     "code": "PSV-030",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/36468556.jpg",
+    "small": "images/small/36468556.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/36468556.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/36468556.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 62867251,
+   "name": "Light of Intervention",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "While this card is on the field, Monster Cards cannot be Set or flipped face-down. If a Monster Card would be Set, it must be Normal Summoned in face-up Defense Position.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 31,
+     "code": "PSV-031",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/62867251.jpg",
+    "small": "images/small/62867251.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/62867251.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/62867251.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 8951260,
+   "name": "Respect Play",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "During their respective turns, each player must show their opponent their hand.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 32,
+     "code": "PSV-032",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/8951260.jpg",
+    "small": "images/small/8951260.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/8951260.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/8951260.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 81210420,
+   "name": "Magical Hats",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "During your opponent's Battle Phase: Choose 2 Spell/Trap Cards from your Deck and 1 monster in your Main Monster Zone. Special Summon them as Normal Monsters (ATK 0/DEF 0) in face-down Defense Position, Set the chosen monster if it is face-up, and shuffle them on the field. The 2 cards chosen from your Deck are destroyed at the end of the Battle Phase, and cannot remain on the field except during this Battle Phase.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 33,
+     "code": "PSV-033",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/81210420.jpg",
+    "small": "images/small/81210420.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/81210420.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/81210420.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 71044499,
+   "name": "Nobleman of Crossout",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Target 1 face-down monster on the field; destroy that target, and if you do, banish it, then, if it was a Flip monster, each player reveals their Main Deck, then banishes all cards from it with that monster's name.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 34,
+     "code": "PSV-034",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/71044499.jpg",
+    "small": "images/small/71044499.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/71044499.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/71044499.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 17449108,
+   "name": "Nobleman of Extermination",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Select, destroy, and remove from play 1 face-down Spell or Trap Card. If it was a Trap Card, both players must remove from play all copies of that card from their Decks.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 35,
+     "code": "PSV-035",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/17449108.jpg",
+    "small": "images/small/17449108.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/17449108.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/17449108.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 43434803,
+   "name": "The Shallow Grave",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Each player targets 1 monster in their own GY; each player Special Summons the target from their GY in face-down Defense Position.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 36,
+     "code": "PSV-036",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/43434803.jpg",
+    "small": "images/small/43434803.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/43434803.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/43434803.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 70828912,
+   "name": "Premature Burial",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Activate this card by paying 800 LP, then target 1 monster in your Graveyard; Special Summon that target in Attack Position and equip it with this card. When this card is destroyed, destroy the equipped monster.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Equip",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 37,
+     "code": "PSV-037",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/70828912.jpg",
+    "small": "images/small/70828912.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/70828912.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/70828912.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 16227556,
+   "name": "Inspection",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "During your opponent's Standby Phase, you can pay 500 Life Points to randomly select 1 card in your opponent's hand and look at it.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 38,
+     "code": "PSV-038",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/16227556.jpg",
+    "small": "images/small/16227556.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/16227556.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/16227556.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 43711255,
+   "name": "Prohibition",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Activate by declaring 1 card name. Cards with that name, and their effects, cannot be used. Cards already on the field are not affected (including face-down cards).",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 39,
+     "code": "PSV-039",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/43711255.jpg",
+    "small": "images/small/43711255.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/43711255.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/43711255.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 79106360,
+   "name": "Morphing Jar #2",
+   "type": "Flip Effect Monster",
+   "frame_type": "effect",
+   "text": "FLIP: Shuffle all monsters on the field into the Deck. Then, each player excavates cards from the top of their Deck, until they excavate the same number of monsters they shuffled into their Main Deck. Special Summon all excavated Level 4 or lower monsters in face-down Defense Position, also send the remaining cards to the Graveyard.",
+   "level": 3,
+   "atk": 800,
+   "def": 700,
+   "race": "Rock",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 40,
+     "code": "PSV-040",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/79106360.jpg",
+    "small": "images/small/79106360.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/79106360.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/79106360.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 42599677,
+   "name": "Flame Champion",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A warrior protected by a flaming shield that nullifies any attack.",
+   "level": 5,
+   "atk": 1900,
+   "def": 1300,
+   "race": "Pyro",
+   "attribute": "FIRE",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 41,
+     "code": "PSV-041",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/42599677.jpg",
+    "small": "images/small/42599677.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/42599677.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/42599677.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 78984772,
+   "name": "Twin-Headed Fire Dragon",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "Two dragons fused as one from the effects of the Big Bang.",
+   "level": 6,
+   "atk": 2200,
+   "def": 1700,
+   "race": "Pyro",
+   "attribute": "FIRE",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 42,
+     "code": "PSV-042",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/78984772.jpg",
+    "small": "images/small/78984772.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/78984772.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/78984772.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 5388481,
+   "name": "Darkfire Soldier #1",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "An explosive expert from a special elite force.",
+   "level": 4,
+   "atk": 1700,
+   "def": 1150,
+   "race": "Pyro",
+   "attribute": "FIRE",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 43,
+     "code": "PSV-043",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/5388481.jpg",
+    "small": "images/small/5388481.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/5388481.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/5388481.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 31477025,
+   "name": "Mr. Volcano",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "This seemingly mild-mannered creature has an extremely volatile temper.",
+   "level": 5,
+   "atk": 2100,
+   "def": 1300,
+   "race": "Pyro",
+   "attribute": "FIRE",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 44,
+     "code": "PSV-044",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/31477025.jpg",
+    "small": "images/small/31477025.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/31477025.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/31477025.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 78861134,
+   "name": "Darkfire Soldier #2",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A warrior who gained immeasurable power from the heart of a volcano.",
+   "level": 4,
+   "atk": 1700,
+   "def": 1100,
+   "race": "Pyro",
+   "attribute": "FIRE",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 45,
+     "code": "PSV-045",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/78861134.jpg",
+    "small": "images/small/78861134.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/78861134.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/78861134.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 4266839,
+   "name": "Kiseitai",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "When your opponent's monster attacks this card in face-down Defense Position, this card becomes an Equip Spell Card equipped to the attacking monster (No damage calculation is conducted). During each of your opponent's Standby Phases, increase your Life Points by half of the ATK of the monster equipped with this card.",
+   "level": 2,
+   "atk": 300,
+   "def": 800,
+   "race": "Fiend",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 46,
+     "code": "PSV-046",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/4266839.jpg",
+    "small": "images/small/4266839.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/4266839.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/4266839.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 30655537,
+   "name": "Cyber Falcon",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A jet-powered hawk that travels at the speed of sound.",
+   "level": 4,
+   "atk": 1400,
+   "def": 1200,
+   "race": "Machine",
+   "attribute": "WIND",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 47,
+     "code": "PSV-047",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/30655537.jpg",
+    "small": "images/small/30655537.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/30655537.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/30655537.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 3134241,
+   "name": "Flying Kamakiri #2",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A flying mantis that feeds primarily on insects.",
+   "level": 4,
+   "atk": 1500,
+   "def": 800,
+   "race": "Insect",
+   "attribute": "WIND",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 48,
+     "code": "PSV-048",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/3134241.jpg",
+    "small": "images/small/3134241.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/3134241.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/3134241.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 30532390,
+   "name": "Sky Scout",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "With eyes like a hawk and a flying speed exceeding Mach 5, this monster is a master of the sky.",
+   "level": 4,
+   "atk": 1800,
+   "def": 600,
+   "race": "Winged Beast",
+   "attribute": "WIND",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 49,
+     "code": "PSV-049",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/30532390.jpg",
+    "small": "images/small/30532390.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/30532390.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/30532390.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 78193831,
+   "name": "Buster Blader",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "Gains 500 ATK for each Dragon monster your opponent controls or is in their GY.",
+   "level": 7,
+   "atk": 2600,
+   "def": 2300,
+   "race": "Warrior",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 50,
+     "code": "PSV-050",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/78193831.jpg",
+    "small": "images/small/78193831.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/78193831.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/78193831.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 37580756,
+   "name": "Michizure",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "When a monster is sent from the field to your GY, even during the Damage Step: Target 1 monster on the field; destroy it.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 51,
+     "code": "PSV-051",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/37580756.jpg",
+    "small": "images/small/37580756.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/37580756.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/37580756.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 1918087,
+   "name": "Minor Goblin Official",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when your opponent's Life Points are 3000 or less. Inflict 500 points of damage to your opponent's Life Points during each of his/her Standby Phases.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 52,
+     "code": "PSV-052",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/1918087.jpg",
+    "small": "images/small/1918087.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/1918087.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/1918087.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 37313786,
+   "name": "Gamble",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when your opponent's hand is 6 or more cards and your hand is 2 or less. Toss a coin and call heads or tails. If you call it right, draw until your hand has 5 cards. If you call it wrong, skip your next turn.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 53,
+     "code": "PSV-053",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/37313786.jpg",
+    "small": "images/small/37313786.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/37313786.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/37313786.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 63689843,
+   "name": "Attack and Receive",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "You can only activate this card when you take damage to your Life Points. Inflict 700 points of damage to your opponent's Life Points. Also, inflict 300 points of damage to your opponent's Life Points for each \"Attack and Receive\" card in your Graveyard.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 54,
+     "code": "PSV-054",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/63689843.jpg",
+    "small": "images/small/63689843.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/63689843.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/63689843.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 35346968,
+   "name": "Solemn Wishes",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Increase your Life Points by 500 points each time you draw a card (or cards).",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 55,
+     "code": "PSV-055",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/35346968.jpg",
+    "small": "images/small/35346968.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/35346968.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/35346968.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 98139712,
+   "name": "Skull Invitation",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Each time a card(s) is sent to the Graveyard, inflict 300 damage to its owner for each card sent.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 56,
+     "code": "PSV-056",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/98139712.jpg",
+    "small": "images/small/98139712.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/98139712.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/98139712.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 6104968,
+   "name": "Bubonic Vermin",
+   "type": "Flip Effect Monster",
+   "frame_type": "effect",
+   "text": "FLIP: You can Special Summon 1 \"Bubonic Vermin\" from your Deck in face-down Defense Position. Then shuffle your Deck.",
+   "level": 3,
+   "atk": 900,
+   "def": 600,
+   "race": "Beast",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 57,
+     "code": "PSV-057",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/6104968.jpg",
+    "small": "images/small/6104968.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/6104968.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/6104968.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 67049542,
+   "name": "Dark Bat",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "Bats from the netherworld that use their hyper senses to detect their enemies.",
+   "level": 3,
+   "atk": 1000,
+   "def": 1000,
+   "race": "Winged Beast",
+   "attribute": "WIND",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 58,
+     "code": "PSV-058",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/67049542.jpg",
+    "small": "images/small/67049542.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/67049542.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/67049542.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 66927994,
+   "name": "Oni Tank T-34",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "An armored tank possessed by a fiend that will pursue enemies until they're crushed.",
+   "level": 4,
+   "atk": 1400,
+   "def": 1700,
+   "race": "Machine",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 59,
+     "code": "PSV-059",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/66927994.jpg",
+    "small": "images/small/66927994.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/66927994.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/66927994.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 2311603,
+   "name": "Overdrive",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "An all-terrain armored vehicle armed with a heavy-duty machine gun.",
+   "level": 4,
+   "atk": 1600,
+   "def": 1500,
+   "race": "Machine",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 60,
+     "code": "PSV-060",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/2311603.jpg",
+    "small": "images/small/2311603.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/2311603.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/2311603.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 24294108,
+   "name": "Burning Land",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "When this card is activated: If there are any Field Spell Cards on the field, destroy them. During each player's Standby Phase: The turn player takes 500 damage.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 61,
+     "code": "PSV-061",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/24294108.jpg",
+    "small": "images/small/24294108.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/24294108.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/24294108.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 60682203,
+   "name": "Cold Wave",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "This card can only be activated at the start of Main Phase 1. Until your next turn, you and your opponent cannot play or Set any Spell or Trap Cards.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 62,
+     "code": "PSV-062",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/60682203.jpg",
+    "small": "images/small/60682203.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/60682203.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/60682203.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 97687912,
+   "name": "Fairy Meteor Crush",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "If the equipped monster attacks a Defense Position monster, inflict piercing battle damage to your opponent.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Equip",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 63,
+     "code": "PSV-063",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/97687912.jpg",
+    "small": "images/small/97687912.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/97687912.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/97687912.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 23171610,
+   "name": "Limiter Removal",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Double the ATK of all Machine monsters you currently control, until the end of this turn. During the End Phase of this turn, destroy those monsters.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Quick-Play",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 64,
+     "code": "PSV-064",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/23171610.jpg",
+    "small": "images/small/23171610.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/23171610.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/23171610.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 66719324,
+   "name": "Rain of Mercy",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Increases the Life Points of both players by 1000 points.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 65,
+     "code": "PSV-065",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/66719324.jpg",
+    "small": "images/small/66719324.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/66719324.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/66719324.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 93108433,
+   "name": "Monster Recovery",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Target 1 monster you control that is owned by you; if that monster is still on the field, shuffle it and your entire hand into the Deck, also, after that, draw cards equal to the number of cards you shuffled from your hand into the Deck by this effect. (You cannot activate this card if you have a card in your hand that is owned by your opponent.)",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Quick-Play",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 66,
+     "code": "PSV-066",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/93108433.jpg",
+    "small": "images/small/93108433.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/93108433.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/93108433.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 59560625,
+   "name": "Shift",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "When your opponent targets exactly 1 monster you control (and no other cards) for an attack, or with a Spell/Trap effect: Target another monster you control that would be an appropriate target; that attack/Spell/Trap now targets the new target.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 67,
+     "code": "PSV-067",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/59560625.jpg",
+    "small": "images/small/59560625.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/59560625.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/59560625.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 96965364,
+   "name": "Insect Imitation",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Tribute 1 monster. Special Summon 1 Insect-Type monster from your Deck whose Level is 1 higher than the Tributed monster's.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 68,
+     "code": "PSV-068",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/96965364.jpg",
+    "small": "images/small/96965364.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/96965364.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/96965364.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 22959079,
+   "name": "Dimensionhole",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Select 1 monster on your side of the field and remove it from play until your next Standby Phase. While the monster is removed from play, the Monster Card Zone of the selected monster cannot be used.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 69,
+     "code": "PSV-069",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/22959079.jpg",
+    "small": "images/small/22959079.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/22959079.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/22959079.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 90502999,
+   "name": "Ground Collapse",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Select 2 Main Monster Zones on the field. Neither player can use the selected zones. You cannot select a zone that is occupied by a Monster Card.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 70,
+     "code": "PSV-070",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/90502999.jpg",
+    "small": "images/small/90502999.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/90502999.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/90502999.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 59344077,
+   "name": "Magic Drain",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "When your opponent activates a Spell Card: They can discard 1 Spell Card to negate this card's effect, otherwise negate the activation of their Spell Card, and if you do, destroy it.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Counter",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 71,
+     "code": "PSV-071",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/59344077.jpg",
+    "small": "images/small/59344077.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/59344077.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/59344077.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 54109233,
+   "name": "Infinite Dismissal",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Level 3 or lower monsters are destroyed during the End Phase of the turn that they are Normal Summoned or Flip Summoned.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 72,
+     "code": "PSV-072",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/54109233.jpg",
+    "small": "images/small/54109233.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/54109233.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/54109233.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 85742772,
+   "name": "Gravity Bind",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Level 4 or higher monsters cannot attack.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 73,
+     "code": "PSV-073",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/85742772.jpg",
+    "small": "images/small/85742772.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/85742772.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/85742772.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 21237481,
+   "name": "Type Zero Magic Crusher",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Discard 1 Spell Card from your hand to inflict 500 points of damage to your opponent's Life Points.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 74,
+     "code": "PSV-074",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/21237481.jpg",
+    "small": "images/small/21237481.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/21237481.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/21237481.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 58621589,
+   "name": "Shadow of Eyes",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "When a monster(s) is Set on your opponent's field: Target 1 of those Set monsters; change that Set monster to face-up Attack Position. (Flip Effects are not activated.)",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Normal",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 75,
+     "code": "PSV-075",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/58621589.jpg",
+    "small": "images/small/58621589.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/58621589.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/58621589.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 3643300,
+   "name": "The Legendary Fisherman",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "While \"Umi\" is on the field, this card is unaffected by Spell effects and cannot be targeted for attacks, but does not prevent your opponent from attacking you directly.",
+   "level": 5,
+   "atk": 1850,
+   "def": 1600,
+   "race": "Warrior",
+   "attribute": "WATER",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 76,
+     "code": "PSV-076",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/3643300.jpg",
+    "small": "images/small/3643300.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/3643300.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/3643300.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 51345461,
+   "name": "Sword Hunter",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "At the end of the Battle Phase, if this card destroyed a monster(s) by battle and sent it to the Graveyard this Battle Phase: Equip all those monsters from the Graveyard to this card as an Equip Spell Card(s) with this effect.\n● The equipped monster gains 200 ATK.",
+   "level": 7,
+   "atk": 2450,
+   "def": 1700,
+   "race": "Warrior",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 77,
+     "code": "PSV-077",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/51345461.jpg",
+    "small": "images/small/51345461.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/51345461.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/51345461.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 88733579,
+   "name": "Drill Bug",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "When this card inflicts Battle Damage to your opponent's Life Points, you can select 1 \"Parasite Paracide\" card from your Deck, shuffle the Deck, and place \"Parasite Paracide\" on top of the Deck.",
+   "level": 2,
+   "atk": 1100,
+   "def": 200,
+   "race": "Insect",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 78,
+     "code": "PSV-078",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/88733579.jpg",
+    "small": "images/small/88733579.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/88733579.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/88733579.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 24128274,
+   "name": "Deepsea Warrior",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "As long as \"Umi\" is face-up on the field, this card is unaffected by any Spell Cards.",
+   "level": 5,
+   "atk": 1600,
+   "def": 1800,
+   "race": "Warrior",
+   "attribute": "WATER",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 79,
+     "code": "PSV-079",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/24128274.jpg",
+    "small": "images/small/24128274.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/24128274.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/24128274.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 50122883,
+   "name": "Bite Shoes",
+   "type": "Flip Effect Monster",
+   "frame_type": "effect",
+   "text": "FLIP: Change the battle position of 1 face-up monster on the field.",
+   "level": 2,
+   "atk": 500,
+   "def": 300,
+   "race": "Fiend",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 80,
+     "code": "PSV-080",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/50122883.jpg",
+    "small": "images/small/50122883.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/50122883.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/50122883.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 87511987,
+   "name": "Spikebot",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A mechanical soldier created by a wicked sorcerer, it attacks with the two steel balls attached to its arms.",
+   "level": 5,
+   "atk": 1800,
+   "def": 1700,
+   "race": "Machine",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 81,
+     "code": "PSV-081",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/87511987.jpg",
+    "small": "images/small/87511987.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/87511987.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/87511987.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 52675689,
+   "name": "Invitation to a Dark Sleep",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "When this monster is summoned (excluding Special Summon), select 1 of your opponent's monsters. As long as this card remains face-up on the field, the selected monster cannot attack.",
+   "level": 5,
+   "atk": 1500,
+   "def": 1800,
+   "race": "Spellcaster",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 82,
+     "code": "PSV-082",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/52675689.jpg",
+    "small": "images/small/52675689.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/52675689.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/52675689.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 27125110,
+   "name": "Thousand-Eyes Idol",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A wicked entity that controls the hearts of men, its thousand eyes are able to see and expand the negative influences in an individual's soul.",
+   "level": 1,
+   "atk": 0,
+   "def": 0,
+   "race": "Spellcaster",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 83,
+     "code": "PSV-083",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/27125110.jpg",
+    "small": "images/small/27125110.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/27125110.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/27125110.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 63519819,
+   "name": "Thousand-Eyes Restrict",
+   "type": "Fusion Monster",
+   "frame_type": "fusion",
+   "text": "\"Relinquished\" + \"Thousand-Eyes Idol\"\r\nOther monsters on the field cannot change their battle positions or attack. Once per turn: You can target 1 monster your opponent controls; equip that target to this card (max. 1). This card's ATK/DEF become equal to that equipped monster's. If this card would be destroyed by battle, destroy that equipped monster instead.",
+   "level": 1,
+   "atk": 0,
+   "def": 0,
+   "race": "Spellcaster",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 84,
+     "code": "PSV-084",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/63519819.jpg",
+    "small": "images/small/63519819.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/63519819.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/63519819.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 84620194,
+   "name": "Girochin Kuwagata",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "Despite its small size, this monster has powerful jaws that can rip metal to shreds.",
+   "level": 4,
+   "atk": 1700,
+   "def": 1000,
+   "race": "Insect",
+   "attribute": "WIND",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 85,
+     "code": "PSV-085",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/84620194.jpg",
+    "small": "images/small/84620194.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/84620194.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/84620194.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 21015833,
+   "name": "Hayabusa Knight",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "This card can make a second attack during each Battle Phase.",
+   "level": 3,
+   "atk": 1000,
+   "def": 700,
+   "race": "Warrior",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 86,
+     "code": "PSV-086",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/21015833.jpg",
+    "small": "images/small/21015833.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/21015833.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/21015833.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 57409948,
+   "name": "Bombardment Beetle",
+   "type": "Flip Effect Monster",
+   "frame_type": "effect",
+   "text": "FLIP: Pick up and see 1 face-down Defense Position Monster Card on your opponent's side of the field. If it is an Effect Monster, destroy it (its Flip Effect is not activated), and if the card is not, return it to its original position.",
+   "level": 2,
+   "atk": 400,
+   "def": 900,
+   "race": "Insect",
+   "attribute": "WIND",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 87,
+     "code": "PSV-087",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/57409948.jpg",
+    "small": "images/small/57409948.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/57409948.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/57409948.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 83994646,
+   "name": "4-Starred Ladybug of Doom",
+   "type": "Flip Effect Monster",
+   "frame_type": "effect",
+   "text": "FLIP: Destroy all Level 4 monsters your opponent controls.",
+   "level": 3,
+   "atk": 800,
+   "def": 1200,
+   "race": "Insect",
+   "attribute": "WIND",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 88,
+     "code": "PSV-088",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/83994646.jpg",
+    "small": "images/small/83994646.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/83994646.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/83994646.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 10992251,
+   "name": "Gradius",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A high-performance jet fighter with power capsules for variable attack capabilities.",
+   "level": 4,
+   "atk": 1200,
+   "def": 800,
+   "race": "Machine",
+   "attribute": "LIGHT",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 89,
+     "code": "PSV-089",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/10992251.jpg",
+    "small": "images/small/10992251.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/10992251.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/10992251.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 56387350,
+   "name": "Vampire Baby",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "At the end of the Battle Phase, if this card destroyed a monster by battle and sent it to the Graveyard this turn: You can Special Summon that monster to your side of the field.",
+   "level": 3,
+   "atk": 700,
+   "def": 1000,
+   "race": "Zombie",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 90,
+     "code": "PSV-090",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/56387350.jpg",
+    "small": "images/small/56387350.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/56387350.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/56387350.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 79870141,
+   "name": "Mad Sword Beast",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "If this card attacks a Defense Position monster, inflict piercing battle damage.",
+   "level": 4,
+   "atk": 1400,
+   "def": 1200,
+   "race": "Dinosaur",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 91,
+     "code": "PSV-091",
+     "rarity": "Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/79870141.jpg",
+    "small": "images/small/79870141.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/79870141.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/79870141.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 5265750,
+   "name": "Skull Mariner",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A pirate ship that appears out of the mist and sinks any seagoing vessels.",
+   "level": 4,
+   "atk": 1600,
+   "def": 900,
+   "race": "Warrior",
+   "attribute": "WATER",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 92,
+     "code": "PSV-092",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/5265750.jpg",
+    "small": "images/small/5265750.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/5265750.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/5265750.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 32269855,
+   "name": "The All-Seeing White Tiger",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A proud ruler of the jungle that some fear and others respect.",
+   "level": 3,
+   "atk": 1300,
+   "def": 500,
+   "race": "Beast",
+   "attribute": "WIND",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 93,
+     "code": "PSV-093",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/32269855.jpg",
+    "small": "images/small/32269855.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/32269855.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/32269855.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 78658564,
+   "name": "Goblin Attack Force",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "If this card attacks, it is changed to Defense Position at the end of the Battle Phase, and its battle position cannot be changed until the End Phase of your next turn.",
+   "level": 4,
+   "atk": 2300,
+   "def": 0,
+   "race": "Warrior",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 94,
+     "code": "PSV-094",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/78658564.jpg",
+    "small": "images/small/78658564.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/78658564.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/78658564.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 4042268,
+   "name": "Island Turtle",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A huge turtle that is often mistaken for an island.",
+   "level": 4,
+   "atk": 1100,
+   "def": 2000,
+   "race": "Aqua",
+   "attribute": "WATER",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 95,
+     "code": "PSV-095",
+     "rarity": "Short Print"
+    }
+   ],
+   "images": {
+    "full": "images/full/4042268.jpg",
+    "small": "images/small/4042268.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/4042268.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/4042268.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 31447217,
+   "name": "Wingweaver",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A six-winged fairy who prays for peace and hope.",
+   "level": 7,
+   "atk": 2750,
+   "def": 2400,
+   "race": "Fairy",
+   "attribute": "LIGHT",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 96,
+     "code": "PSV-096",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/31447217.jpg",
+    "small": "images/small/31447217.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/31447217.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/31447217.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 67532912,
+   "name": "Science Soldier",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "Soldiers equipped with state-of-the-art weaponry to face unknown creatures.",
+   "level": 3,
+   "atk": 800,
+   "def": 800,
+   "race": "Warrior",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 97,
+     "code": "PSV-097",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/67532912.jpg",
+    "small": "images/small/67532912.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/67532912.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/67532912.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 4920010,
+   "name": "Souls of the Forgotten",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A wicked spirit created by the hateful souls of those who fell in battle. It grows by assimilating the souls of its enemies.",
+   "level": 2,
+   "atk": 900,
+   "def": 200,
+   "race": "Fiend",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 98,
+     "code": "PSV-098",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/4920010.jpg",
+    "small": "images/small/4920010.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/4920010.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/4920010.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 30325729,
+   "name": "Dokuroyaiba",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "A boomerang with brains that will pursue a target to the ends of the earth.",
+   "level": 3,
+   "atk": 1000,
+   "def": 400,
+   "race": "Fiend",
+   "attribute": "FIRE",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 99,
+     "code": "PSV-099",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/30325729.jpg",
+    "small": "images/small/30325729.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/30325729.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/30325729.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 66362965,
+   "name": "The Fiend Megacyber",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "If your opponent controls at least 2 more monsters than you do, you can Special Summon this card (from your hand).",
+   "level": 6,
+   "atk": 2200,
+   "def": 1200,
+   "race": "Warrior",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 100,
+     "code": "PSV-100",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/66362965.jpg",
+    "small": "images/small/66362965.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/66362965.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/66362965.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 423705,
+   "name": "Gearfried the Iron Knight",
+   "type": "Effect Monster",
+   "frame_type": "effect",
+   "text": "If either player equips an Equip Card(s) to this card: Destroy that Equip Card(s).",
+   "level": 4,
+   "atk": 1800,
+   "def": 1600,
+   "race": "Warrior",
+   "attribute": "EARTH",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 101,
+     "code": "PSV-101",
+     "rarity": "Super Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/423705.jpg",
+    "small": "images/small/423705.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/423705.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/423705.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 23615409,
+   "name": "Insect Barrier",
+   "type": "Spell Card",
+   "frame_type": "spell",
+   "text": "Insect-Type monsters your opponent controls cannot declare an attack.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 102,
+     "code": "PSV-102",
+     "rarity": "Common"
+    }
+   ],
+   "images": {
+    "full": "images/full/23615409.jpg",
+    "small": "images/small/23615409.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/23615409.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/23615409.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 11761845,
+   "name": "Beast of Talwar",
+   "type": "Normal Monster",
+   "frame_type": "normal",
+   "text": "Only the master of the sword among Fiend-Type monsters is permitted to hold the Talwar.\n\n\n(This card is always treated as an \"Archfiend\" card.)",
+   "level": 6,
+   "atk": 2400,
+   "def": 2150,
+   "race": "Fiend",
+   "attribute": "DARK",
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 103,
+     "code": "PSV-103",
+     "rarity": "Ultra Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/11761845.jpg",
+    "small": "images/small/11761845.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/11761845.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/11761845.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
+   "id": 61740673,
+   "name": "Imperial Order",
+   "type": "Trap Card",
+   "frame_type": "trap",
+   "text": "Negate all Spell effects on the field. Once per turn, during the Standby Phase, you must pay 700 LP (this is not optional), or this card is destroyed.",
+   "level": null,
+   "atk": null,
+   "def": null,
+   "race": "Continuous",
+   "attribute": null,
+   "printings": [
+    {
+     "set": "PSV",
+     "number": 104,
+     "code": "PSV-104",
+     "rarity": "Secret Rare"
+    }
+   ],
+   "images": {
+    "full": "images/full/61740673.jpg",
+    "small": "images/small/61740673.jpg",
+    "url_full": "https://images.ygoprodeck.com/images/cards/61740673.jpg",
+    "url_small": "https://images.ygoprodeck.com/images/cards_small/61740673.jpg"
+   },
+   "in_game_index": "PSV"
+  },
+  {
    "id": 17092736,
    "name": "Ancient Telescope",
    "type": "Spell Card",
@@ -10175,69 +13011,6 @@
     "small": "images/small/48365709.jpg",
     "url_full": "https://images.ygoprodeck.com/images/cards/48365709.jpg",
     "url_small": "https://images.ygoprodeck.com/images/cards_small/48365709.jpg"
-   }
-  },
-  {
-   "id": 36280194,
-   "name": "Backup Soldier",
-   "type": "Trap Card",
-   "frame_type": "trap",
-   "text": "While there are 5 or more monsters in your Graveyard: Target up to 3 non-Effect Monsters with 1500 or less ATK in your Graveyard; add them to your hand.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Normal",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "DB1",
-     "number": 82,
-     "code": "DB1-EN082",
-     "rarity": "Common",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "PSV",
-     "number": 28,
-     "code": "PSV-028",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 28,
-     "code": "PSV-E028",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 28,
-     "code": "PSV-EN028",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "5DS1",
-     "number": 35,
-     "code": "5DS1-EN035",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Yu-Gi-Oh! 5D's"
-    },
-    {
-     "set": "SYE",
-     "number": 47,
-     "code": "SYE-047",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Yugi Evolution"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/36280194.jpg",
-    "small": "images/small/36280194.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/36280194.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/36280194.jpg"
    }
   },
   {
@@ -11116,405 +13889,6 @@
    }
   },
   {
-   "id": 60082869,
-   "name": "Dust Tornado",
-   "type": "Trap Card",
-   "frame_type": "trap",
-   "text": "Target 1 Spell/Trap your opponent controls; destroy that target, then you can Set 1 Spell/Trap from your hand.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Normal",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "BP01",
-     "number": 88,
-     "code": "BP01-EN088",
-     "rarity": "Common",
-     "set_name": "Battle Pack: Epic Dawn"
-    },
-    {
-     "set": "DB1",
-     "number": 75,
-     "code": "DB1-EN075",
-     "rarity": "Rare",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "DTP1",
-     "number": 16,
-     "code": "DTP1-EN016",
-     "rarity": "Duel Terminal Normal Parallel Rare",
-     "set_name": "Duel Terminal - Preview Wave 1"
-    },
-    {
-     "set": "DT01",
-     "number": 46,
-     "code": "DT01-EN046",
-     "rarity": "Duel Terminal Normal Parallel Rare",
-     "set_name": "Duel Terminal 1"
-    },
-    {
-     "set": "HAC1",
-     "number": 27,
-     "code": "HAC1-EN027",
-     "rarity": "Common",
-     "set_name": "Hidden Arsenal: Chapter 1"
-    },
-    {
-     "set": "LCYW",
-     "number": 95,
-     "code": "LCYW-EN095",
-     "rarity": "Ultra Rare",
-     "set_name": "Legendary Collection 3: Yugi's World Mega Pack"
-    },
-    {
-     "set": "PSV",
-     "number": 11,
-     "code": "PSV-011",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 11,
-     "code": "PSV-E011",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 11,
-     "code": "PSV-EN011",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "RP02",
-     "number": 5,
-     "code": "RP02-EN005",
-     "rarity": "Common",
-     "set_name": "Retro Pack 2"
-    },
-    {
-     "set": "SDRL",
-     "number": 33,
-     "code": "SDRL-EN033",
-     "rarity": "Common",
-     "set_name": "Rise of the Dragon Lords Structure Deck"
-    },
-    {
-     "set": "STP3",
-     "number": 29,
-     "code": "STP3-EN029",
-     "rarity": "Common",
-     "set_name": "Speed Duel Tournament Pack 3"
-    },
-    {
-     "set": "SBAD",
-     "number": 43,
-     "code": "SBAD-EN043",
-     "rarity": "Super Rare",
-     "set_name": "Speed Duel: Attack from the Deep"
-    },
-    {
-     "set": "YSD",
-     "number": 35,
-     "code": "YSD-EN035",
-     "rarity": "Common",
-     "set_name": "Starter Deck 2006"
-    },
-    {
-     "set": "YS11",
-     "number": 33,
-     "code": "YS11-EN033",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Dawn of the Xyz"
-    },
-    {
-     "set": "5DS3",
-     "number": 31,
-     "code": "5DS3-EN031",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Duelist Toolbox"
-    },
-    {
-     "set": "YSDJ",
-     "number": 33,
-     "code": "YSDJ-EN033",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Jaden Yuki"
-    },
-    {
-     "set": "SKE",
-     "number": 45,
-     "code": "SKE-045",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Kaiba Evolution"
-    },
-    {
-     "set": "YS12",
-     "number": 33,
-     "code": "YS12-EN033",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Xyz Symphony"
-    },
-    {
-     "set": "5DS2",
-     "number": 34,
-     "code": "5DS2-EN034",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Yu-Gi-Oh! 5D's 2009"
-    },
-    {
-     "set": "SD3",
-     "number": 27,
-     "code": "SD3-EN027",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Blaze of Destruction"
-    },
-    {
-     "set": "SD4",
-     "number": 26,
-     "code": "SD4-EN026",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Fury from the Deep"
-    },
-    {
-     "set": "SD8",
-     "number": 29,
-     "code": "SD8-EN029",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Lord of the Storm"
-    },
-    {
-     "set": "SD2",
-     "number": 24,
-     "code": "SD2-EN024",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Zombie Madness"
-    },
-    {
-     "set": "YS14",
-     "number": 34,
-     "code": "YS14-EN034",
-     "rarity": "Common",
-     "set_name": "Super Starter: Space-Time Showdown"
-    },
-    {
-     "set": "YS13",
-     "number": 38,
-     "code": "YS13-EN038",
-     "rarity": "Common",
-     "set_name": "Super Starter: V for Victory"
-    },
-    {
-     "set": "SDZW",
-     "number": 33,
-     "code": "SDZW-EN033",
-     "rarity": "Common",
-     "set_name": "Zombie World Structure Deck"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/60082869.jpg",
-    "small": "images/small/60082869.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/60082869.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/60082869.jpg"
-   }
-  },
-  {
-   "id": 96355986,
-   "name": "Enchanted Javelin",
-   "type": "Trap Card",
-   "frame_type": "trap",
-   "text": "Select 1 attacking monster. Gain Life Points equal to its ATK.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Normal",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "DB1",
-     "number": 77,
-     "code": "DB1-EN077",
-     "rarity": "Common",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "PSV",
-     "number": 15,
-     "code": "PSV-015",
-     "rarity": "Common",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 15,
-     "code": "PSV-E015",
-     "rarity": "Common",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 15,
-     "code": "PSV-EN015",
-     "rarity": "Common",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "SDP",
-     "number": 49,
-     "code": "SDP-049",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Pegasus"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/96355986.jpg",
-    "small": "images/small/96355986.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/96355986.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/96355986.jpg"
-   }
-  },
-  {
-   "id": 97687912,
-   "name": "Fairy Meteor Crush",
-   "type": "Spell Card",
-   "frame_type": "spell",
-   "text": "If the equipped monster attacks a Defense Position monster, inflict piercing battle damage to your opponent.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Equip",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "DB1",
-     "number": 178,
-     "code": "DB1-EN178",
-     "rarity": "Rare",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "DT01",
-     "number": 95,
-     "code": "DT01-EN095",
-     "rarity": "Duel Terminal Normal Parallel Rare",
-     "set_name": "Duel Terminal 1"
-    },
-    {
-     "set": "LCJW",
-     "number": 232,
-     "code": "LCJW-EN232",
-     "rarity": "Common",
-     "set_name": "Legendary Collection 4: Joey's World Mega Pack"
-    },
-    {
-     "set": "PSV",
-     "number": 63,
-     "code": "PSV-063",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 63,
-     "code": "PSV-E063",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 63,
-     "code": "PSV-EN063",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "SKE",
-     "number": 40,
-     "code": "SKE-040",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Kaiba Evolution"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/97687912.jpg",
-    "small": "images/small/97687912.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/97687912.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/97687912.jpg"
-   }
-  },
-  {
-   "id": 98299011,
-   "name": "Gift of The Mystical Elf",
-   "type": "Trap Card",
-   "frame_type": "trap",
-   "text": "Increase your Life Points by 300 points for each monster on the field.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Normal",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "KC01",
-     "number": 54,
-     "code": "KC01-EN054",
-     "rarity": "Ultra Rare",
-     "set_name": "25th Anniversary Ultimate Kaiba Set"
-    },
-    {
-     "set": "DB1",
-     "number": 73,
-     "code": "DB1-EN073",
-     "rarity": "Common",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "PSV",
-     "number": 9,
-     "code": "PSV-009",
-     "rarity": "Short Print",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 9,
-     "code": "PSV-E009",
-     "rarity": "Short Print",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 9,
-     "code": "PSV-EN009",
-     "rarity": "Common",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "SKE",
-     "number": 44,
-     "code": "SKE-044",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Kaiba Evolution"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/98299011.jpg",
-    "small": "images/small/98299011.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/98299011.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/98299011.jpg"
-   }
-  },
-  {
    "id": 79571449,
    "name": "Graceful Charity",
    "type": "Spell Card",
@@ -12166,69 +14540,6 @@
    }
   },
   {
-   "id": 62867251,
-   "name": "Light of Intervention",
-   "type": "Trap Card",
-   "frame_type": "trap",
-   "text": "While this card is on the field, Monster Cards cannot be Set or flipped face-down. If a Monster Card would be Set, it must be Normal Summoned in face-up Defense Position.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Continuous",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "DB1",
-     "number": 84,
-     "code": "DB1-EN084",
-     "rarity": "Common",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "DT02",
-     "number": 47,
-     "code": "DT02-EN047",
-     "rarity": "Duel Terminal Normal Parallel Rare",
-     "set_name": "Duel Terminal 2"
-    },
-    {
-     "set": "PSV",
-     "number": 31,
-     "code": "PSV-031",
-     "rarity": "Common",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 31,
-     "code": "PSV-E031",
-     "rarity": "Common",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 31,
-     "code": "PSV-EN031",
-     "rarity": "Common",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "SKE",
-     "number": 46,
-     "code": "SKE-046",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Kaiba Evolution"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/62867251.jpg",
-    "small": "images/small/62867251.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/62867251.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/62867251.jpg"
-   }
-  },
-  {
    "id": 46474915,
    "name": "Magical Ghost",
    "type": "Normal Monster",
@@ -12408,167 +14719,6 @@
     "small": "images/small/47060154.jpg",
     "url_full": "https://images.ygoprodeck.com/images/cards/47060154.jpg",
     "url_small": "https://images.ygoprodeck.com/images/cards_small/47060154.jpg"
-   }
-  },
-  {
-   "id": 71044499,
-   "name": "Nobleman of Crossout",
-   "type": "Spell Card",
-   "frame_type": "spell",
-   "text": "Target 1 face-down monster on the field; destroy that target, and if you do, banish it, then, if it was a Flip monster, each player reveals their Main Deck, then banishes all cards from it with that monster's name.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Normal",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "AP06",
-     "number": 23,
-     "code": "AP06-EN023",
-     "rarity": "Common",
-     "set_name": "Astral Pack Six"
-    },
-    {
-     "set": "DB1",
-     "number": 88,
-     "code": "DB1-EN088",
-     "rarity": "Super Rare",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "DT03",
-     "number": 42,
-     "code": "DT03-EN042",
-     "rarity": "Duel Terminal Normal Parallel Rare",
-     "set_name": "Duel Terminal 3"
-    },
-    {
-     "set": "DL14",
-     "number": 15,
-     "code": "DL14-EN015",
-     "rarity": "Rare",
-     "set_name": "Duelist League 14 participation cards"
-    },
-    {
-     "set": "HL06",
-     "number": 1,
-     "code": "HL06-EN001",
-     "rarity": "Ultra Parallel Rare",
-     "set_name": "Hobby League 6 participation card A"
-    },
-    {
-     "set": "PSV",
-     "number": 34,
-     "code": "PSV-034",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 34,
-     "code": "PSV-E034",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 34,
-     "code": "PSV-EN034",
-     "rarity": "Super Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "RA03",
-     "number": 102,
-     "code": "RA03-EN102",
-     "rarity": "Platinum Secret Rare",
-     "set_name": "Quarter Century Bonanza"
-    },
-    {
-     "set": "RP02",
-     "number": 11,
-     "code": "RP02-EN011",
-     "rarity": "Common",
-     "set_name": "Retro Pack 2"
-    },
-    {
-     "set": "STP4",
-     "number": 23,
-     "code": "STP4-EN023",
-     "rarity": "Common",
-     "set_name": "Speed Duel Tournament Pack 4"
-    },
-    {
-     "set": "SBCB",
-     "number": 138,
-     "code": "SBCB-EN138",
-     "rarity": "Common",
-     "set_name": "Speed Duel: Battle City Box"
-    },
-    {
-     "set": "SKE",
-     "number": 38,
-     "code": "SKE-038",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Kaiba Evolution"
-    },
-    {
-     "set": "SD3",
-     "number": 17,
-     "code": "SD3-EN017",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Blaze of Destruction"
-    },
-    {
-     "set": "SD1",
-     "number": 12,
-     "code": "SD1-EN012",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Dragon's Roar"
-    },
-    {
-     "set": "SD8",
-     "number": 20,
-     "code": "SD8-EN020",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Lord of the Storm"
-    },
-    {
-     "set": "SD6",
-     "number": 19,
-     "code": "SD6-EN019",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Spellcaster's Judgment"
-    },
-    {
-     "set": "SD2",
-     "number": 16,
-     "code": "SD2-EN016",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Zombie Madness"
-    },
-    {
-     "set": "SDDE",
-     "number": 20,
-     "code": "SDDE-EN020",
-     "rarity": "Common",
-     "set_name": "The Dark Emperor Structure Deck"
-    },
-    {
-     "set": "TU03",
-     "number": 17,
-     "code": "TU03-EN017",
-     "rarity": "Common",
-     "set_name": "Turbo Pack: Booster Three"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/71044499.jpg",
-    "small": "images/small/71044499.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/71044499.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/71044499.jpg"
    }
   },
   {
@@ -12772,160 +14922,6 @@
     "small": "images/small/93920745.jpg",
     "url_full": "https://images.ygoprodeck.com/images/cards/93920745.jpg",
     "url_small": "https://images.ygoprodeck.com/images/cards_small/93920745.jpg"
-   }
-  },
-  {
-   "id": 70828912,
-   "name": "Premature Burial",
-   "type": "Spell Card",
-   "frame_type": "spell",
-   "text": "Activate this card by paying 800 LP, then target 1 monster in your Graveyard; Special Summon that target in Attack Position and equip it with this card. When this card is destroyed, destroy the equipped monster.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Equip",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "BP02",
-     "number": 135,
-     "code": "BP02-EN135",
-     "rarity": "Mosaic Rare",
-     "set_name": "Battle Pack 2: War of the Giants"
-    },
-    {
-     "set": "BP03",
-     "number": 136,
-     "code": "BP03-EN136",
-     "rarity": "Common",
-     "set_name": "Battle Pack 3: Monster League"
-    },
-    {
-     "set": "BP01",
-     "number": 40,
-     "code": "BP01-EN040",
-     "rarity": "Rare",
-     "set_name": "Battle Pack: Epic Dawn"
-    },
-    {
-     "set": "DB1",
-     "number": 91,
-     "code": "DB1-EN091",
-     "rarity": "Super Rare",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "LCJW",
-     "number": 64,
-     "code": "LCJW-EN064",
-     "rarity": "Common",
-     "set_name": "Legendary Collection 4: Joey's World Mega Pack"
-    },
-    {
-     "set": "PSV",
-     "number": 37,
-     "code": "PSV-037",
-     "rarity": "Ultra Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 37,
-     "code": "PSV-E037",
-     "rarity": "Ultra Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 37,
-     "code": "PSV-EN037",
-     "rarity": "Ultra Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "RA03",
-     "number": 103,
-     "code": "RA03-EN103",
-     "rarity": "Platinum Secret Rare",
-     "set_name": "Quarter Century Bonanza"
-    },
-    {
-     "set": "RP02",
-     "number": 12,
-     "code": "RP02-EN012",
-     "rarity": "Common",
-     "set_name": "Retro Pack 2"
-    },
-    {
-     "set": "SDRL",
-     "number": 24,
-     "code": "SDRL-EN024",
-     "rarity": "Common",
-     "set_name": "Rise of the Dragon Lords Structure Deck"
-    },
-    {
-     "set": "YSD",
-     "number": 23,
-     "code": "YSD-EN023",
-     "rarity": "Common",
-     "set_name": "Starter Deck 2006"
-    },
-    {
-     "set": "SKE",
-     "number": 39,
-     "code": "SKE-039",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Kaiba Evolution"
-    },
-    {
-     "set": "SD3",
-     "number": 18,
-     "code": "SD3-EN018",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Blaze of Destruction"
-    },
-    {
-     "set": "SD1",
-     "number": 13,
-     "code": "SD1-EN013",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Dragon's Roar"
-    },
-    {
-     "set": "SD4",
-     "number": 17,
-     "code": "SD4-EN017",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Fury from the Deep"
-    },
-    {
-     "set": "SD7",
-     "number": 18,
-     "code": "SD7-EN018",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Invincible Fortress"
-    },
-    {
-     "set": "SD6",
-     "number": 20,
-     "code": "SD6-EN020",
-     "rarity": "Common",
-     "set_name": "Structure Deck: Spellcaster's Judgment"
-    },
-    {
-     "set": "UP02",
-     "number": 11,
-     "code": "UP02-EN011",
-     "rarity": "Super Rare",
-     "set_name": "Ultimate Tournament Pack 2"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/70828912.jpg",
-    "small": "images/small/70828912.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/70828912.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/70828912.jpg"
    }
   },
   {
@@ -13671,83 +15667,6 @@
    }
   },
   {
-   "id": 59560625,
-   "name": "Shift",
-   "type": "Trap Card",
-   "frame_type": "trap",
-   "text": "When your opponent targets exactly 1 monster you control (and no other cards) for an attack, or with a Spell/Trap effect: Target another monster you control that would be an appropriate target; that attack/Spell/Trap now targets the new target.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Normal",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "DB1",
-     "number": 182,
-     "code": "DB1-EN182",
-     "rarity": "Common",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "LCYW",
-     "number": 97,
-     "code": "LCYW-EN097",
-     "rarity": "Super Rare",
-     "set_name": "Legendary Collection 3: Yugi's World Mega Pack"
-    },
-    {
-     "set": "PSV",
-     "number": 67,
-     "code": "PSV-067",
-     "rarity": "Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 67,
-     "code": "PSV-E067",
-     "rarity": "Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 67,
-     "code": "PSV-EN067",
-     "rarity": "Rare",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "SYE",
-     "number": 48,
-     "code": "SYE-048",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Yugi Evolution"
-    },
-    {
-     "set": "WGRT",
-     "number": 79,
-     "code": "WGRT-EN079",
-     "rarity": "Super Rare",
-     "set_name": "War of the Giants Reinforcements"
-    },
-    {
-     "set": "BPW2",
-     "number": 79,
-     "code": "BPW2-EN079",
-     "rarity": "Super Rare",
-     "set_name": "War of the Giants: Round 2"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/59560625.jpg",
-    "small": "images/small/59560625.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/59560625.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/59560625.jpg"
-   }
-  },
-  {
    "id": 68005187,
    "name": "Soul Exchange",
    "type": "Spell Card",
@@ -13990,62 +15909,6 @@
     "small": "images/small/50005633.jpg",
     "url_full": "https://images.ygoprodeck.com/images/cards/50005633.jpg",
     "url_small": "https://images.ygoprodeck.com/images/cards_small/50005633.jpg"
-   }
-  },
-  {
-   "id": 34694160,
-   "name": "The Eye of Truth",
-   "type": "Trap Card",
-   "frame_type": "trap",
-   "text": "Your opponent must keep their hand revealed. Once per turn, during your opponent's Standby Phase, if they have a Spell(s) in their hand: They gain 1000 LP if they have a Spell(s) in their hand at resolution.",
-   "level": null,
-   "atk": null,
-   "def": null,
-   "race": "Continuous",
-   "attribute": null,
-   "printings": [
-    {
-     "set": "DB1",
-     "number": 74,
-     "code": "DB1-EN074",
-     "rarity": "Common",
-     "set_name": "Dark Beginning 1"
-    },
-    {
-     "set": "PSV",
-     "number": 10,
-     "code": "PSV-010",
-     "rarity": "Short Print",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 10,
-     "code": "PSV-E010",
-     "rarity": "Short Print",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "PSV",
-     "number": 10,
-     "code": "PSV-EN010",
-     "rarity": "Common",
-     "set_name": "Pharaoh's Servant"
-    },
-    {
-     "set": "SYE",
-     "number": 46,
-     "code": "SYE-046",
-     "rarity": "Common",
-     "set_name": "Starter Deck: Yugi Evolution"
-    }
-   ],
-   "in_game_index": "EXTRA",
-   "images": {
-    "full": "images/full/34694160.jpg",
-    "small": "images/small/34694160.jpg",
-    "url_full": "https://images.ygoprodeck.com/images/cards/34694160.jpg",
-    "url_small": "https://images.ygoprodeck.com/images/cards_small/34694160.jpg"
    }
   },
   {
@@ -14707,5 +16570,5 @@
    }
   }
  ],
- "note": "in_game_index: which list the card appears under in the owner's game. EXTRA = the 66 cards the game's 'All' list shows outside the three set tabs (Pharaoh's Servant / starter-deck era cards)."
+ "note": "in_game_index: which list the card appears under in the owner's game. PSV = Pharaoh's Servant, the game's fourth set tab (2026-11-21). EXTRA = the 56 cards the game's 'All' list shows outside the four set tabs (starter-deck era cards)."
 }

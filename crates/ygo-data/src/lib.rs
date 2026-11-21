@@ -36,7 +36,8 @@ use std::path::Path;
 pub const SCHEMA_VERSION: u32 = 1;
 
 /// The `cards.json` schema version this build understands. Version 2 added
-/// the 66 EXTRA cards' `in_game_index` and the file's `note`.
+/// the EXTRA cards' `in_game_index` and the file's `note`; PSV (2026-11-21)
+/// is a new `in_game_index` value, which an older build refuses.
 pub const CARDS_SCHEMA_VERSION: u32 = 2;
 
 pub(crate) fn check_schema(file: &'static str, found: u32) -> Result<(), DataError> {

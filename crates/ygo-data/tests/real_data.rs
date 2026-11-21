@@ -24,18 +24,18 @@ fn collection(name: &str) -> Collection {
 }
 
 #[test]
-fn all_440_cards_load_with_the_handoff_counts() {
+fn all_535_cards_load_with_the_handoff_counts() {
     let b = bundle();
-    assert_eq!(b.cards.len(), 440);
+    assert_eq!(b.cards.len(), 535);
     assert_eq!(
         b.cards.count_by_kind(),
         vec![
-            (CardKind::Normal, 168),
-            (CardKind::Effect, 99),
-            (CardKind::Fusion, 25),
+            (CardKind::Normal, 193),
+            (CardKind::Effect, 119),
+            (CardKind::Fusion, 26),
             (CardKind::Ritual, 5),
-            (CardKind::Spell, 107),
-            (CardKind::Trap, 36),
+            (CardKind::Spell, 121),
+            (CardKind::Trap, 71),
         ]
     );
     let by_index = |i: GameIndex| b.cards.iter().filter(|c| c.in_game_index == i).count();
@@ -44,11 +44,12 @@ fn all_440_cards_load_with_the_handoff_counts() {
             by_index(GameIndex::Lob),
             by_index(GameIndex::Mrd),
             by_index(GameIndex::Srl),
+            by_index(GameIndex::Psv),
             by_index(GameIndex::Extra),
         ],
-        [126, 144, 104, 66]
+        [126, 144, 104, 105, 56]
     );
-    // The 66 EXTRA cards are the ones data/extra_cards.txt names.
+    // The 56 EXTRA cards are the ones data/extra_cards.txt names.
     let names = std::fs::read_to_string(root().join("data/extra_cards.txt")).unwrap();
     let mut listed: Vec<&str> = names
         .lines()
@@ -76,7 +77,7 @@ fn all_440_cards_load_with_the_handoff_counts() {
 #[test]
 fn both_saves_collections_load() {
     let a = collection("collection.json");
-    assert_eq!((a.unique_cards(), a.total_copies()), (385, 1117));
+    assert_eq!((a.unique_cards(), a.total_copies()), (465, 1197));
     let b = collection("collection_save_b.json");
     assert_eq!((b.unique_cards(), b.total_copies()), (201, 421));
 }
