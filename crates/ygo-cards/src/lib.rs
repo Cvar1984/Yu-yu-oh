@@ -14,6 +14,9 @@ pub mod monsters_a;
 pub mod monsters_b;
 pub mod oneshot;
 mod positions;
+pub mod psv_monsters;
+pub mod psv_spells;
+pub mod psv_traps;
 pub mod remaining;
 pub mod reveal;
 pub mod ritual;
@@ -44,5 +47,8 @@ pub fn registry() -> Registry {
     extra_monsters::register(&mut r);
     extra_spells::register(&mut r);
     extra_traps::register(&mut r);
+    psv_monsters::register(&mut r);
+    psv_spells::register(&mut r);
+    psv_traps::register(&mut r);
     r
 }
