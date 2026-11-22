@@ -49,6 +49,7 @@ tribute_margin = 5
 tribute_needs_cover = false
 counter_min_value = 50
 facedown_attack_min_atk = 1400
+use_cost = 0.5
 "#;
 
 #[test]

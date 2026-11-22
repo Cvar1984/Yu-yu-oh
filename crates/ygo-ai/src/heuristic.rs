@@ -21,9 +21,6 @@ use crate::eval::{Worth, lead, settle};
 const SETTLE_CAP: usize = 300;
 /// Options of one `Choose` decision the lookahead tries, best scored first.
 const LOOKAHEAD_OPTIONS: usize = 12;
-/// Activating a Spell or Trap Card spends it: the lookahead asks the
-/// effect to gain this share of the card's worth in the hand.
-const USE_COST: f64 = 0.5;
 
 /// Scores closer than this are a tie.
 const TIE: f64 = 1e-9;
@@ -104,7 +101,7 @@ impl HeuristicPlayer {
     /// leads to for the deciding player: the action, then play on by this
     /// bot without lookahead on both sides until the next open decision,
     /// then their lead in points (`eval::lead`). Activated Spells and
-    /// Traps pay `USE_COST`; the cards any option activates count for
+    /// Traps pay the style's `use_cost`; the cards any option activates count for
     /// nothing in every result, so keeping one is no gain by itself.
     /// `None` for an option `g` does not allow.
     pub fn option_values(&self, g: &Game, options: &[Action], seed: u64) -> Vec<Option<f64>> {
@@ -182,7 +179,7 @@ impl HeuristicPlayer {
         let played = !g.stats(card).is_monster()
             && (inst.location == Location::Hand || inst.position == Position::FaceDown);
         if played {
-            self.card_value(inst.card) * self.worth.hand_worth * USE_COST
+            self.card_value(inst.card) * self.worth.hand_worth * self.style.use_cost
         } else {
             0.0
         }

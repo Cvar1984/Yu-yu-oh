@@ -106,6 +106,9 @@ pub struct Style {
     pub tribute_needs_cover: bool,
     pub counter_min_value: i32,
     pub facedown_attack_min_atk: i32,
+    /// With lookahead: activating a Spell or Trap Card must gain this share
+    /// of the card's worth in the hand (what keeping it is worth).
+    pub use_cost: f64,
     /// Card values that replace those in `card_values.toml`.
     #[serde(skip)]
     pub values: BTreeMap<CardId, i32>,
