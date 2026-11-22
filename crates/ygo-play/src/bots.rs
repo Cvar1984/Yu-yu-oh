@@ -9,8 +9,13 @@ use ygo_ai::{HeuristicPlayer, Player, RandomPlayer, SearchPlayer, SearchSettings
 use ygo_data::{Bundle, CardDb, CardValues, DataError, Styles};
 use ygo_engine::Shared;
 
-/// The opponent when none is named.
-pub const DEFAULT_BOT: &str = "heuristic:beatdown";
+/// The opponent when none is named: the Beatdown style looking one step
+/// ahead (owner, 2026-11-22). `heuristic:<style>` is the plain bot, kept
+/// for comparisons; search bots play out in the plain Beatdown style.
+pub const DEFAULT_BOT: &str = "lookahead:beatdown";
+
+/// The style search bots play out in when none is named.
+const DEFAULT_ROLLOUT_STYLE: &str = "beatdown";
 
 pub struct Bots {
     pub shared: Arc<Shared>,
@@ -48,12 +53,12 @@ impl Bots {
         }
     }
 
-    /// The bots to offer: `random`, every heuristic style and `search`.
+    /// The bots to offer: `random`, every style looking ahead, and `search`.
     /// `make` also takes `search:<style>`, a search bot whose playouts use
     /// another style.
     pub fn names(&self) -> Vec<String> {
         std::iter::once("random".to_string())
-            .chain(self.styles.names().map(|s| format!("heuristic:{s}")))
+            .chain(self.styles.names().map(|s| format!("lookahead:{s}")))
             .chain(std::iter::once("search".to_string()))
             .collect()
     }
@@ -84,7 +89,7 @@ impl Bots {
         }
         // `search` plays out its samples with the default heuristic style.
         let (search, style_name) = match name {
-            "search" => (true, DEFAULT_BOT.strip_prefix("heuristic:")),
+            "search" => (true, Some(DEFAULT_ROLLOUT_STYLE)),
             _ => match name.strip_prefix("search:") {
                 Some(style) => (true, Some(style)),
                 None => (false, name.strip_prefix("heuristic:")),
@@ -92,7 +97,7 @@ impl Bots {
         };
         let style = style_name.and_then(|s| self.styles.get(s)).ok_or_else(|| {
             format!(
-                "unknown bot `{name}`; available: {}, search:<style>",
+                "unknown bot `{name}`; available: {}, search:<style>, heuristic:<style> (no lookahead)",
                 self.names().join(", ")
             )
         })?;
