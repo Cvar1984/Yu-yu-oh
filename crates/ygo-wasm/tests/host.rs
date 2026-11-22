@@ -93,7 +93,7 @@ fn init_offers_the_legal_decks_and_every_bot() {
     assert_eq!(decks[3]["legal"], false);
     let problem = decks[3]["problem"].as_str().unwrap();
     assert!(problem.contains("2 copies of Raigeki"), "{problem}");
-    assert_eq!(answer["default_bot"], "heuristic:beatdown");
+    assert_eq!(answer["default_bot"], "lookahead:beatdown");
     let bots = answer["bots"].as_array().unwrap();
     assert_eq!(bots.len(), 8, "random, six styles, search");
     assert!(bots.contains(&json!("search")));

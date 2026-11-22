@@ -129,7 +129,9 @@ fn who_goes_first_follows_the_choice() {
         .err()
         .expect("unknown bot refused");
     assert!(
-        err.contains("heuristic:beatdown") && err.contains("random"),
+        err.contains("lookahead:beatdown")
+            && err.contains("heuristic:<style>")
+            && err.contains("random"),
         "{err}"
     );
     assert!(bots().make("heuristic:nonsense", 1).is_err());
