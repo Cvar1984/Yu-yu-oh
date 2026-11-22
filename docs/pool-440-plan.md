@@ -150,3 +150,37 @@ within noise of the original. The weak spots stay the Dark Plasma zone
 and Gate Guardian decks (about a third won). Scripting Scapegoat (batch
 2) changes the baseline: rerun this comparison then.
 
+## Deck crafting with the lookahead bot (2026-11-22)
+
+The search bot's playouts misplayed many cards (`ygo audit`: the plain
+heuristic bot erred in 19.4% of its activations, answers and choices on
+the real decks), so deck results favoured decks it happened to play
+well. Decks are now measured with the lookahead bot on both sides
+(`lookahead:beatdown`), 2,000 games against each enemy deck
+(`tools/deck_eval.sh`). The enemies play better too, so every win rate
+is lower than with the old protocol.
+
+Baselines (seeds 9101-9106, 12,000 games): save_a_crafted_40 51.4%,
+save_a_control_no_tribute_40 44.7%, save_a_best_overall_40 43.6%,
+save_a_owner_current_40 42.2%, the owner's Dark Summoner deck 38.2%.
+
+`tools/deck_search.py` searches one-card swaps over save A's collection
+(485 cards since the 2026-11-22 list), within copy and ban list limits,
+without the 8 unscripted EXTRA cards: each round screens random swaps on
+300 games per enemy, confirms the best five on 1,500 per enemy against
+the current deck on other seeds, and keeps a swap that gains enough. The
+results are then measured on seed sets the search never used.
+
+| Search | Swaps kept | Result (24,000 games, ±0.6) |
+| --- | --- | --- |
+| From save_a_crafted_40 (two passes, then a third that found nothing) | 5 | save_a_searched_40: 62.3% |
+| From Dark Summoner (15 rounds, then a pass that found nothing) | 10 | save_a_dark_summoner_40: 61.1% |
+| Reference, same seeds | | save_a_crafted_40: 51.1% |
+
+Both searches went the same way: Gravity Bind (Level 4 and higher cannot
+attack), Swords of Revealing Light and small monsters that still may
+attack under it; the big monsters, Waboku and Graceful Charity left. The
+two decks share 20 of their 40 cards. A deck's file order changes how it
+is shuffled, so the same deck can differ by about a point on one seed
+set; each result above is the saved file's, over two seed sets.
+
