@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
-use ygo_engine::{Action, Game, GameResult, Location, PlayerId, PlayerView, Position};
+use ygo_engine::{Action, Game, GameResult, PlayerId, PlayerView};
 
 use crate::{HeuristicPlayer, Player};
 
@@ -237,32 +237,12 @@ impl SearchPlayer {
     /// `hand_worth`.
     fn evaluate(&self, g: &Game) -> f64 {
         let set = &self.settings;
-        let side = |p: PlayerId| -> f64 {
-            let st = g.player(p);
-            let mut worth = f64::from(st.lp) / set.lp_per_point;
-            for (i, inst) in g.instances().iter().enumerate() {
-                if inst.controller != p {
-                    continue;
-                }
-                let value = self.rollout.card_value(inst.card);
-                worth += match inst.location {
-                    Location::MonsterZone(_) => {
-                        // A monster's worth includes its ATK; count boosts too.
-                        let id = ygo_engine::InstanceId(i as u8);
-                        let boost = if inst.position == Position::FaceUpAttack {
-                            f64::from(g.atk(id) - g.stats(id).atk) / set.lp_per_point
-                        } else {
-                            0.0
-                        };
-                        value + boost
-                    }
-                    Location::SpellTrapZone(_) | Location::FieldZone => value,
-                    Location::Hand => value * set.hand_worth,
-                    _ => 0.0,
-                };
-            }
-            worth
+        let w = crate::eval::Worth {
+            lp_per_point: set.lp_per_point,
+            hand_worth: set.hand_worth,
         };
+        let value = |c| self.rollout.card_value(c);
+        let side = |p: PlayerId| crate::eval::side_worth(g, p, &value, w, &[]);
         let diff = side(PlayerId(0)) - side(PlayerId(1));
         1.0 / (1.0 + (-diff / set.score_scale).exp())
     }

@@ -21,6 +21,8 @@ ygo-cards.workspace = true
 ygo-ai.workspace = true
 ygo-play.workspace = true
 clap.workspace = true
+rand_core = "0.10"
+rand_chacha = "0.10"
 ratatui = "0.30"
 
 [dev-dependencies]

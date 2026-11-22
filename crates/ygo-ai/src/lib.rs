@@ -2,8 +2,11 @@
 //! recorded game between two of them. The uniform random player is the
 //! floor of the evaluation ladder and the engine's fuzzing driver.
 
+mod eval;
 mod heuristic;
 mod search;
+
+pub use eval::Worth;
 
 pub use heuristic::HeuristicPlayer;
 pub use search::{SearchPlayer, SearchSettings};

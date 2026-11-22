@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::{bots, decks, play, replay, sim, tui};
+use ygo_cli::{audit, bots, decks, play, replay, sim, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -73,6 +73,31 @@ enum Command {
         #[command(flatten)]
         search: SearchArgs,
     },
+    /// How well a heuristic bot plays its cards: at each activation,
+    /// answer or card choice, every option is tried on the real game and
+    /// the gap to the best is booked to the card (see `audit.rs`).
+    Audit {
+        /// Decks for both sides; random 40-card pool decks when none.
+        decks: Vec<PathBuf>,
+        #[arg(short = 'n', long, default_value_t = 200)]
+        games: u32,
+        #[arg(long, default_value_t = 1)]
+        seed: u64,
+        /// Heuristic style of both bots.
+        #[arg(long, default_value = "beatdown")]
+        style: String,
+        /// Audit the lookahead bot instead of the plain heuristic one.
+        #[arg(long)]
+        lookahead: bool,
+        /// A game still running after this many turns is a draw.
+        #[arg(long, default_value_t = ygo_engine::GameSetup::DEFAULT_MAX_TURNS)]
+        max_turns: u32,
+        #[arg(long, default_value_t = 1)]
+        threads: usize,
+        /// Cards listed in the report.
+        #[arg(long, default_value_t = 40)]
+        top: usize,
+    },
     /// Play against a bot in a full-screen terminal UI.
     Play {
         /// Your deck.
@@ -126,6 +151,9 @@ struct SearchArgs {
     /// Turns a `search` bot plays ahead before scoring; 0 plays to the end.
     #[arg(long, default_value_t = ygo_ai::SearchSettings::default().horizon_turns)]
     horizon: u32,
+    /// `search` bots play out their samples with the lookahead heuristic bot.
+    #[arg(long)]
+    rollout_lookahead: bool,
 }
 
 impl SearchArgs {
@@ -136,6 +164,7 @@ impl SearchArgs {
             (None, None) => bots.search.iterations,
         };
         bots.search.horizon_turns = self.horizon;
+        bots.rollout_lookahead = self.rollout_lookahead;
         if let Some(secs) = self.think {
             let limit = std::time::Duration::try_from_secs_f64(secs)
                 .map_err(|_| format!("--think {secs}: not a number of seconds"))?;
@@ -248,6 +277,36 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     threads,
                 },
             )?;
+            Ok(true)
+        }
+        Command::Audit {
+            decks,
+            games,
+            seed,
+            style,
+            lookahead,
+            max_turns,
+            threads,
+            top,
+        } => {
+            let bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            let decks = decks
+                .iter()
+                .map(|p| decks::load_legal(p, &bundle))
+                .collect::<Result<Vec<_>, _>>()?;
+            let report = audit::run(
+                &bots,
+                &audit::AuditOptions {
+                    decks: &decks,
+                    games,
+                    seed,
+                    style: &style,
+                    lookahead,
+                    max_turns,
+                    threads,
+                },
+            )?;
+            audit::print(&bots, &report, top);
             Ok(true)
         }
         Command::Play {

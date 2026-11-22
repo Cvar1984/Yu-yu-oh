@@ -19,6 +19,8 @@ pub struct Bots {
     styles: Styles,
     /// How hard `search` bots think.
     pub search: SearchSettings,
+    /// `search` bots play their playouts with the lookahead heuristic bot.
+    pub rollout_lookahead: bool,
 }
 
 impl Bots {
@@ -42,6 +44,7 @@ impl Bots {
             values,
             styles,
             search: SearchSettings::default(),
+            rollout_lookahead: false,
         }
     }
 
@@ -55,9 +58,29 @@ impl Bots {
             .collect()
     }
 
+    /// A heuristic bot of this style, looking one step ahead or not.
+    pub fn heuristic(
+        &self,
+        style: &str,
+        lookahead: bool,
+        seed: u64,
+    ) -> Result<HeuristicPlayer, String> {
+        let style = self
+            .styles
+            .get(style)
+            .ok_or_else(|| format!("unknown style `{style}`"))?;
+        Ok(
+            HeuristicPlayer::new(self.shared.clone(), &self.cards, &self.values, style, seed)
+                .with_lookahead(lookahead),
+        )
+    }
+
     pub fn make(&self, name: &str, seed: u64) -> Result<Box<dyn Player>, String> {
         if name == "random" {
             return Ok(Box::new(RandomPlayer::new(seed)));
+        }
+        if let Some(style) = name.strip_prefix("lookahead:") {
+            return Ok(Box::new(self.heuristic(style, true, seed)?));
         }
         // `search` plays out its samples with the default heuristic style.
         let (search, style_name) = match name {
@@ -76,7 +99,8 @@ impl Bots {
         let heuristic =
             HeuristicPlayer::new(self.shared.clone(), &self.cards, &self.values, style, seed);
         Ok(if search {
-            Box::new(SearchPlayer::new(heuristic, self.search.clone(), seed))
+            let rollout = heuristic.with_lookahead(self.rollout_lookahead);
+            Box::new(SearchPlayer::new(rollout, self.search.clone(), seed))
         } else {
             Box::new(heuristic)
         })
