@@ -10,11 +10,20 @@ use rand_core::{Rng, SeedableRng};
 use ygo_data::{CardDb, CardId, CardKind, CardValues, Style};
 use ygo_engine::Tag;
 use ygo_engine::{
-    Action, CardStats, InstanceId, Observation, Place, PlayerId, PlayerView, Position, Shared,
-    SpellTrapType, VisibleCard, WindowKind,
+    Action, CardStats, DecisionKind, Game, InstanceId, Location, Observation, Place, PlayerId,
+    PlayerView, Position, Shared, SpellTrapType, VisibleCard, WindowKind,
 };
 
 use crate::Player;
+use crate::eval::{Worth, lead, settle};
+
+/// Actions a lookahead may take to settle one option.
+const SETTLE_CAP: usize = 300;
+/// Options of one `Choose` decision the lookahead tries, best scored first.
+const LOOKAHEAD_OPTIONS: usize = 12;
+/// Activating a Spell or Trap Card spends it: the lookahead asks the
+/// effect to gain this share of the card's worth in the hand.
+const USE_COST: f64 = 0.5;
 
 /// Scores closer than this are a tie.
 const TIE: f64 = 1e-9;
@@ -32,6 +41,10 @@ pub struct HeuristicPlayer {
     /// Activations made this turn, so a repeatable effect loses appeal.
     turn: u32,
     activated: Vec<(InstanceId, u8)>,
+    /// Try each activation, answer and choice on a sample and keep the one
+    /// that leaves the best position (`option_values`).
+    lookahead: bool,
+    worth: Worth,
 }
 
 /// What every score needs to know about the board, computed once per
@@ -73,6 +86,145 @@ impl HeuristicPlayer {
             rng: ChaCha8Rng::seed_from_u64(seed),
             turn: 0,
             activated: Vec::new(),
+            lookahead: false,
+            worth: Worth::default(),
+        }
+    }
+
+    /// The same bot that looks one step ahead before activating a card,
+    /// answering a question or choosing a card (or not).
+    pub fn with_lookahead(self, on: bool) -> Self {
+        Self {
+            lookahead: on,
+            ..self
+        }
+    }
+
+    /// What each of `options` (legal actions of `g`'s pending decision)
+    /// leads to for the deciding player: the action, then play on by this
+    /// bot without lookahead on both sides until the next open decision,
+    /// then their lead in points (`eval::lead`). Activated Spells and
+    /// Traps pay `USE_COST`; the cards any option activates count for
+    /// nothing in every result, so keeping one is no gain by itself.
+    /// `None` for an option `g` does not allow.
+    pub fn option_values(&self, g: &Game, options: &[Action], seed: u64) -> Vec<Option<f64>> {
+        let Some(player) = g.pending_decision().map(|d| d.player) else {
+            return vec![None; options.len()];
+        };
+        let ignore: Vec<InstanceId> = options
+            .iter()
+            .filter_map(|a| match a {
+                Action::Activate { card, .. } => Some(*card),
+                _ => None,
+            })
+            .collect();
+        let value = |c| self.card_value(c);
+        let blind = self.fresh(seed).with_lookahead(false);
+        options
+            .iter()
+            .map(|a| {
+                if !g.actions().contains(a) {
+                    return None;
+                }
+                let cost = match a {
+                    Action::Activate { card, .. } => self.use_cost(g, *card),
+                    _ => 0.0,
+                };
+                let mut next = g.clone();
+                next.apply(a).ok()?;
+                settle(&mut next, &mut blind.clone(), SETTLE_CAP);
+                Some(lead(&next, player, &value, self.worth, &ignore) - cost)
+            })
+            .collect()
+    }
+
+    /// For audits, on the real game `g` rather than a sample: the
+    /// lookahead value of `chosen` and of the best option this bot would
+    /// weigh in its decision, and that option. `None` when the decision
+    /// has fewer than two such options.
+    pub fn review(&self, g: &Game, chosen: &Action, seed: u64) -> Option<(f64, f64, Action)> {
+        let d = g.pending_decision()?;
+        let obs = g.observe(d.player);
+        let board = self.board(&obs);
+        let actions = g.actions();
+        let scores: Vec<f64> = actions
+            .iter()
+            .map(|a| self.score_on(&obs, &board, a))
+            .collect();
+        let mut candidates = self.lookahead_candidates(d.kind, actions, &scores);
+        if candidates.len() < 2 {
+            return None;
+        }
+        if let Some(i) = actions.iter().position(|a| a == chosen)
+            && !candidates.contains(&i)
+        {
+            candidates.push(i);
+        }
+        let options: Vec<Action> = candidates.iter().map(|&i| actions[i].clone()).collect();
+        let values = self.option_values(g, &options, seed);
+        let chosen_value = options
+            .iter()
+            .zip(&values)
+            .find(|(a, _)| *a == chosen)
+            .and_then(|(_, v)| *v)?;
+        let (best, best_value) = options
+            .iter()
+            .zip(values)
+            .filter_map(|(a, v)| v.map(|v| (a, v)))
+            .max_by(|x, y| x.1.total_cmp(&y.1))?;
+        Some((chosen_value, best_value, best.clone()))
+    }
+
+    /// What activating `card` spends: a Spell or Trap Card played from the
+    /// hand or from face-down. A face-up card's or a monster's effect is free.
+    fn use_cost(&self, g: &Game, card: InstanceId) -> f64 {
+        let inst = g.instance(card);
+        let played = !g.stats(card).is_monster()
+            && (inst.location == Location::Hand || inst.position == Position::FaceDown);
+        if played {
+            self.card_value(inst.card) * self.worth.hand_worth * USE_COST
+        } else {
+            0.0
+        }
+    }
+
+    /// The actions worth a lookahead in this decision, by index: every
+    /// activation, answer and choice (and passing), against the best other
+    /// action by score. Empty when there is nothing of that kind.
+    fn lookahead_candidates(
+        &self,
+        kind: DecisionKind,
+        actions: &[Action],
+        scores: &[f64],
+    ) -> Vec<usize> {
+        let special = |a: &Action| {
+            matches!(
+                a,
+                Action::Activate { .. } | Action::Answer { .. } | Action::Choose { .. }
+            )
+        };
+        if !actions.iter().any(special) {
+            return Vec::new();
+        }
+        let mut order: Vec<usize> = (0..actions.len()).collect();
+        order.sort_by(|&a, &b| scores[b].total_cmp(&scores[a]));
+        match kind {
+            DecisionKind::Respond | DecisionKind::Choose | DecisionKind::Triggers => {
+                order.truncate(LOOKAHEAD_OPTIONS);
+                order
+            }
+            DecisionKind::MainPhase | DecisionKind::BattlePhase => {
+                let other = order.iter().copied().find(|&i| !special(&actions[i]));
+                let mut picked: Vec<usize> = order
+                    .iter()
+                    .copied()
+                    .filter(|&i| special(&actions[i]))
+                    .take(LOOKAHEAD_OPTIONS)
+                    .collect();
+                picked.extend(other);
+                picked
+            }
+            _ => Vec::new(),
         }
     }
 
@@ -445,11 +597,40 @@ impl Player for HeuristicPlayer {
             .iter()
             .map(|a| self.score_on(obs, &board, a))
             .collect();
-        let best = scores.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-        let ties: Vec<usize> = (0..actions.len())
-            .filter(|&i| scores[i] >= best - TIE)
-            .collect();
-        let pick = ties[(self.rng.next_u64() % ties.len() as u64) as usize];
+        let kind = view
+            .observation()
+            .decision
+            .map_or(DecisionKind::MainPhase, |d| d.kind);
+        let candidates = if self.lookahead {
+            self.lookahead_candidates(kind, actions, &scores)
+        } else {
+            Vec::new()
+        };
+        let looked = if candidates.len() > 1 {
+            let sample = view.sample(self.rng.next_u64());
+            let options: Vec<Action> = candidates.iter().map(|&i| actions[i].clone()).collect();
+            let seed = self.rng.next_u64();
+            let values = self.option_values(&sample, &options, seed);
+            // Best result first, the score breaking ties.
+            candidates
+                .iter()
+                .zip(values)
+                .filter_map(|(&i, v)| v.map(|v| (i, v)))
+                .max_by(|a, b| {
+                    a.1.total_cmp(&b.1)
+                        .then(scores[a.0].total_cmp(&scores[b.0]))
+                })
+                .map(|(i, _)| i)
+        } else {
+            None
+        };
+        let pick = looked.unwrap_or_else(|| {
+            let best = scores.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            let ties: Vec<usize> = (0..actions.len())
+                .filter(|&i| scores[i] >= best - TIE)
+                .collect();
+            ties[(self.rng.next_u64() % ties.len() as u64) as usize]
+        });
         let action = actions[pick].clone();
         if let Action::Activate { card, effect, .. } = action {
             self.activated.push((card, effect));

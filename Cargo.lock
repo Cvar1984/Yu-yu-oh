@@ -2162,6 +2162,8 @@ name = "ygo-cli"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "rand_chacha",
+ "rand_core 0.10.1",
  "ratatui",
  "ygo-ai",
  "ygo-cards",

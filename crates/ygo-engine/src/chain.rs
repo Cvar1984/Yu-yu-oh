@@ -201,6 +201,12 @@ impl Game {
         })
     }
 
+    /// The card whose resolution waits for a `Choose` or `Ask` answer, if
+    /// any. For analysis tools; players see the question, not its source.
+    pub fn resolving_card(&self) -> Option<InstanceId> {
+        self.pending_choice.as_ref().map(|pc| pc.link.card)
+    }
+
     /// The link responses would chain to.
     pub fn last_link(&self) -> Option<&ChainLink> {
         self.chain.last()
@@ -627,7 +633,13 @@ impl Game {
         };
         let window = Window { kind, events };
         // With no chain, speed 1 is left to `fast_effect_allowed` (Standby Spells).
-        let min_speed = self.chain.last().map_or(1, |l| l.speed);
+        // Between a summon's declaration and its success only Counter Traps
+        // (speed 3) may start a chain.
+        let min_speed = match (self.chain.last(), kind) {
+            (Some(l), _) => l.speed,
+            (None, WindowKind::SummonDeclared) => 3,
+            (None, _) => 1,
+        };
         // Every window of the Damage Step counts, chain windows included:
         // only effects that may start there can respond to a Damage Step chain.
         let in_damage_step = self.phase == crate::Phase::Battle(crate::BattleStep::Damage);

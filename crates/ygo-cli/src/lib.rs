@@ -4,6 +4,7 @@
 
 pub use ygo_play::{bots, decks, describe, session};
 
+pub mod audit;
 pub mod play;
 pub mod replay;
 pub mod sim;

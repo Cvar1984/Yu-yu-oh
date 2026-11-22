@@ -731,3 +731,37 @@ fn type_zero_magic_crusher_discards_a_spell_for_500_damage() {
     assert_eq!(lp(&g, P1), 7500);
     assert_eq!(g.instance(hinotama).location, Location::Graveyard);
 }
+
+#[test]
+fn a_summon_declaration_can_be_answered_only_by_counter_traps() {
+    use ygo_cards::traps::SOLEMN_JUDGMENT;
+    let mut g = game(
+        &[DARK_HOLE, CELTIC_GUARDIAN],
+        &[CALL_OF_THE_HAUNTED, SOLEMN_JUDGMENT],
+    );
+    next_turn(&mut g);
+    summon_now(&mut g, P1, PAD);
+    set_card(&mut g, P1, CALL_OF_THE_HAUNTED);
+    set_card(&mut g, P1, SOLEMN_JUDGMENT);
+    next_turn(&mut g);
+    activate(&mut g, DARK_HOLE);
+    let celtic = in_hand(&g, P0, CELTIC_GUARDIAN);
+    play(&mut g, summon(celtic));
+    let d = g.pending_decision().unwrap();
+    assert_eq!((d.player, d.kind), (P1, DecisionKind::Respond));
+    assert!(
+        !activations(&g, SOLEMN_JUDGMENT).is_empty(),
+        "a Counter Trap may"
+    );
+    assert!(
+        activations(&g, CALL_OF_THE_HAUNTED).is_empty(),
+        "a speed-2 Trap may not answer the declaration"
+    );
+    play(&mut g, Action::Pass);
+    let d = g.pending_decision().unwrap();
+    assert_eq!((d.player, d.kind), (P1, DecisionKind::Respond));
+    assert!(
+        !activations(&g, CALL_OF_THE_HAUNTED).is_empty(),
+        "it may once the summon succeeded"
+    );
+}
