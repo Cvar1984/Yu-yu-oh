@@ -2,7 +2,7 @@
  "schema_version": 1,
  "name": "Enemy E1 Toon",
  "for": "enemy",
- "notes": "Realistic enemy built from all 440 cards with the limited list; theme cards fixed, rest tuned (sim v9).",
+ "notes": "Realistic enemy built from all 440 cards with the limited list; theme cards fixed, rest tuned (sim v9). 2026-11-22 (owner: the game's opponents can answer locks): -2 Waboku, +1 Mystical Space Typhoon, +1 Dust Tornado, so the deck can destroy a face-up Spell or Trap.",
  "main": [
   {
    "id": 79571449,
@@ -52,11 +52,6 @@
   {
    "id": 44095762,
    "name": "Mirror Force",
-   "count": 2
-  },
-  {
-   "id": 12607053,
-   "name": "Waboku",
    "count": 2
   },
   {
@@ -117,6 +112,16 @@
   {
    "id": 78010363,
    "name": "Witch of the Black Forest",
+   "count": 1
+  },
+  {
+   "id": 5318639,
+   "name": "Mystical Space Typhoon",
+   "count": 1
+  },
+  {
+   "id": 60082869,
+   "name": "Dust Tornado",
    "count": 1
   }
  ],

@@ -184,3 +184,33 @@ Gravity Bind the deck fell to 55.0%. Both decks were removed (owner,
 2026-11-22); the bots must learn to break a lock before the search runs
 again.
 
+
+### Breaking the lock (2026-11-22)
+
+Four of the six enemy decks had no card that destroys a face-up Spell or
+Trap, so nothing could break Gravity Bind. The owner says the game's
+opponents have answers, so each got two (e6 one, e3 already had four):
+Mystical Space Typhoon and Dust Tornado, in place of Waboku (e1, e4, e5,
+e6) or two Graceful Charity (e2); see each deck's notes. The bots use
+them: in an audit of 600 lock-deck games, Mystical Space Typhoon and
+Dust Tornado were activated in 668 reviewed decisions, wrongly in 8%.
+
+A bot setting that made a monster unable to attack count for less (so
+removing a lock or not locking yourself would score higher) changed
+nothing measurable at 0.75, 0.5 or 0.25, neither in the six mirrors nor
+against the lock deck, and was taken out again.
+
+The removed lock deck still wins 61.0% against the armed enemy decks
+(crafted deck 52.6%), 17% of its wins by deck-out. With the strongest
+pilot on both sides (the search bot with lookahead playouts, 150 games)
+it beat Big beatdown 74.7% ±7.0 (crafted deck 53.3% ±8.0), 39 of its
+112 wins by deck-out, games of 34 turns. Against these opponents the
+lock is a real strength of the simulation, not only a bot blind spot;
+whether it is a deck the owner wants is the owner's call.
+
+That run also found a sampler bug: a card whose effect is on the chain
+while it is face-down (Kiseitai, attacked) was dealt another identity in
+the opponent's samples, so its link resolved an effect the new card does
+not have and the game panicked. Chain cards and a card waiting on an
+answer now keep their identity in samples (`PlayerView::sample`; test in
+`crates/ygo-ai/tests/view.rs`).
