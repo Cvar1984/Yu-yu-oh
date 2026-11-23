@@ -5,6 +5,10 @@ within the copy and ban list limits; 300 games per enemy deck, seeds
 9101-9106), confirms the best 5 against the current deck (1,500 per enemy,
 seeds 9301-9306), and keeps the best swap if it gains at least ACCEPT
 points. Stops after 2 rounds without a gain or after ROUNDS rounds.
+Decks are scored by deck_eval.sh's damage score (owner, 2026-11-22: a
+win or loss by deck-out counts as a draw, so a deck must win by damage),
+and a deck is never tried if a lock card that stops both players'
+monsters would stop most of its own (SELF_LOCKS).
 Report a result on other seeds (tools/deck_eval.sh <deck> 2000 <base>).
 
 Usage, from the repository root after `cargo build --release -p ygo-cli`:
@@ -20,6 +24,22 @@ ban = {x["id"]: x["limit"] for x in json.load(open(f"{repo}/data/banlist.json"))
 # The 8 EXTRA cards still unscripted (crates/ygo-cards/tests/registry.rs).
 UNSCRIPTED = {2833249, 62867251, 77622396, 70344351, 73915051, 59560625, 68005187, 80604092}
 def limit(i): return min(coll.get(i, 0), ban.get(i, 3), 3)
+
+# Lock cards that stop both players' monsters from attacking, with the
+# monsters they stop: a deck may not hold one that stops more than half of
+# its own monsters (owner, 2026-11-22).
+SELF_LOCKS = {
+    85742772: lambda c: (c["level"] or 0) >= 4,  # Gravity Bind
+    44656491: lambda c: (c["atk"] or 0) >= 1500,  # Messenger of Peace
+}
+
+def self_locked(counts):
+    monsters = [(cards[i], n) for i, n in counts.items() if n and "Monster" in cards[i]["type"]]
+    total = sum(n for _, n in monsters)
+    for lock, stops in SELF_LOCKS.items():
+        if counts.get(lock, 0) and 2 * sum(n for c, n in monsters if stops(c)) > total:
+            return True
+    return False
 pool = [i for i in coll if cards[i]["type"] != "Fusion Monster" and i not in UNSCRIPTED and limit(i) > 0]
 deck0 = json.load(open(start))
 cur = {e["id"]: e["count"] for e in deck0["main"]}
@@ -33,8 +53,7 @@ def write(counts, path):
 def evaluate(counts, n, base):
     p = f"{out}/cand.json"; write(counts, p)
     r = subprocess.run([f"{here}/deck_eval.sh", p, str(n), str(base)], capture_output=True, text=True).stdout
-    w, g = r.split("|")[0].split()
-    return int(w) / int(g)
+    return float(r.split("|")[0].split()[2])
 
 def swaps(counts, k):
     seen, res = set(), []
@@ -42,7 +61,9 @@ def swaps(counts, k):
         rem = rng.choice([i for i, n in counts.items() if n])
         add = rng.choice([i for i in pool if counts.get(i, 0) < limit(i) and i != rem])
         if (rem, add) in seen: continue
-        seen.add((rem, add)); c = dict(counts); c[rem] -= 1; c[add] = c.get(add, 0) + 1; res.append(((rem, add), c))
+        seen.add((rem, add)); c = dict(counts); c[rem] -= 1; c[add] = c.get(add, 0) + 1
+        if self_locked(c): continue
+        res.append(((rem, add), c))
     return res
 
 log = open(f"{out}/log.txt", "a")

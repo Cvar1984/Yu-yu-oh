@@ -214,3 +214,15 @@ the opponent's samples, so its link resolved an effect the new card does
 not have and the game panicked. Chain cards and a card waiting on an
 answer now keep their identity in samples (`PlayerView::sample`; test in
 `crates/ygo-ai/tests/view.rs`).
+
+### Win by damage only (owner, 2026-11-22)
+
+The search now scores a deck by its damage score: a game won or lost by
+deck-out counts as a draw (`tools/deck_eval.sh`, third number). On the
+same 1,800 games the crafted deck scores 54.3% either way, the lock deck
+60.4% by win rate but 55.2% by damage score. The search also never tries
+a deck holding a lock card that stops both players' monsters if it would
+stop more than half of its own (Gravity Bind: Level 4 or higher;
+Messenger of Peace: 1500 ATK or more; `SELF_LOCKS` in
+`tools/deck_search.py`); the lock deck fails that rule.
+
