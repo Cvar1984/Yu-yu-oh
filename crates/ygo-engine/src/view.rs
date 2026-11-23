@@ -94,6 +94,15 @@ impl<'a> PlayerView<'a> {
                 .for_each(&mut mark);
         }
         obs.revealed.iter().for_each(&mut mark);
+        // A card on the chain, or one whose resolution waits for an answer,
+        // was activated in the open: it keeps its identity even if it has
+        // since gone back to the hand or the Deck.
+        for link in &obs.chain {
+            known[link.instance.index()] = true;
+        }
+        if let Some(card) = self.game.resolving_card() {
+            known[card.index()] = true;
+        }
         (0..known.len())
             .filter(|&i| !known[i])
             .map(|i| InstanceId(i as u8))
