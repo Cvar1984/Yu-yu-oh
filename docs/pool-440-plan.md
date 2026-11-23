@@ -171,16 +171,16 @@ without the 8 unscripted EXTRA cards: each round screens random swaps on
 the current deck on other seeds, and keeps a swap that gains enough. The
 results are then measured on seed sets the search never used.
 
-| Search | Swaps kept | Result (24,000 games, ±0.6) |
-| --- | --- | --- |
-| From save_a_crafted_40 (two passes, then a third that found nothing) | 5 | save_a_searched_40: 62.3% |
-| From Dark Summoner (15 rounds, then a pass that found nothing) | 10 | save_a_dark_summoner_40: 61.1% |
-| Reference, same seeds | | save_a_crafted_40: 51.1% |
-
-Both searches went the same way: Gravity Bind (Level 4 and higher cannot
-attack), Swords of Revealing Light and small monsters that still may
-attack under it; the big monsters, Waboku and Graceful Charity left. The
-two decks share 20 of their 40 cards. A deck's file order changes how it
-is shuffled, so the same deck can differ by about a point on one seed
-set; each result above is the saved file's, over two seed sets.
+Two searches (from save_a_crafted_40 and from the owner's Dark Summoner
+deck) reached 62.3% and 61.1%, but the owner found the decks made no
+sense, and they did not: both put Gravity Bind (Level 4 and higher
+monsters cannot attack) in decks whose monsters are almost all Level 4,
+so it locked their own attackers too. They won by freezing the board:
+29% of the searched deck's wins came from the opponent's deck running
+out (crafted deck: 0%), and its games lasted 22 turns instead of 14.
+The enemy bots never broke the lock (no removal aimed at Gravity Bind,
+big monsters played into it), and the search exploited that. Without
+Gravity Bind the deck fell to 55.0%. Both decks were removed (owner,
+2026-11-22); the bots must learn to break a lock before the search runs
+again.
 
