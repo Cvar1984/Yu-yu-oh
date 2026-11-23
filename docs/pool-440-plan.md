@@ -87,7 +87,8 @@ calculation, and a negated Spell goes to the Graveyard exactly once.
 | Step | Commit | Result |
 | --- | --- | --- |
 | 1. Data | `874320f` | 440 cards, 13 limited, 2 collections, 15 decks load and check; 44 scripts pending |
-| 2. Batch 1 | this commit | 36 cards scripted (Fairy Meteor Crush moved here from batch 2), 29 tests in `tests/extra.rs`; 8 pending |
+| 2. Batch 1 | batch 1 | 36 cards scripted (Fairy Meteor Crush moved here from batch 2), 29 tests in `tests/extra.rs`; 8 pending |
+| 3. Batch 2 A | this commit | D. Tribe, Riryoku Field, Shift; 6 tests in `tests/extra_2.rs`; 5 pending |
 
 Batch 1 added to the engine: piercing damage (`Effect::pierce`), stopping
 an attack already declared (`cancel_attack`; Spellbinding Circle now
@@ -106,6 +107,20 @@ Graveyard. Simplifications, like those listed in `docs/m3-plan.md`:
   the odds are the same.
 - **Shadow Spell** goes to the Graveyard with its monster as an Equip
   does, rather than being destroyed by its own effect.
+
+Batch 2 (2026-11-23), in three parts. Owner's answer: the Sheep Token's
+stats go in a data file, `data/tokens.json`.
+
+- **A**: D. Tribe, Riryoku Field, Shift. Engine: lingering
+  `LingeringKind::Race` (the Type comes from the source script's `race`
+  hook, applied after continuous ones; it ends when the monster leaves
+  the field), `change_race_until_end_phase`, `attack_targets`,
+  `retarget_attack` and `Event::AttackRetargeted`. Fairy's Hand Mirror's
+  single-target checks are shared (`remaining::single_monster_target`,
+  `other_single_targets`). Simplifications: D. Tribe needs a face-up
+  monster to affect, and a monster turned face-down and back up keeps
+  the Dragon Type that turn; Shift answers an attack only in the
+  attack-declaration window with no chain open.
 
 ## Deck crafting from save A (2026-11-20)
 

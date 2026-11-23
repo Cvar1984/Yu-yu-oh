@@ -352,6 +352,9 @@ pub fn event(obs: &Observation, pool: &CardPool, e: &Event) -> Option<String> {
         } => format!("{} attacks {}", c(*attacker), c(*t)),
         Event::AttackCancelled { attacker } => format!("The attack of {} stopped", c(*attacker)),
         Event::AttackReplay { attacker } => format!("{} lost its target", c(*attacker)),
+        Event::AttackRetargeted { attacker, target } => {
+            format!("{} now attacks {}", c(*attacker), c(*target))
+        }
         Event::DestroyedByBattle { card } => format!("{} was destroyed by battle", c(*card)),
         Event::DestroyedByEffect { card, .. } => format!("{} was destroyed", c(*card)),
         Event::DamageTaken { player, amount, lp } => {

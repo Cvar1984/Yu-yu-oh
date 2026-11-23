@@ -259,6 +259,11 @@ pub enum Event {
     AttackReplay {
         attacker: InstanceId,
     },
+    /// An effect moved the attack under way to a new target (Shift).
+    AttackRetargeted {
+        attacker: InstanceId,
+        target: InstanceId,
+    },
     DeckReordered {
         player: PlayerId,
         count: u8,

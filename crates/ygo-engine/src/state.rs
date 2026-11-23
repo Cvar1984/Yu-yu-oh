@@ -140,6 +140,9 @@ pub enum LingeringKind {
     /// The Spell or Trap `card` is a Normal Monster with 0 ATK and DEF until
     /// the end of this Battle Phase, then destroyed (Magical Hats).
     HatMonster { card: InstanceId },
+    /// `card` has the Type that the first `race` hook of the source's
+    /// script names, while it stays face-up on the field (D. Tribe).
+    Race { card: InstanceId },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.
