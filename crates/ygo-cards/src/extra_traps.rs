@@ -2,8 +2,8 @@
 
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
-    CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Location, Phase, PlayerId,
-    Registry, Source, StatMod, Tag, TargetSets, Window, WindowKind,
+    CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Lingering, LingeringKind,
+    Location, Phase, PlayerId, Registry, Source, StatMod, Tag, TargetSets, Window, WindowKind,
 };
 
 use crate::continuous::face_up_monsters;
@@ -27,6 +27,8 @@ pub const WABOKU: CardId = CardId(12607053);
 pub const D_TRIBE: CardId = CardId(2833249);
 pub const RIRYOKU_FIELD: CardId = CardId(70344351);
 pub const SHIFT: CardId = CardId(59560625);
+pub const LIGHT_OF_INTERVENTION: CardId = CardId(62867251);
+pub const REVERSE_TRAP: CardId = CardId(77622396);
 /// Not in the pool: Gryphon Wing can never be activated here.
 pub const HARPIES_FEATHER_DUSTER: CardId = CardId(18144506);
 
@@ -201,6 +203,34 @@ fn shift_targets(g: &Game, s: Source) -> TargetSets {
 }
 
 pub fn register(r: &mut Registry) {
+    // Until the End Phase, every ATK/DEF addition subtracts and every
+    // subtraction adds (multiplications and set values are untouched:
+    // `Tag::StatsSetOrScaled`).
+    r.register(
+        REVERSE_TRAP,
+        single(Effect {
+            timing: |g, _, _| !all_monsters(g).is_empty(),
+            damage_step: true,
+            ..Effect::activate(2, |g, ctx| {
+                let turn = g.turn();
+                g.add_lingering(Lingering {
+                    source: ctx.source,
+                    kind: LingeringKind::StatChangesReversed,
+                    expires_turn: turn,
+                });
+                Flow::Done
+            })
+        }),
+    );
+    // Continuous Trap: no monster can be Set or turned face-down; a Set is
+    // a Normal Summon in face-up Defense Position.
+    r.register(
+        LIGHT_OF_INTERVENTION,
+        CardScript {
+            tags: vec![Tag::NoFaceDownMonsters],
+            effects: vec![Effect::activate(2, ygo_engine::nothing)],
+        },
+    );
     // All face-up monsters you control at resolution become Dragon until
     // the end of this turn.
     r.register(

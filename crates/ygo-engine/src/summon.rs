@@ -39,17 +39,26 @@ impl Game {
         let free_zones = (0..state.monster_zones.len())
             .filter(|&i| state.monster_zones[i].is_none() && !self.zone_locked(player, i))
             .count();
-        let on_field: Vec<InstanceId> = state.monsters().collect();
+        let mut on_field: Vec<InstanceId> = state.monsters().collect();
+        // Soul Exchange: the opponent's monster joins, and must be used.
+        let must = self.must_tribute(player);
+        on_field.extend(must);
         for &card in &state.hand {
             let stats = self.stats(card);
             if !stats.can_normal_summon(self.script(card)) {
                 continue;
             }
             let needed = self.tributes_needed(stats.level);
-            if needed > on_field.len() || free_zones + needed == 0 {
+            if needed > on_field.len() {
                 continue;
             }
             for tributes in combinations(&on_field, needed) {
+                let freed = tributes.iter().filter(|&&t| Some(t) != must).count();
+                if free_zones + freed == 0
+                    || must.is_some_and(|m| needed > 0 && !tributes.contains(&m))
+                {
+                    continue;
+                }
                 for face_down in [false, true] {
                     actions.push(Action::Summon {
                         card,
@@ -79,10 +88,17 @@ impl Game {
             });
         }
         self.players[player.index()].summons_used += 1;
+        // Under Light of Intervention a Set is a face-up Defense summon.
+        let position = match (face_down, self.face_down_forbidden()) {
+            (false, _) => Position::FaceUpAttack,
+            (true, false) => Position::FaceDownDefense,
+            (true, true) => Position::FaceUpDefense,
+        };
+        let face_down = position == Position::FaceDownDefense;
         let pending = PendingSummon {
             player,
             card,
-            kind: SummonKind::Normal,
+            kind: SummonKind::Normal { position },
             face_down,
             negated: false,
         };
@@ -172,12 +188,7 @@ impl Game {
             return;
         }
         match kind {
-            SummonKind::Normal => {
-                let position = if face_down {
-                    Position::FaceDownDefense
-                } else {
-                    Position::FaceUpAttack
-                };
+            SummonKind::Normal { position } => {
                 self.remove_from_current_place(card);
                 let zone = self
                     .free_monster_zone(player)

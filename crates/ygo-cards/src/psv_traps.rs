@@ -4,7 +4,7 @@
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
     CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Lingering, LingeringKind,
-    Location, Phase, PlayerId, Position, Registry, Source, StatMod, TargetSets, Window,
+    Location, Phase, PlayerId, Position, Registry, Source, StatMod, Tag, TargetSets, Window,
 };
 
 use crate::psv_monsters::is_effect_monster;
@@ -934,6 +934,7 @@ pub fn register(r: &mut Registry) {
         single(Effect {
             timing: |g, s, _| {
                 matches!(g.phase(), Phase::Battle(_))
+                    && !g.face_down_forbidden()
                     && g.turn_player() != s.controller
                     && !g.monsters_controlled(s.controller).is_empty()
                     && hat_options(g, s.controller, &[]).len() >= 2
@@ -987,7 +988,7 @@ pub fn register(r: &mut Registry) {
     r.register(
         MIRROR_WALL,
         CardScript {
-            tags: Vec::new(),
+            tags: vec![Tag::StatsSetOrScaled],
             effects: vec![
                 Effect::activate(2, |g, ctx| {
                     g.clear_marks(ctx.source);

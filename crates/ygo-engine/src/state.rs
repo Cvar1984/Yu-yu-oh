@@ -143,6 +143,14 @@ pub enum LingeringKind {
     /// `card` has the Type that the first `race` hook of the source's
     /// script names, while it stays face-up on the field (D. Tribe).
     Race { card: InstanceId },
+    /// Every ATK/DEF addition subtracts and every subtraction adds, except
+    /// the changes of `Tag::StatsSetOrScaled` cards (Reverse Trap).
+    StatChangesReversed,
+    /// `player`'s Tribute Summons must Tribute the opponent's `card`, as if
+    /// they controlled it (Soul Exchange).
+    MustTribute { player: PlayerId, card: InstanceId },
+    /// `player` cannot enter the Battle Phase (Soul Exchange).
+    NoBattlePhase { player: PlayerId },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.

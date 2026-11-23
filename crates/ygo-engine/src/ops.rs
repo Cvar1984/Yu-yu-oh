@@ -212,6 +212,9 @@ impl Game {
     /// Changes a monster's battle position by an effect; it then counts as
     /// having changed position this turn.
     pub fn set_position(&mut self, card: InstanceId, position: Position) {
+        if position == Position::FaceDownDefense && self.face_down_forbidden() {
+            return;
+        }
         let inst = &mut self.instances[card.index()];
         if !matches!(inst.location, Location::MonsterZone(_)) || inst.position == position {
             return;
@@ -548,6 +551,11 @@ impl Game {
         if !self.can_special_summon(player) {
             return false;
         }
+        let position = if position == Position::FaceDownDefense && self.face_down_forbidden() {
+            Position::FaceUpDefense
+        } else {
+            position
+        };
         self.remove_from_current_place(card);
         let zone = self.free_monster_zone(player).expect("checked above");
         let rules = &self.shared.rules.summon;
@@ -673,6 +681,9 @@ impl Game {
                 | LingeringKind::DamageCalcStats { .. }
                 | LingeringKind::Marked { .. }
                 | LingeringKind::Race { .. }
+                | LingeringKind::StatChangesReversed
+                | LingeringKind::MustTribute { .. }
+                | LingeringKind::NoBattlePhase { .. }
                 | LingeringKind::BattleShield { .. } => {}
             }
         }
@@ -930,14 +941,16 @@ impl Game {
     pub(crate) fn stats_with(&self, modifiers: &[Modifier], card: InstanceId) -> (i32, i32) {
         let base = self.stats(card);
         let immune = self.unaffected_by_spells(card);
-        let mut total = self.temporary_mod(card, immune);
+        let reversed = self.stat_changes_reversed();
+        let mut total = self.temporary_mod(card, immune, reversed);
         for (source, modify) in modifiers {
             if immune && self.is_spell(source.card) {
                 continue;
             }
             let m = modify(self, *source, card);
-            total.atk += m.atk;
-            total.def += m.def;
+            let sign = self.stat_sign(reversed, source.card);
+            total.atk += sign * m.atk;
+            total.def += sign * m.def;
         }
         ((base.atk + total.atk).max(0), (base.def + total.def).max(0))
     }
@@ -948,7 +961,26 @@ impl Game {
 
     /// Lingering ATK/DEF changes; a card unaffected by Spells ignores those
     /// a Spell gave.
-    fn temporary_mod(&self, card: InstanceId, immune: bool) -> StatMod {
+    fn stat_changes_reversed(&self) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::StatChangesReversed)
+    }
+
+    /// +1, or -1 while Reverse Trap reverses `source`'s additions.
+    fn stat_sign(&self, reversed: bool, source: InstanceId) -> i32 {
+        if reversed
+            && !self
+                .script(source)
+                .is_some_and(|s| s.has(Tag::StatsSetOrScaled))
+        {
+            -1
+        } else {
+            1
+        }
+    }
+
+    fn temporary_mod(&self, card: InstanceId, immune: bool, reversed: bool) -> StatMod {
         let mut total = StatMod::default();
         for l in &self.lingering {
             if immune && self.is_spell(l.source) {
@@ -959,8 +991,9 @@ impl Game {
                 | LingeringKind::DamageCalcStats { card: c, atk, def }
                     if c == card =>
                 {
-                    total.atk += atk;
-                    total.def += def;
+                    let sign = self.stat_sign(reversed, l.source);
+                    total.atk += sign * atk;
+                    total.def += sign * def;
                 }
                 _ => {}
             }
@@ -970,15 +1003,17 @@ impl Game {
 
     fn stat_mod(&self, card: InstanceId) -> StatMod {
         let immune = self.unaffected_by_spells(card);
-        let mut total = self.temporary_mod(card, immune);
+        let reversed = self.stat_changes_reversed();
+        let mut total = self.temporary_mod(card, immune, reversed);
         self.for_each_continuous(|source, effect| {
             if immune && self.is_spell(source.card) {
                 return;
             }
             if let Some(modify) = effect.modify {
                 let m = modify(self, source, card);
-                total.atk += m.atk;
-                total.def += m.def;
+                let sign = self.stat_sign(reversed, source.card);
+                total.atk += sign * m.atk;
+                total.def += sign * m.def;
             }
         });
         total
@@ -1172,6 +1207,40 @@ impl Game {
             kind: LingeringKind::NoSpellsOrTraps,
             expires_turn: turn,
         });
+    }
+
+    /// Whether no monster may be Set or turned face-down now (Light of
+    /// Intervention).
+    pub fn face_down_forbidden(&self) -> bool {
+        let mut forbidden = false;
+        self.for_each_face_up_script(|_, script| {
+            forbidden |= script.has(Tag::NoFaceDownMonsters);
+        });
+        forbidden
+    }
+
+    /// The opponent's monster `player` must Tribute this turn, while it is
+    /// still on the field (Soul Exchange).
+    pub fn must_tribute(&self, player: PlayerId) -> Option<InstanceId> {
+        self.lingering.iter().find_map(|l| match l.kind {
+            LingeringKind::MustTribute { player: p, card }
+                if p == player
+                    && self.instances[card.index()].controller != player
+                    && matches!(
+                        self.instances[card.index()].location,
+                        Location::MonsterZone(_)
+                    ) =>
+            {
+                Some(card)
+            }
+            _ => None,
+        })
+    }
+
+    pub(crate) fn battle_phase_forbidden(&self, player: PlayerId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::NoBattlePhase { player })
     }
 
     pub(crate) fn spells_and_traps_forbidden(&self) -> bool {
@@ -1805,6 +1874,9 @@ impl Game {
     /// Normal Monster with 0 ATK and DEF (Magical Hats). Mark it with
     /// `mark_hat` once the hats are shuffled.
     pub fn set_as_monster(&mut self, card: InstanceId, player: PlayerId) -> bool {
+        if self.face_down_forbidden() {
+            return false;
+        }
         let Some(zone) = self.free_monster_zone(player) else {
             return false;
         };

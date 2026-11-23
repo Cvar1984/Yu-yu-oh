@@ -55,7 +55,10 @@ impl Game {
                 self.ignition_actions(player, &mut actions);
                 let second = self.phase == Phase::Main2
                     && self.extra_battle_phase == Some((player, self.turn));
-                if (self.phase == Phase::Main1 || second) && self.attacks_allowed() {
+                if (self.phase == Phase::Main1 || second)
+                    && self.attacks_allowed()
+                    && !self.battle_phase_forbidden(player)
+                {
                     actions.push(Action::EnterBattlePhase);
                 }
                 actions.push(Action::EndTurn);

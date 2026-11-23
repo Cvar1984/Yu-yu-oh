@@ -469,7 +469,8 @@ pub fn register(r: &mut Registry) {
                 ..Effect::continuous()
             },
             Vec::new(),
-        ),
+        )
+        .with_tag(Tag::StatsSetOrScaled),
     );
     // Control returns however Snatch Steal leaves the field (the engine
     // does it for Tag::ControlWhileEquipped).

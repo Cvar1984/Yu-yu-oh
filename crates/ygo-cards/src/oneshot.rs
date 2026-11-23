@@ -4,7 +4,7 @@
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
     CardScript, Effect, EffectCtx, Flow, Game, InstanceId, Location, Phase, PlayerId, Position,
-    Registry, Source, TargetSets, WindowKind,
+    Registry, Source, Tag, TargetSets, WindowKind,
 };
 
 pub const SPARKS: CardId = CardId(76103675);
@@ -477,7 +477,8 @@ pub fn register(r: &mut Registry) {
                 }
                 Flow::Done
             })
-        }),
+        })
+        .with_tag(Tag::StatsSetOrScaled),
     );
     // All Attack Position monsters to Defense Position and vice versa; a
     // face-down Defense Position monster is a Defense Position monster, so
@@ -511,7 +512,11 @@ pub fn register(r: &mut Registry) {
     r.register(
         DARKNESS_APPROACHES,
         single(Effect {
-            timing: |g, s, _| hand_without_self(g, s).len() >= 2 && !face_up_monsters(g).is_empty(),
+            timing: |g, s, _| {
+                hand_without_self(g, s).len() >= 2
+                    && !face_up_monsters(g).is_empty()
+                    && !g.face_down_forbidden()
+            },
             cost_choices: Some(|g, s| subsets(&hand_without_self(g, s), 2)),
             cost: Some(|g, ctx| {
                 for &c in &ctx.cost.clone() {

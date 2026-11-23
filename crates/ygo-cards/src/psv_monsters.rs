@@ -359,7 +359,7 @@ pub fn register(r: &mut Registry) {
     r.register(
         THOUSAND_EYES_RESTRICT,
         CardScript {
-            tags: Vec::new(),
+            tags: vec![Tag::StatsSetOrScaled],
             effects: vec![
                 absorb_one(),
                 Effect {

@@ -4,7 +4,7 @@
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
     Action, CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Location, Phase,
-    PlayerId, Position, Registry, Source, StatMod, TargetSets, WindowKind,
+    PlayerId, Position, Registry, Source, StatMod, Tag, TargetSets, WindowKind,
 };
 
 use crate::positions::{FACE_UP, face_up};
@@ -378,7 +378,8 @@ pub fn register(r: &mut Registry) {
                 }
                 Flow::Done
             })
-        }),
+        })
+        .with_tag(Tag::StatsSetOrScaled),
     );
     // Target 1 monster you control that you own; shuffle it and your whole
     // hand into the Deck, then draw as many cards as went from the hand.
