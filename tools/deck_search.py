@@ -41,6 +41,11 @@ def self_locked(counts):
             return True
     return False
 pool = [i for i in coll if cards[i]["type"] != "Fusion Monster" and i not in UNSCRIPTED and limit(i) > 0]
+# ADD_ATTRIBUTE=DARK keeps a theme: only monsters of that Attribute (and
+# any Spell or Trap) may be added.
+theme = os.environ.get("ADD_ATTRIBUTE")
+if theme:
+    pool = [i for i in pool if "Monster" not in cards[i]["type"] or cards[i]["attribute"] == theme]
 deck0 = json.load(open(start))
 cur = {e["id"]: e["count"] for e in deck0["main"]}
 rng = random.Random(int(os.environ.get("SEED", "7")))
