@@ -1,0 +1,164 @@
+{
+ "schema_version": 1,
+ "name": "Searched Beatdown (save A)",
+ "for": "save A",
+ "notes": "2026-11-22: save_a_crafted_40 improved by tools/deck_search.py under the owner's rules (wins by damage only: a deck-out counts as a draw; no lock card that stops most of the deck's own monsters). Out: Summoned Skull, Rush Recklessly, Magic Jammer, Guardian of the Throne Room, Spellbinding Circle, Judge Man. In: Gearfried the Iron Knight, Goblin Attack Force, Magic Drain, Man-Eater Bug, Blackland Fire Dragon, Darkfire Soldier #2. Results (lookahead Beatdown bot on both sides, six enemy decks, 2,000 games each on two seed sets the search never used, 24,000 games): 61.6% ±0.6, the same by damage score (almost no deck-out wins); Toon 81.3, Special Summon 73.7, Removal 63.4, Big beatdown 65.0, Dark Plasma zone 34.9, Gate Guardian 51.5. save_a_crafted_40 on the same games: 52.7%.",
+ "main": [
+  {
+   "id": 23771716,
+   "name": "7 Colored Fish",
+   "count": 3
+  },
+  {
+   "id": 94773007,
+   "name": "Jirai Gumo",
+   "count": 3
+  },
+  {
+   "id": 15480588,
+   "name": "Armored Lizard",
+   "count": 2
+  },
+  {
+   "id": 21417692,
+   "name": "Dark Elf",
+   "count": 2
+  },
+  {
+   "id": 1184620,
+   "name": "Kojikocy",
+   "count": 2
+  },
+  {
+   "id": 87564352,
+   "name": "Blackland Fire Dragon",
+   "count": 1
+  },
+  {
+   "id": 41396436,
+   "name": "Blue-Winged Crown",
+   "count": 1
+  },
+  {
+   "id": 34124316,
+   "name": "Cyber Jar",
+   "count": 1
+  },
+  {
+   "id": 78861134,
+   "name": "Darkfire Soldier #2",
+   "count": 1
+  },
+  {
+   "id": 423705,
+   "name": "Gearfried the Iron Knight",
+   "count": 1
+  },
+  {
+   "id": 78658564,
+   "name": "Goblin Attack Force",
+   "count": 1
+  },
+  {
+   "id": 97590748,
+   "name": "La Jinn the Mystical Genie of the Lamp",
+   "count": 1
+  },
+  {
+   "id": 54652250,
+   "name": "Man-Eater Bug",
+   "count": 1
+  },
+  {
+   "id": 93920745,
+   "name": "Penguin Soldier",
+   "count": 1
+  },
+  {
+   "id": 26202165,
+   "name": "Sangan",
+   "count": 1
+  },
+  {
+   "id": 78010363,
+   "name": "Witch of the Black Forest",
+   "count": 1
+  },
+  {
+   "id": 66788016,
+   "name": "Fissure",
+   "count": 2
+  },
+  {
+   "id": 79759861,
+   "name": "Tribute to the Doomed",
+   "count": 2
+  },
+  {
+   "id": 4031928,
+   "name": "Change of Heart",
+   "count": 1
+  },
+  {
+   "id": 44763025,
+   "name": "Delinquent Duo",
+   "count": 1
+  },
+  {
+   "id": 79571449,
+   "name": "Graceful Charity",
+   "count": 1
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "count": 1
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "count": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "count": 1
+  },
+  {
+   "id": 72302403,
+   "name": "Swords of Revealing Light",
+   "count": 1
+  },
+  {
+   "id": 60082869,
+   "name": "Dust Tornado",
+   "count": 1
+  },
+  {
+   "id": 59344077,
+   "name": "Magic Drain",
+   "count": 1
+  },
+  {
+   "id": 4178474,
+   "name": "Raigeki Break",
+   "count": 1
+  },
+  {
+   "id": 29267084,
+   "name": "Shadow Spell",
+   "count": 1
+  },
+  {
+   "id": 41420027,
+   "name": "Solemn Judgment",
+   "count": 1
+  },
+  {
+   "id": 12607053,
+   "name": "Waboku",
+   "count": 1
+  }
+ ],
+ "extra": []
+}

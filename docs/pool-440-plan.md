@@ -226,3 +226,15 @@ stop more than half of its own (Gravity Bind: Level 4 or higher;
 Messenger of Peace: 1500 ATK or more; `SELF_LOCKS` in
 `tools/deck_search.py`); the lock deck fails that rule.
 
+Under these rules the search from save_a_crafted_40 kept six swaps
+(Summoned Skull, Rush Recklessly, Magic Jammer, Guardian of the Throne
+Room, Spellbinding Circle and Judge Man out; Gearfried the Iron Knight,
+Goblin Attack Force, Magic Drain, Man-Eater Bug, Blackland Fire Dragon
+and Darkfire Soldier #2 in): `save_a_beatdown_40`, Level 4 attackers
+with removal, 61.6% ±0.6 against 52.7% for the crafted deck over 24,000
+games on two seed sets the search never used, the same by damage score.
+The search from the owner's Dark Summoner deck (40.0%) reached 50.8%,
+but four of its six additions left its DARK theme; it is being redone
+with `ADD_ATTRIBUTE=DARK` (only DARK monsters, and any Spell or Trap,
+may be added).
+
