@@ -88,7 +88,8 @@ calculation, and a negated Spell goes to the Graveyard exactly once.
 | --- | --- | --- |
 | 1. Data | `874320f` | 440 cards, 13 limited, 2 collections, 15 decks load and check; 44 scripts pending |
 | 2. Batch 1 | batch 1 | 36 cards scripted (Fairy Meteor Crush moved here from batch 2), 29 tests in `tests/extra.rs`; 8 pending |
-| 3. Batch 2 A | this commit | D. Tribe, Riryoku Field, Shift; 6 tests in `tests/extra_2.rs`; 5 pending |
+| 3. Batch 2 A | A | D. Tribe, Riryoku Field, Shift; 6 tests in `tests/extra_2.rs`; 5 pending |
+| 4. Batch 2 B | this commit | Reverse Trap, Light of Intervention, Soul Exchange; 4 more tests; 2 pending |
 
 Batch 1 added to the engine: piercing damage (`Effect::pierce`), stopping
 an attack already declared (`cancel_attack`; Spellbinding Circle now
@@ -121,6 +122,23 @@ stats go in a data file, `data/tokens.json`.
   monster to affect, and a monster turned face-down and back up keeps
   the Dragon Type that turn; Shift answers an attack only in the
   attack-declaration window with no chain open.
+
+- **B**: Reverse Trap, Light of Intervention, Soul Exchange. Engine:
+  lingering `StatChangesReversed` (applied in `stat_mod` and
+  `stats_with`), `MustTribute` and `NoBattlePhase`;
+  `Tag::StatsSetOrScaled` on the cards whose changes set, swap or
+  multiply (Sanga, Kazejin and Suijin, Karate Man, Cocoon of Evolution,
+  Relinquished, Thousand-Eyes Restrict, Megamorph, Mirror Wall, Limiter
+  Removal, Shield & Sword); `Tag::NoFaceDownMonsters` with
+  `face_down_forbidden`; `SummonKind::Normal` carries its position;
+  `CardScript::with_tag`. Simplifications: Reverse Trap reverses by
+  source card, so a card would need the tag for all its changes (none of
+  the tagged cards also adds); under Light of Intervention a face-down
+  Special Summon is made in face-up Defense Position, a turn face-down
+  does nothing, and Magical Hats and Darkness Approaches cannot be
+  activated; Soul Exchange binds Tribute Summons only (not Ritual
+  Summons or Tribute costs), and is activated only in Main Phase 1,
+  before any Battle Phase.
 
 ## Deck crafting from save A (2026-11-20)
 

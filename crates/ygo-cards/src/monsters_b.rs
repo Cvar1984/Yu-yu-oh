@@ -323,7 +323,8 @@ pub fn register(r: &mut Registry) {
                     Flow::Done
                 })
             },
-        ]),
+        ])
+        .with_tag(Tag::StatsSetOrScaled),
     );
     r.register(
         THE_LITTLE_SWORDSMAN_OF_AILE,
@@ -566,7 +567,7 @@ pub fn register(r: &mut Registry) {
         }),
     );
     for id in [SANGA_OF_THE_THUNDER, KAZEJIN, SUIJIN] {
-        r.register(id, guardian());
+        r.register(id, guardian().with_tag(Tag::StatsSetOrScaled));
     }
     // Attacked by a non-Machine: that monster is destroyed in the End Phase
     // of its controller's 2nd turn after the attack (4 turns later).
@@ -755,7 +756,8 @@ pub fn register(r: &mut Registry) {
                 }),
                 ..Effect::continuous()
             },
-        ]),
+        ])
+        .with_tag(Tag::StatsSetOrScaled),
     );
     r.register(
         HARPIE_LADY_SISTERS,

@@ -53,6 +53,13 @@ pub enum Tag {
     RevealTurnPlayerHand,
     /// May attack twice in each Battle Phase (Hayabusa Knight).
     SecondAttack,
+    /// Its ATK/DEF changes set, swap or multiply values instead of adding
+    /// or subtracting (Megamorph, Shield & Sword): Reverse Trap leaves them.
+    StatsSetOrScaled,
+    /// While face-up on the field, no monster can be Set or turned
+    /// face-down; a Set becomes a Normal Summon in face-up Defense
+    /// Position (Light of Intervention).
+    NoFaceDownMonsters,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -369,6 +376,12 @@ pub struct CardScript {
 impl CardScript {
     pub fn has(&self, tag: Tag) -> bool {
         self.tags.contains(&tag)
+    }
+
+    /// The same script with one more tag.
+    pub fn with_tag(mut self, tag: Tag) -> Self {
+        self.tags.push(tag);
+        self
     }
 }
 

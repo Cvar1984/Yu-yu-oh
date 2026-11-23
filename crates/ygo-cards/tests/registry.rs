@@ -74,13 +74,7 @@ fn effect_monsters_summon_as_vanilla_but_toons_cannot() {
 /// `docs/pool-440-plan.md`). Every Pharaoh's Servant card is scripted
 /// (`docs/psv-plan.md`). The list only shrinks: every entry must be
 /// unscripted, and every unscripted card must be listed.
-const PENDING: &[(u32, &str)] = &[
-    (62867251, "Light of Intervention"),
-    (77622396, "Reverse Trap"),
-    (73915051, "Scapegoat"),
-    (68005187, "Soul Exchange"),
-    (80604092, "Ultimate Offering"),
-];
+const PENDING: &[(u32, &str)] = &[(73915051, "Scapegoat"), (80604092, "Ultimate Offering")];
 
 #[test]
 fn every_non_normal_card_in_the_pool_has_a_script() {

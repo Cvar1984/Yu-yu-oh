@@ -1,11 +1,15 @@
 //! Rulings tests for the last EXTRA cards (pool-440 plan, batch 2), on the
 //! modern text. The board helpers are the PSV tests' (`psv_common`).
 
+use ygo_cards::continuous::LEGENDARY_SWORD;
+use ygo_cards::extra_spells::SOUL_EXCHANGE;
 use ygo_cards::extra_traps::*;
-use ygo_cards::oneshot::RUSH_RECKLESSLY;
+use ygo_cards::oneshot::{DARKNESS_APPROACHES, RUSH_RECKLESSLY, SHIELD_AND_SWORD};
 use ygo_cards::spells::{CHANGE_OF_HEART, DARK_HOLE};
-use ygo_engine::testing::{CELTIC_GUARDIAN, MYSTICAL_ELF, in_hand, next_turn, play};
-use ygo_engine::{Action, DecisionKind, Location};
+use ygo_engine::testing::{
+    CELTIC_GUARDIAN, MYSTICAL_ELF, SUMMONED_SKULL, in_hand, next_turn, play,
+};
+use ygo_engine::{Action, DecisionKind, Location, Position};
 
 mod psv_common;
 use psv_common::*;
@@ -124,4 +128,123 @@ fn shift_needs_a_second_monster() {
         assert!(activations(&g, SHIFT).is_empty());
         play(&mut g, Action::Pass);
     }
+}
+
+// Reverse Trap: additions subtract and subtractions add until the End
+// Phase, whether the change came before or after it.
+#[test]
+fn reverse_trap_reverses_additions_until_the_end_phase() {
+    let mut g = game(
+        &[
+            CELTIC_GUARDIAN,
+            REVERSE_TRAP,
+            LEGENDARY_SWORD,
+            RUSH_RECKLESSLY,
+        ],
+        &[],
+    );
+    let celtic = summon_now(&mut g, P0, CELTIC_GUARDIAN);
+    set_card(&mut g, P0, REVERSE_TRAP);
+    next_turn(&mut g);
+    next_turn(&mut g);
+    activate_on(&mut g, LEGENDARY_SWORD, &[celtic]);
+    assert_eq!(g.atk(celtic), 1700);
+    activate(&mut g, REVERSE_TRAP);
+    assert_eq!((g.atk(celtic), g.def(celtic)), (1100, 900));
+    activate_on(&mut g, RUSH_RECKLESSLY, &[celtic]);
+    assert_eq!(g.atk(celtic), 400, "1400 - 300 - 700");
+    next_turn(&mut g);
+    assert_eq!(g.atk(celtic), 1700, "only the Sword's 300 is left");
+}
+
+#[test]
+fn reverse_trap_leaves_swaps_and_multiplications_alone() {
+    let mut g = game(&[CELTIC_GUARDIAN, REVERSE_TRAP, SHIELD_AND_SWORD], &[]);
+    let celtic = summon_now(&mut g, P0, CELTIC_GUARDIAN);
+    set_card(&mut g, P0, REVERSE_TRAP);
+    next_turn(&mut g);
+    next_turn(&mut g);
+    activate(&mut g, SHIELD_AND_SWORD);
+    assert_eq!((g.atk(celtic), g.def(celtic)), (1200, 1400));
+    activate(&mut g, REVERSE_TRAP);
+    assert_eq!((g.atk(celtic), g.def(celtic)), (1200, 1400));
+}
+
+// Light of Intervention: a Set is a face-up Defense Normal Summon for both
+// players, and nothing turns a monster face-down.
+#[test]
+fn light_of_intervention_turns_sets_into_face_up_defense_summons() {
+    let mut g = game(
+        &[
+            CELTIC_GUARDIAN,
+            LIGHT_OF_INTERVENTION,
+            MYSTICAL_ELF,
+            DARKNESS_APPROACHES,
+        ],
+        &[KOUMORI_DRAGON],
+    );
+    summon_now(&mut g, P0, CELTIC_GUARDIAN);
+    set_card(&mut g, P0, LIGHT_OF_INTERVENTION);
+    next_turn(&mut g);
+    let koumori = set_monster(&mut g, P1, KOUMORI_DRAGON);
+    assert_eq!(g.instance(koumori).position, Position::FaceDownDefense);
+    next_turn(&mut g);
+    activate(&mut g, LIGHT_OF_INTERVENTION);
+    let elf = set_monster(&mut g, P0, MYSTICAL_ELF);
+    assert_eq!(g.instance(elf).position, Position::FaceUpDefense);
+    assert!(
+        activations(&g, DARKNESS_APPROACHES).is_empty(),
+        "nothing can be turned face-down"
+    );
+    next_turn(&mut g);
+    let other = in_hand(&g, P1, PAD);
+    play(
+        &mut g,
+        Action::Summon {
+            card: other,
+            tributes: vec![],
+            face_down: true,
+        },
+    );
+    assert_eq!(g.instance(other).position, Position::FaceUpDefense);
+}
+
+// Soul Exchange: this turn the Tribute Summon uses the opponent's monster,
+// and the Battle Phase is gone.
+#[test]
+fn soul_exchange_tributes_the_opponents_monster_and_ends_the_battle_phase() {
+    let mut g = game(
+        &[CELTIC_GUARDIAN, SOUL_EXCHANGE, SUMMONED_SKULL],
+        &[KOUMORI_DRAGON],
+    );
+    let celtic = summon_now(&mut g, P0, CELTIC_GUARDIAN);
+    next_turn(&mut g);
+    let koumori = summon_now(&mut g, P1, KOUMORI_DRAGON);
+    next_turn(&mut g);
+    let skull = in_hand(&g, P0, SUMMONED_SKULL);
+    let tributes = |g: &ygo_engine::Game| -> Vec<Vec<ygo_engine::InstanceId>> {
+        g.legal_actions()
+            .into_iter()
+            .filter_map(|a| match a {
+                Action::Summon { card, tributes, .. } if card == skull => Some(tributes),
+                _ => None,
+            })
+            .collect()
+    };
+    assert!(tributes(&g).iter().all(|t| t == &vec![celtic]));
+    activate_on(&mut g, SOUL_EXCHANGE, &[koumori]);
+    assert!(!g.legal_actions().contains(&Action::EnterBattlePhase));
+    let offered = tributes(&g);
+    assert!(!offered.is_empty() && offered.iter().all(|t| t == &vec![koumori]));
+    play(
+        &mut g,
+        Action::Summon {
+            card: skull,
+            tributes: vec![koumori],
+            face_down: false,
+        },
+    );
+    assert_eq!(g.instance(koumori).location, Location::Graveyard);
+    assert!(g.graveyard(P1).contains(&koumori));
+    assert!(g.on_field(celtic));
 }

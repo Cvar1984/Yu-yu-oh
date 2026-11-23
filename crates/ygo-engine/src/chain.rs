@@ -54,7 +54,10 @@ pub enum WindowKind {
 /// How a summon was declared, for the cards that care.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SummonKind {
-    Normal,
+    /// A Normal or Tribute Summon or Set, in this position.
+    Normal {
+        position: Position,
+    },
     Flip,
     /// A summon procedure from the hand, in this position.
     Procedure {

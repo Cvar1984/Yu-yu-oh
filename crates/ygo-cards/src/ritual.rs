@@ -4,7 +4,8 @@ use ygo_data::CardId;
 
 use crate::positions;
 use ygo_engine::{
-    CardScript, Effect, Flow, Game, InstanceId, Location, Registry, Source, StatMod, TargetSets,
+    CardScript, Effect, Flow, Game, InstanceId, Location, Registry, Source, StatMod, Tag,
+    TargetSets,
 };
 
 pub const BLACK_ILLUSION_RITUAL: CardId = CardId(41426869);
@@ -223,7 +224,7 @@ pub fn register(r: &mut Registry) {
     r.register(
         RELINQUISHED,
         CardScript {
-            tags: Vec::new(),
+            tags: vec![Tag::StatsSetOrScaled],
             effects: vec![
                 absorb_one(),
                 Effect {

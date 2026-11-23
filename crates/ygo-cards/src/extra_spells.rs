@@ -3,14 +3,15 @@
 
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
-    CardScript, Effect, EffectCtx, Flow, Game, InstanceId, Location, PlayerId, Position, Registry,
-    Source, TargetSets,
+    CardScript, Effect, EffectCtx, Flow, Game, InstanceId, Lingering, LingeringKind, Location,
+    Phase, PlayerId, Position, Registry, Source, TargetSets,
 };
 
 use crate::continuous::{equip_resolve, equipped_bonus, face_up_monsters};
 use crate::positions;
 
 pub const ANCIENT_TELESCOPE: CardId = CardId(17092736);
+pub const SOUL_EXCHANGE: CardId = CardId(68005187);
 pub const CARD_DESTRUCTION: CardId = CardId(72892473);
 pub const DE_SPELL: CardId = CardId(19159413);
 pub const DIAN_KETO_THE_CURE_MASTER: CardId = CardId(84257639);
@@ -145,6 +146,52 @@ fn flute_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
 }
 
 pub fn register(r: &mut Registry) {
+    // Target 1 monster your opponent controls: this turn your Tribute
+    // Summons must Tribute it, as if you controlled it. No Battle Phase the
+    // turn you activate this card, so only before one (Main Phase 1).
+    r.register(
+        SOUL_EXCHANGE,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![Effect {
+                timing: |g, s, _| {
+                    g.phase() == Phase::Main1
+                        && !g.monsters_controlled(s.controller.opponent()).is_empty()
+                },
+                targets: Some(|g, s| {
+                    g.monsters_controlled(s.controller.opponent())
+                        .into_iter()
+                        .map(|m| vec![m])
+                        .collect()
+                }),
+                cost: Some(|g, ctx| {
+                    let turn = g.turn();
+                    g.add_lingering(Lingering {
+                        source: ctx.source,
+                        kind: LingeringKind::NoBattlePhase {
+                            player: ctx.controller,
+                        },
+                        expires_turn: turn,
+                    });
+                }),
+                ..Effect::activate(1, |g, ctx| {
+                    let target = ctx.targets[0];
+                    if g.on_field(target) && g.instance(target).controller != ctx.controller {
+                        let turn = g.turn();
+                        g.add_lingering(Lingering {
+                            source: ctx.source,
+                            kind: LingeringKind::MustTribute {
+                                player: ctx.controller,
+                                card: target,
+                            },
+                            expires_turn: turn,
+                        });
+                    }
+                    Flow::Done
+                })
+            }],
+        },
+    );
     // See the top 5 cards of your opponent's Deck; they stay in order.
     r.register(
         ANCIENT_TELESCOPE,
