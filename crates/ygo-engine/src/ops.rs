@@ -672,6 +672,7 @@ impl Game {
                 | LingeringKind::CannotAttack { .. }
                 | LingeringKind::DamageCalcStats { .. }
                 | LingeringKind::Marked { .. }
+                | LingeringKind::Race { .. }
                 | LingeringKind::BattleShield { .. } => {}
             }
         }
@@ -785,6 +786,17 @@ impl Game {
     }
 
     /// Negates `card`'s effects until this turn's End Phase.
+    /// `card` takes the Type `source`'s `race` hook names until the End
+    /// Phase, while it stays on the field (D. Tribe).
+    pub fn change_race_until_end_phase(&mut self, source: InstanceId, card: InstanceId) {
+        let turn = self.turn;
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::Race { card },
+            expires_turn: turn,
+        });
+    }
+
     pub fn negate_until_end_of_turn(&mut self, source: InstanceId, card: InstanceId) {
         let turn = self.turn;
         self.lingering.push(Lingering {
@@ -824,6 +836,24 @@ impl Game {
                     changed = Some(r);
                 }
             });
+            // A lasting change applies after the continuous ones.
+            for l in &self.lingering {
+                if l.kind == (LingeringKind::Race { card })
+                    && let Some(f) = self
+                        .script(l.source)
+                        .and_then(|s| s.effects.iter().find_map(|e| e.race))
+                    && let Some(r) = f(
+                        self,
+                        Source {
+                            card: l.source,
+                            controller: self.instances[l.source.index()].controller,
+                        },
+                        card,
+                    )
+                {
+                    changed = Some(r);
+                }
+            }
         }
         changed.unwrap_or(&self.stats(card).race)
     }
@@ -1529,6 +1559,9 @@ impl Game {
         // A zone lock ends when its source leaves the field (Ground Collapse).
         self.lingering
             .retain(|l| !(l.source == card && matches!(l.kind, LingeringKind::ZoneLocked { .. })));
+        // A Type given until the End Phase ends when the monster leaves.
+        self.lingering
+            .retain(|l| l.kind != LingeringKind::Race { card });
     }
 
     fn send_equips_to_graveyard(&mut self, card: InstanceId) {

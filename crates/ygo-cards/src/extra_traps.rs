@@ -7,6 +7,7 @@ use ygo_engine::{
 };
 
 use crate::continuous::face_up_monsters;
+use crate::remaining::{opposing_link, other_single_targets, single_monster_target};
 
 pub const BACKUP_SOLDIER: CardId = CardId(36280194);
 pub const BURST_BREATH: CardId = CardId(80163754);
@@ -23,6 +24,9 @@ pub const REINFORCEMENTS: CardId = CardId(17814387);
 pub const SHADOW_SPELL: CardId = CardId(29267084);
 pub const THE_EYE_OF_TRUTH: CardId = CardId(34694160);
 pub const WABOKU: CardId = CardId(12607053);
+pub const D_TRIBE: CardId = CardId(2833249);
+pub const RIRYOKU_FIELD: CardId = CardId(70344351);
+pub const SHIFT: CardId = CardId(59560625);
 /// Not in the pool: Gryphon Wing can never be activated here.
 pub const HARPIES_FEATHER_DUSTER: CardId = CardId(18144506);
 
@@ -153,7 +157,118 @@ fn settable(g: &Game, player: PlayerId) -> Vec<InstanceId> {
         .collect()
 }
 
+/// Riryoku Field: the activation of a Spell Card that targets exactly 1
+/// monster on the field, still waiting to resolve.
+fn single_target_spell(g: &Game) -> Option<InstanceId> {
+    g.last_link()
+        .filter(|l| {
+            !l.negated
+                && l.card_activation
+                && g.stats(l.card).kind == CardKind::Spell
+                && single_monster_target(g, l).is_some()
+        })
+        .map(|l| l.card)
+}
+
+/// Shift: (the Spell or Trap, a new target) when the opponent's Spell or
+/// Trap targets exactly 1 monster `s`'s controller controls; or the new
+/// target alone when the opponent's attack does, with no chain open.
+fn shift_targets(g: &Game, s: Source) -> TargetSets {
+    let mine = |t: InstanceId| g.instance(t).controller == s.controller;
+    if let Some(link) = opposing_link(g, s) {
+        let spell_or_trap = matches!(g.stats(link.card).kind, CardKind::Spell | CardKind::Trap);
+        if !spell_or_trap || !single_monster_target(g, &link).is_some_and(mine) {
+            return Vec::new();
+        }
+        return other_single_targets(g, &link)
+            .into_iter()
+            .filter(|&t| mine(t) && g.on_field(t))
+            .map(|t| vec![link.card, t])
+            .collect();
+    }
+    if g.last_link().is_some() {
+        return Vec::new();
+    }
+    match g.current_attack() {
+        Some((attacker, Some(old))) if !mine(attacker) && mine(old) => g
+            .attack_targets(attacker)
+            .into_iter()
+            .filter(|&t| t != old && mine(t))
+            .map(|t| vec![t])
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
 pub fn register(r: &mut Registry) {
+    // All face-up monsters you control at resolution become Dragon until
+    // the end of this turn.
+    r.register(
+        D_TRIBE,
+        single(Effect {
+            timing: |g, s, _| {
+                g.monsters_controlled(s.controller)
+                    .into_iter()
+                    .any(|m| g.instance(m).position.is_face_up())
+            },
+            race: Some(|_, _, _| Some("Dragon")),
+            ..Effect::activate(2, |g, ctx| {
+                for m in g.monsters_controlled(ctx.controller) {
+                    if g.instance(m).position.is_face_up() {
+                        g.change_race_until_end_phase(ctx.source, m);
+                    }
+                }
+                Flow::Done
+            })
+        }),
+    );
+    // Counter Trap: when a Spell Card that targets exactly 1 monster on the
+    // field is activated, negate it and destroy it.
+    r.register(
+        RIRYOKU_FIELD,
+        single(Effect {
+            timing: |g, _, _| single_target_spell(g).is_some(),
+            targets: Some(|g, _| {
+                single_target_spell(g)
+                    .map(|c| vec![c])
+                    .into_iter()
+                    .collect()
+            }),
+            ..Effect::activate(3, |g, ctx| {
+                g.negate_activation(ctx.targets[0], ctx.source);
+                Flow::Done
+            })
+        }),
+    );
+    // When the opponent targets exactly 1 monster you control for an
+    // attack or with a Spell/Trap: move it to another monster you control
+    // that would be a legal target.
+    r.register(
+        SHIFT,
+        single(Effect {
+            timing: |g, s, w| {
+                (w.kind == WindowKind::AttackDeclared || g.last_link().is_some())
+                    && !shift_targets(g, s).is_empty()
+            },
+            targets: Some(shift_targets),
+            ..Effect::activate(2, |g, ctx| {
+                if let &[card, new] = ctx.targets.as_slice() {
+                    if g.on_field(new) {
+                        g.retarget(card, vec![new]);
+                    }
+                } else {
+                    let new = ctx.targets[0];
+                    let legal = g
+                        .current_attack()
+                        .is_some_and(|(a, _)| g.attack_targets(a).contains(&new));
+                    if legal && g.instance(new).controller == ctx.controller {
+                        g.retarget_attack(new);
+                    }
+                }
+                Flow::Done
+            })
+        }),
+    );
     // While you have 5 or more monsters in your Graveyard: up to 3
     // non-Effect Monsters with 1500 or less ATK from your Graveyard to
     // your hand. Simplified like Soul Release: the cards are picked on

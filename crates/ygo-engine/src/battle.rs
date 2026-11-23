@@ -71,6 +71,41 @@ impl Game {
         }
     }
 
+    /// The monsters `attacker` could choose as an attack target now.
+    pub fn attack_targets(&self, attacker: InstanceId) -> Vec<InstanceId> {
+        let mut actions = Vec::new();
+        self.attack_options(attacker, &mut actions);
+        actions
+            .into_iter()
+            .filter_map(|a| match a {
+                Action::Attack { target, .. } => target,
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Moves the attack under way to `target`, without a replay (Shift).
+    /// Returns `false` if no attack is waiting for its Damage Step.
+    pub fn retarget_attack(&mut self, target: InstanceId) -> bool {
+        let Some((attacker, _)) = self.current_attack else {
+            return false;
+        };
+        let step = self.pending.iter_mut().rev().find_map(|p| match p {
+            Pending::DamageStep {
+                attacker: a,
+                target,
+            } if *a == attacker => Some(target),
+            _ => None,
+        });
+        let Some(slot) = step else {
+            return false;
+        };
+        *slot = Some(target);
+        self.current_attack = Some((attacker, Some(target)));
+        self.emit(Event::AttackRetargeted { attacker, target });
+        true
+    }
+
     /// How many attacks `attacker` may declare each Battle Phase.
     fn attacks_per_battle_phase(&self, attacker: InstanceId) -> u8 {
         if self

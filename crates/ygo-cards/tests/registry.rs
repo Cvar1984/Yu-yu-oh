@@ -75,12 +75,9 @@ fn effect_monsters_summon_as_vanilla_but_toons_cannot() {
 /// (`docs/psv-plan.md`). The list only shrinks: every entry must be
 /// unscripted, and every unscripted card must be listed.
 const PENDING: &[(u32, &str)] = &[
-    (2833249, "D. Tribe"),
     (62867251, "Light of Intervention"),
     (77622396, "Reverse Trap"),
-    (70344351, "Riryoku Field"),
     (73915051, "Scapegoat"),
-    (59560625, "Shift"),
     (68005187, "Soul Exchange"),
     (80604092, "Ultimate Offering"),
 ];
