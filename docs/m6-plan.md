@@ -4,9 +4,9 @@ Gate (handoff): **each promoted checkpoint beats the previous one.** A
 candidate is promoted only if it beats the current best over enough games
 for a 95% interval that excludes 50% (handoff, Testing: bot evaluation).
 
-Status (2026-11-24): steps 1 to 4 done; step 5 started: the
-network-guided search bot beats every reference bot with the owner's
-deck (below). Owner (2026-11-24): burn is the library; the plan is
+Status (2026-11-24): steps 1 to 4 done; step 5 started: the network
+alone, and the network-guided search bot, each beat every reference bot
+with the owner's deck (below). Owner (2026-11-24): burn is the library; the plan is
 approved.
 
 ## Step 1: the library trial (done)
@@ -216,11 +216,46 @@ averages, or normalises, every pooled set.
      Every interval excludes 50%. Against search, all 2,800 games pooled:
      57.5%. Speed: 4 to 13 games/s on 4 cores (the plain search bot: 10).
    - Expert iteration, round 1: those 2,000 games plus 2,000 mirrors of the
-     network-guided search, `owner-1` trained on its choices (3 epochs,
-     learning rate 3e-4, 171,944 samples): agreement 81.8% to 82.3%;
-     against search on the same seeds 56.9% ±2.2, no better than
-     `owner-1`, so not promoted. Training on the move played gives little
-     here; the next round should train on the search's visit counts.
+     network-guided search, `owner-1` trained on its moves (3 epochs,
+     learning rate 3e-4, 171,944 samples): `owner-2`. As the prior of the
+     guided search it is no better (56.9% ±2.2 against search on the same
+     seeds), but **alone it is the strongest network** (below).
+   - **The network alone (greedy, `neural:checkpoints/owner-2.bpk`) beats
+     all 14 reference bots** (2,000 games each, seed 12000; owner-2 was
+     picked on seed 31000, so this run is a fresh check):
+
+     | Opponent | Result |
+     | --- | --- |
+     | random | 99.0% ±0.4 |
+     | heuristic Beatdown, Control, Stall | 66.3% ±2.1, 70.8% ±2.0, 76.0% ±1.9 |
+     | heuristic Burn, Exodia, Patient | 68.7% ±2.0, 80.6% ±1.7, 74.9% ±1.9 |
+     | lookahead Beatdown, Control, Stall | 54.2% ±2.2, 60.4% ±2.1, 64.7% ±2.1 |
+     | lookahead Burn, Exodia, Patient | 57.2% ±2.2, 69.8% ±2.0, 63.8% ±2.1 |
+     | search | 53.5% ±2.2 |
+
+     The closest two on three seeds (12000, 31000, 55000), 6,000 games
+     each: search 53.3%, 53.5%, 54.4%, pooled **53.75% ±1.26**; lookahead
+     Beatdown 55.1%, 54.2%, 57.3%, pooled 55.6%. `owner-1` alone had been
+     49.9% against lookahead Beatdown (2,000 games).
+   - What did not help:
+     - `ygo distill` (`ygo_train::distill`, DAgger): the network plays the
+       14 bots itself, the guided search with the same network as prior
+       labels each of its decisions with its visit shares, and the network
+       trains on all labelled games so far (2,800 games a round; the
+       search's move played in 50%, then 25%, then 0% of decisions).
+       Against lookahead Beatdown (2,000 games, seed 12000): `owner-1`
+       49.9%, round 1 51.6%, round 2 54.4%, round 3 50.8%, round 4 44.6%
+       (seed 31000). Round 2 reached 53.5% against search on one seed and
+       50.0% on another. Later rounds got worse, likely because the
+       teacher's visits lean on the student's own prior, so its mistakes
+       feed back; a fixed teacher and its move as the target (how
+       `owner-2` was made) did better.
+     - `owner-3`: `owner-2` trained 3 more epochs on 5,400 more guided-search
+       games against the hardest opponents (9,400 in all): agreement stayed
+       at 83.5%, and alone it scored 53.5%, 54.6% and 52.1% against
+       lookahead Beatdown, Burn and search (seed 31000), no better than
+       `owner-2` (55.1%, 56.2%, 53.3%). Agreement with the teacher has
+       levelled off near 83%: a larger network is the next lever.
 6. **Promotion and the gate.** Each candidate plays the current best
    (2,000 games, each player first in half); promoted only if the 95%
    interval excludes 50%. A ladder report beside it: random, heuristic,
