@@ -50,10 +50,10 @@ enum Command {
     Sim {
         deck_a: PathBuf,
         deck_b: PathBuf,
-        /// Player A: `random`, `lookahead:<style>`, `heuristic:<style>`, `search[:<style>]` or `neural:<checkpoint>`.
+        /// Player A: `random`, `lookahead:<style>`, `heuristic:<style>`, `search[:<style>]`, `neural:<checkpoint>`, `neural-lookahead:<checkpoint>` or `neural-search:<checkpoint>`.
         #[arg(long, default_value = "random")]
         bot_a: String,
-        /// Player B: `random`, `lookahead:<style>`, `heuristic:<style>`, `search[:<style>]` or `neural:<checkpoint>`.
+        /// Player B: `random`, `lookahead:<style>`, `heuristic:<style>`, `search[:<style>]`, `neural:<checkpoint>`, `neural-lookahead:<checkpoint>` or `neural-search:<checkpoint>`.
         #[arg(long, default_value = "random")]
         bot_b: String,
         /// Number of games; each player goes first in half of them.
@@ -182,6 +182,9 @@ struct SearchArgs {
     /// `search` bots play out their samples with the lookahead heuristic bot.
     #[arg(long)]
     rollout_lookahead: bool,
+    /// Weight of the network's prior in `neural-search` bots (PUCT).
+    #[arg(long, default_value_t = ygo_ai::SearchSettings::default().prior_weight)]
+    prior_weight: f64,
 }
 
 impl SearchArgs {
@@ -193,6 +196,7 @@ impl SearchArgs {
         };
         bots.search.horizon_turns = self.horizon;
         bots.rollout_lookahead = self.rollout_lookahead;
+        bots.search.prior_weight = self.prior_weight;
         if let Some(secs) = self.think {
             let limit = std::time::Duration::try_from_secs_f64(secs)
                 .map_err(|_| format!("--think {secs}: not a number of seconds"))?;
