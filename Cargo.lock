@@ -8087,6 +8087,7 @@ dependencies = [
  "ygo-data",
  "ygo-engine",
  "ygo-play",
+ "ygo-train",
 ]
 
 [[package]]
@@ -8134,6 +8135,14 @@ version = "0.1.0"
 [[package]]
 name = "ygo-train"
 version = "0.1.0"
+dependencies = [
+ "burn",
+ "rand_chacha 0.10.0",
+ "rand_core 0.10.1",
+ "ygo-ai",
+ "ygo-cards",
+ "ygo-engine",
+]
 
 [[package]]
 name = "ygo-wasm"

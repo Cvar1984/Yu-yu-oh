@@ -20,6 +20,7 @@ ygo-engine.workspace = true
 ygo-cards.workspace = true
 ygo-ai.workspace = true
 ygo-play = { workspace = true, features = ["neural"] }
+ygo-train.workspace = true
 clap.workspace = true
 rand_core = "0.10"
 rand_chacha = "0.10"

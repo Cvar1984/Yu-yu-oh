@@ -98,6 +98,34 @@ enum Command {
         #[arg(long, default_value_t = 40)]
         top: usize,
     },
+    /// Train the neural bot to imitate the bots of recorded games
+    /// (`ygo sim --record`): their choices and who won (M6 step 4).
+    Imitate {
+        /// Directories of game records (`*.jsonl`).
+        #[arg(required = true)]
+        records: Vec<PathBuf>,
+        /// Where to save the trained network.
+        #[arg(long)]
+        out: PathBuf,
+        /// Start from this network instead of a new one.
+        #[arg(long)]
+        from: Option<PathBuf>,
+        /// Learn from players whose label starts with one of these
+        /// (comma-separated); all but `random` when empty.
+        #[arg(long, default_value = "")]
+        teachers: String,
+        #[arg(long, default_value_t = 3)]
+        epochs: usize,
+        #[arg(long, default_value_t = 128)]
+        batch: usize,
+        #[arg(long, default_value_t = 1e-3)]
+        learning_rate: f64,
+        /// One record in this many is held out to measure agreement.
+        #[arg(long, default_value_t = 10)]
+        holdout: usize,
+        #[arg(long, default_value_t = 1)]
+        seed: u64,
+    },
     /// Play against a bot in a full-screen terminal UI.
     Play {
         /// Your deck.
@@ -309,6 +337,34 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             audit::print(&bots, &report, top);
             Ok(true)
         }
+        Command::Imitate {
+            records,
+            out,
+            from,
+            teachers,
+            epochs,
+            batch,
+            learning_rate,
+            holdout,
+            seed,
+        } => {
+            imitate(
+                &bundle,
+                &records,
+                &out,
+                from.as_deref(),
+                &teachers,
+                &ygo_train::imitation::Options {
+                    epochs,
+                    batch,
+                    learning_rate,
+                    holdout,
+                    seed,
+                    ..Default::default()
+                },
+            )?;
+            Ok(true)
+        }
         Command::Play {
             deck,
             bot_deck,
@@ -371,4 +427,64 @@ fn load_collection(path: &Path, bundle: &Bundle) -> Result<Collection, DataError
     let collection = Collection::load(path)?;
     collection.validate(&bundle.cards)?;
     Ok(collection)
+}
+
+/// `ygo imitate`: reads the records, trains, saves the network.
+fn imitate(
+    bundle: &ygo_data::Bundle,
+    dirs: &[PathBuf],
+    out: &std::path::Path,
+    from: Option<&std::path::Path>,
+    teachers: &str,
+    opts: &ygo_train::imitation::Options,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use ygo_ai::neural::{Net, cpu};
+    let mut records = Vec::new();
+    for dir in dirs {
+        let mut files: Vec<PathBuf> = std::fs::read_dir(dir)?
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().is_some_and(|x| x == "jsonl"))
+            .collect();
+        files.sort();
+        for f in files {
+            let text = std::fs::read_to_string(&f)?;
+            records.push(
+                ygo_engine::GameRecord::from_jsonl(&text)
+                    .map_err(|e| format!("{}: {e}", f.display()))?,
+            );
+        }
+    }
+    let prefixes: Vec<&str> = teachers.split(',').filter(|t| !t.is_empty()).collect();
+    let teacher = |label: &str| {
+        if prefixes.is_empty() {
+            label != "random"
+        } else {
+            prefixes.iter().any(|p| label.starts_with(p))
+        }
+    };
+    let shared =
+        ygo_engine::Shared::new(bundle.rules.clone(), &bundle.cards, ygo_cards::registry());
+    let net = match from {
+        Some(path) => Net::load(path, &cpu())?,
+        None => Net::new(&cpu()),
+    };
+    println!("{} records from {} directories", records.len(), dirs.len());
+    let net = ygo_train::imitation::train(net, &records, &shared, &teacher, opts, &mut |e| {
+        println!(
+            "epoch {}: {} samples, loss {:.3}, held-out agreement {:.1}% and value error {:.3} ({} decisions), {:.0}s",
+            e.epoch,
+            e.samples,
+            e.loss,
+            100.0 * e.agreement,
+            e.value_error,
+            e.held_out,
+            e.seconds
+        );
+    })?;
+    if let Some(dir) = out.parent().filter(|d| !d.as_os_str().is_empty()) {
+        std::fs::create_dir_all(dir)?;
+    }
+    net.save(out)?;
+    println!("saved {}", out.display());
+    Ok(())
 }
