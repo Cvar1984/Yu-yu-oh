@@ -93,6 +93,7 @@ calculation, and a negated Spell goes to the Graveyard exactly once.
 | 5. Batch 2 C | `ce4b30d` | Scapegoat (Tokens), Ultimate Offering; 6 more tests and a card-text test; none pending: every non-Normal card of the 535 is scripted |
 | 6. Acceptance cases | `5ab8941` | 76 of the prototype's 77 cases covered and passing (`docs/acceptance.md`), 6 new tests in `tests/acceptance.rs` and 1 in `ygo-ai/tests/lookahead.rs`, both prototype bugs pinned; the engine now replays an attack when the defender's number of monsters changes; 1 bot case open (discard plan) |
 | 6b. Discard plan | `f27cfee` | revive potential in the position score (`[revive]` in `card_values.toml`, style `revive_worth`): 77 of 77; no strength change in 6,000 mirror games |
+| 7. Bots | this commit | card values kept (the prototype's later values gain nothing overall, `2ca3915`); M5 gate holds on 535 cards: search beats every heuristic style, 61.6% to 73.0%, and wins every enemy-deck mirror, 54.8% to 69.4% |
 
 Batch 1 added to the engine: piercing damage (`Effect::pierce`), stopping
 an attack already declared (`cancel_attack`; Spellbinding Circle now
@@ -192,6 +193,42 @@ default brought the Toon deck to 47.1%. The prototype's values were set
 for its own, simpler bot; tuning them card by card against one deck would
 fit the noise. **Kept as they are**: new cards use the defaults (Spells
 and Traps 30, monsters by their stats), and the lookahead does the rest.
+
+**M5 gate rerun.** The search bot (200 playouts, horizon 2) against each
+plain heuristic style, 1,000 games each, `--seed 5000`, each player first
+in half, as in `docs/m5-plan.md`. The gate's deck (the owner's 45 of
+2026-11-16) was removed as stale, so this uses the owner's current deck,
+`save_a_owner_current_40`, mirrored:
+
+| Opponent | Search wins | Search first | Search second | Mean turns |
+| --- | --- | --- | --- | --- |
+| beatdown | 61.6% ±3.0 | 64.0% ±4.2 | 59.2% ±4.3 | 19.7 |
+| control | 64.4% ±3.0 | 68.6% ±4.1 | 60.2% ±4.3 | 19.9 |
+| stall | 71.7% ±2.8 | 76.0% ±3.7 | 67.4% ±4.1 | 21.5 |
+| burn | 63.9% ±3.0 | 66.2% ±4.1 | 61.6% ±4.3 | 19.8 |
+| exodia | 73.0% ±2.8 | 76.2% ±3.7 | 69.8% ±4.0 | 23.1 |
+| patient | 70.1% ±2.8 | 73.6% ±3.9 | 66.6% ±4.1 | 20.7 |
+
+**The gate holds**: the lowest bound of any interval is 58.6%. The margins
+are below M5's 72% to 79%, but on another deck and a pool with 161 more
+cards, so the two are not comparable. No draws.
+
+The search bot against plain Beatdown in each enemy deck's mirror, 500
+games each, same seed:
+
+| Deck | Search wins | Deck-out wins (search / Beatdown) |
+| --- | --- | --- |
+| E1 Toon | 54.8% ±4.4 | 55 / 34 |
+| E2 Special Summon | 60.0% ±4.3 | 23 / 53 |
+| E3 Removal | 55.4% ±4.4 | 49 / 14 |
+| E4 Big Beatdown | 65.2% ±4.2 | 26 / 12 |
+| E5 DARK + Plasma Zone | 69.4% ±4.0 | 1 / 1 |
+| E6 Gate Guardian | 61.0% ±4.3 | 2 / 1 |
+
+It wins every one, narrowly with the slow decks (Toon and Removal, about
+30 turns), where deck-outs decide a fifth of the games: the search's
+scoring still ignores the Deck (`docs/m5-plan.md`, What it does not do
+yet). Speed: 6 to 20 games/s on 4 threads of this container.
 
 ## Deck crafting from save A (2026-11-20)
 
