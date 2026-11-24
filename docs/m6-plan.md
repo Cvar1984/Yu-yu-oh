@@ -4,8 +4,10 @@ Gate (handoff): **each promoted checkpoint beats the previous one.** A
 candidate is promoted only if it beats the current best over enough games
 for a 95% interval that excludes 50% (handoff, Testing: bot evaluation).
 
-Status (2026-11-24): step 1 done. Owner (2026-11-24): burn is the
-library; the plan is approved; step 2 next.
+Status (2026-11-24): steps 1 to 4 done; step 5 started: the
+network-guided search bot beats every reference bot with the owner's
+deck (below). Owner (2026-11-24): burn is the library; the plan is
+approved.
 
 ## Step 1: the library trial (done)
 
@@ -177,6 +179,48 @@ averages, or normalises, every pooled set.
    plays itself; games go to a replay buffer; the network trains on the
    search's visit counts and the results; a candidate checkpoint is saved
    every N games.
+   **Started (2026-11-24), owner's goal: "train the network bot against
+   everyone until it's better than every bot with the same deck"**, the
+   owner's screenshot deck (40 cards, save A; not yet in `data/decks`,
+   whether to save it as `save_a_owner_current_40` is the owner's call)
+   on both sides.
+   - Network for this deck, `owner-1`: `imitation-1` trained 3 more
+     epochs on 16,000 lookahead mirrors and 2,000 search games with the
+     deck (held-out agreement 88.7%, value error 0.693). Alone (greedy) it
+     beats random, the six plain styles (64.8% to 74.8%) and four
+     lookahead styles, but not lookahead Beatdown (45.0%), lookahead Burn
+     (48.5%) or search (47.0%, 200 games). Its value head is too weak to
+     search with (`neural-lookahead:` lost to both).
+   - **`neural-search:<checkpoint>`**: the search bot with the policy as
+     its prior. `SearchPlayer::with_prior` (a `Prior` trait): the moves of
+     the decision being made are picked by PUCT (average result plus
+     `prior_weight` × prior × sqrt(visits) / (1 + the move's visits), a
+     move not yet tried starting from the average so far); deeper moves
+     keep UCB1, playouts stay heuristic. One forward pass a decision.
+     `prior_weight` against the plain search bot (400 games, seed 8800):
+     0.1 59.5%, 0.25 60.2%, 0.5 58.0%, 1 55.0%, 2 50.5%; default 0.25.
+     Control, the same PUCT with a flat prior: 49.0% (0.25) and 47.0% (1),
+     so the gain is the network's.
+   - Ladder (`tools/neural_ladder.sh`, seed 7700, 400 games each, the
+     network-guided search with `owner-1` as player A):
+
+     | Opponent | Result |
+     | --- | --- |
+     | random | 99.5% ±0.7 |
+     | heuristic Beatdown, Control, Stall | 71.5% ±4.4, 75.5% ±4.2, 77.5% ±4.1 |
+     | heuristic Burn, Exodia, Patient | 73.5% ±4.3, 81.2% ±3.8, 78.5% ±4.0 |
+     | lookahead Beatdown, Control, Stall | 63.5% ±4.7, 62.3% ±4.8, 64.2% ±4.7 |
+     | lookahead Burn, Exodia, Patient | 64.5% ±4.7, 68.8% ±4.5, 65.8% ±4.7 |
+     | search | 53.0% ±4.9; then 2,000 games (seed 400000): **57.8% ±2.2** |
+
+     Every interval excludes 50%. Against search, all 2,800 games pooled:
+     57.5%. Speed: 4 to 13 games/s on 4 cores (the plain search bot: 10).
+   - Expert iteration, round 1: those 2,000 games plus 2,000 mirrors of the
+     network-guided search, `owner-1` trained on its choices (3 epochs,
+     learning rate 3e-4, 171,944 samples): agreement 81.8% to 82.3%;
+     against search on the same seeds 56.9% ±2.2, no better than
+     `owner-1`, so not promoted. Training on the move played gives little
+     here; the next round should train on the search's visit counts.
 6. **Promotion and the gate.** Each candidate plays the current best
    (2,000 games, each player first in half); promoted only if the 95%
    interval excludes 50%. A ladder report beside it: random, heuristic,
