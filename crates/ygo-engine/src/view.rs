@@ -32,6 +32,12 @@ impl<'a> PlayerView<'a> {
         &self.observation
     }
 
+    /// The rules, card pool and scripts: public data, the same for both
+    /// players.
+    pub fn shared(&self) -> &crate::Shared {
+        self.game.shared()
+    }
+
     /// The legal actions, never empty.
     pub fn actions(&self) -> &'a [Action] {
         self.game.actions()

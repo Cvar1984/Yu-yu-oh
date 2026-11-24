@@ -4,8 +4,8 @@ Gate (handoff): **each promoted checkpoint beats the previous one.** A
 candidate is promoted only if it beats the current best over enough games
 for a 95% interval that excludes 50% (handoff, Testing: bot evaluation).
 
-Status (2026-11-24): step 1 done, steps 2 to 7 wait for the owner's
-approval of this plan.
+Status (2026-11-24): step 1 done. Owner (2026-11-24): burn is the
+library; the plan is approved; step 2 next.
 
 ## Step 1: the library trial (done)
 
@@ -68,6 +68,21 @@ averages, or normalises, every pooled set.
    Tests: two games that look the same to the decider encode the same
    (`PlayerView::sample`, as `tests/view.rs` does); every action of
    random games encodes.
+   **Done (2026-11-24):** `crates/ygo-ai/src/encode.rs`, `encode(&PlayerView)`:
+   132 numbers per card (`CARD_F`), 66 for the game (`GLOBAL_F`) and 429
+   per legal action (`ACTION_F`: its kind and details, then the card
+   vectors of its subject, the mean of its targets and the mean of its
+   costs or Tributes). Types, attributes and tags keep reserved slots
+   (`Tag::ALL`, whose order a test pins), so a slot never changes meaning.
+   The engine gained `Tag::ALL` and `PlayerView::shared` (public data).
+   Tests (`crates/ygo-ai/tests/encode.rs`): 5,894 decisions of 30 random
+   whole-pool games encode with the right sizes and finite numbers (up to
+   115 cards and 52 legal actions), and at every decision of 15 more
+   games a sample that looks the same to the decider encodes the same.
+   Speed: 5.7 µs per decision (release, one core, 10,134 decisions of 50
+   random games), next to about 75 µs for the trial network.
+   Simplification: a monster's Type is its printed one (DNA Surgery's
+   change is not shown).
 3. **Network and neural bot** (`ygo-ai`, burn behind a cargo feature
    `neural`, so the browser build and the other crates stay as they are
    until they want it). `NeuralPlayer` implements `Player`: the policy

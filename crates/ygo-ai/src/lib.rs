@@ -2,6 +2,7 @@
 //! recorded game between two of them. The uniform random player is the
 //! floor of the evaluation ladder and the engine's fuzzing driver.
 
+pub mod encode;
 mod eval;
 mod heuristic;
 mod search;
