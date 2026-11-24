@@ -131,3 +131,24 @@ fn training_lowers_the_loss() {
     let after = loss(&net).into_scalar::<f32>();
     assert!(after < before * 0.5, "loss {before} -> {after}");
 }
+
+#[test]
+fn the_lookahead_bot_plays_whole_games() {
+    use ygo_ai::neural::Lookahead;
+    let net = Net::new(&cpu());
+    let mut g = new_game(4);
+    let look = Lookahead {
+        top: 2,
+        samples: 1,
+        cap: 10,
+    };
+    let mut players: [Box<dyn Player>; 2] = [
+        Box::new(NeuralPlayer::new(net, cpu(), 0.0, 4).with_lookahead(look)),
+        Box::new(RandomPlayer::new(4)),
+    ];
+    while let Some(view) = PlayerView::new(&g) {
+        let a = players[view.player().index()].choose(&view);
+        g.apply(&a).expect("the lookahead bot picks a legal action");
+    }
+    assert!(g.result().is_some());
+}
