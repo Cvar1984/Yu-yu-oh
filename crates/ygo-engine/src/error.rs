@@ -7,6 +7,8 @@ use crate::PlayerId;
 pub enum SetupError {
     #[error("player {player} has an unknown card id {id}")]
     UnknownCard { player: PlayerId, id: CardId },
+    #[error("player {player}: {id} is a Token, which no deck may hold")]
+    TokenInDeck { player: PlayerId, id: CardId },
     #[error("player {player}: {name} ({id}) is in the wrong deck list")]
     WrongDeckList {
         player: PlayerId,

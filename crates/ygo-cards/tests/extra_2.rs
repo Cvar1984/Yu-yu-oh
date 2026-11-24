@@ -2,14 +2,15 @@
 //! modern text. The board helpers are the PSV tests' (`psv_common`).
 
 use ygo_cards::continuous::LEGENDARY_SWORD;
-use ygo_cards::extra_spells::SOUL_EXCHANGE;
+use ygo_cards::extra_spells::{SCAPEGOAT, SHEEP_TOKEN, SOUL_EXCHANGE};
 use ygo_cards::extra_traps::*;
 use ygo_cards::oneshot::{DARKNESS_APPROACHES, RUSH_RECKLESSLY, SHIELD_AND_SWORD};
 use ygo_cards::spells::{CHANGE_OF_HEART, DARK_HOLE};
 use ygo_engine::testing::{
-    CELTIC_GUARDIAN, MYSTICAL_ELF, SUMMONED_SKULL, in_hand, next_turn, play,
+    CELTIC_GUARDIAN, MYSTICAL_ELF, SUMMONED_SKULL, check_invariants, in_hand, next_turn, play,
+    stacked,
 };
-use ygo_engine::{Action, DecisionKind, Location, Position};
+use ygo_engine::{Action, DecisionKind, Game, Location, Position, SetupError};
 
 mod psv_common;
 use psv_common::*;
@@ -247,4 +248,158 @@ fn soul_exchange_tributes_the_opponents_monster_and_ends_the_battle_phase() {
     assert_eq!(g.instance(koumori).location, Location::Graveyard);
     assert!(g.graveyard(P1).contains(&koumori));
     assert!(g.on_field(celtic));
+}
+
+fn sheep(g: &Game, p: ygo_engine::PlayerId) -> Vec<ygo_engine::InstanceId> {
+    g.monsters_controlled(p)
+        .into_iter()
+        .filter(|&m| g.stats(m).id == SHEEP_TOKEN)
+        .collect()
+}
+
+// Scapegoat: four Sheep Tokens in face-up Defense Position; no other
+// summon that turn, but a Set; the Tokens are not Tribute Summon material.
+#[test]
+fn scapegoat_summons_four_sheep_and_locks_other_summons() {
+    let mut g = game(&[SCAPEGOAT, CELTIC_GUARDIAN, SUMMONED_SKULL], &[]);
+    activate(&mut g, SCAPEGOAT);
+    let tokens = sheep(&g, P0);
+    assert_eq!(tokens.len(), 4);
+    for &t in &tokens {
+        assert_eq!(g.instance(t).position, Position::FaceUpDefense);
+        assert_eq!(g.instance(t).owner, P0);
+    }
+    let celtic = in_hand(&g, P0, CELTIC_GUARDIAN);
+    let skull = in_hand(&g, P0, SUMMONED_SKULL);
+    let summons: Vec<Action> = g
+        .legal_actions()
+        .into_iter()
+        .filter(|a| matches!(a, Action::Summon { card, .. } if *card == celtic || *card == skull))
+        .collect();
+    assert_eq!(
+        summons,
+        vec![Action::Summon {
+            card: celtic,
+            tributes: vec![],
+            face_down: true,
+        }],
+        "only a Set; the Skull would need a Sheep as its Tribute"
+    );
+    check_invariants(&g);
+}
+
+#[test]
+fn scapegoat_cannot_follow_a_summon() {
+    let mut g = game(&[CELTIC_GUARDIAN, SCAPEGOAT], &[]);
+    pass_all_windows(&mut g);
+    summon_now(&mut g, P0, CELTIC_GUARDIAN);
+    assert!(activations(&g, SCAPEGOAT).is_empty());
+}
+
+// A Token that leaves the field is gone: it never reaches the Graveyard,
+// and a later Scapegoat reuses its instance.
+#[test]
+fn sheep_tokens_vanish_when_they_leave_the_field() {
+    let mut g = game(&[SCAPEGOAT, SCAPEGOAT], &[DARK_HOLE]);
+    activate(&mut g, SCAPEGOAT);
+    let first = sheep(&g, P0);
+    let instances = g.instances().len();
+    next_turn(&mut g);
+    activate(&mut g, DARK_HOLE);
+    for &t in &first {
+        assert_eq!(g.instance(t).location, Location::Gone);
+    }
+    assert!(
+        g.graveyard(P0)
+            .iter()
+            .all(|&c| g.stats(c).id != SHEEP_TOKEN)
+    );
+    check_invariants(&g);
+    next_turn(&mut g);
+    activate(&mut g, SCAPEGOAT);
+    assert_eq!(sheep(&g, P0).len(), 4);
+    assert_eq!(
+        g.instances().len(),
+        instances,
+        "the gone Tokens were reused"
+    );
+    check_invariants(&g);
+}
+
+#[test]
+fn no_deck_may_hold_a_token() {
+    let mut deck = vec![PAD; 40];
+    deck[0] = SHEEP_TOKEN;
+    let err = Game::new(shared(), &stacked([&deck, &[]], PAD)).unwrap_err();
+    assert!(matches!(err, SetupError::TokenInDeck { .. }), "{err}");
+}
+
+// Ultimate Offering: pay 500 LP, then Normal Summon or Set at once, on top
+// of the turn's Normal Summon, Tributes included.
+#[test]
+fn ultimate_offering_grants_an_extra_tribute_summon() {
+    let mut g = game(&[CELTIC_GUARDIAN, ULTIMATE_OFFERING, SUMMONED_SKULL], &[]);
+    let celtic = summon_now(&mut g, P0, CELTIC_GUARDIAN);
+    set_card(&mut g, P0, ULTIMATE_OFFERING);
+    next_turn(&mut g);
+    next_turn(&mut g);
+    let offering = in_hand_or_field(&g, ULTIMATE_OFFERING);
+    let a = activations(&g, ULTIMATE_OFFERING)
+        .into_iter()
+        .find(|a| matches!(a, Action::Activate { effect: 0, .. }))
+        .unwrap();
+    play(&mut g, a);
+    pass_all_windows(&mut g);
+    assert!(g.instance(offering).position.is_face_up());
+    let used = g.player(P0).summons_used;
+    activate(&mut g, ULTIMATE_OFFERING);
+    let skull = in_hand(&g, P0, SUMMONED_SKULL);
+    choose(&mut g, skull);
+    choose(&mut g, celtic);
+    answer(&mut g, 0);
+    assert_eq!(g.instance(skull).position, Position::FaceUpAttack);
+    assert_eq!(g.instance(celtic).location, Location::Graveyard);
+    assert_eq!(lp(&g, P0), 7500);
+    assert_eq!(
+        g.player(P0).summons_used,
+        used,
+        "the turn's summon is untouched"
+    );
+}
+
+#[test]
+fn ultimate_offering_sets_a_monster_in_the_opponents_battle_phase() {
+    let mut g = game(&[ULTIMATE_OFFERING, MYSTICAL_ELF], &[KOUMORI_DRAGON]);
+    set_card(&mut g, P0, ULTIMATE_OFFERING);
+    next_turn(&mut g);
+    let koumori = summon_now(&mut g, P1, KOUMORI_DRAGON);
+    play(&mut g, Action::EnterBattlePhase);
+    // The Trap Card first, as the Battle Phase starts; its effect later.
+    respond(&mut g, P0, ULTIMATE_OFFERING, None);
+    attack(&mut g, koumori, None);
+    respond(&mut g, P0, ULTIMATE_OFFERING, None);
+    let elf = in_hand(&g, P0, MYSTICAL_ELF);
+    choose(&mut g, elf);
+    answer(&mut g, 1);
+    assert_eq!(g.instance(elf).position, Position::FaceDownDefense);
+    // 500 paid, and the direct attack goes on: the engine replays an
+    // attack only when its target leaves, not when a monster joins.
+    assert_eq!(lp(&g, P0), 8000 - 500 - 1500);
+    check_invariants(&g);
+}
+
+fn in_hand_or_field(g: &Game, id: ygo_data::CardId) -> ygo_engine::InstanceId {
+    (0..g.instances().len())
+        .map(|i| ygo_engine::InstanceId(i as u8))
+        .find(|&c| g.stats(c).id == id && g.instance(c).owner == P0)
+        .unwrap()
+}
+
+fn pass_all_windows(g: &mut Game) {
+    while g
+        .pending_decision()
+        .is_some_and(|d| d.kind == DecisionKind::Respond)
+    {
+        play(g, Action::Pass);
+    }
 }

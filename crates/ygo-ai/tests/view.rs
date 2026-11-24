@@ -133,7 +133,7 @@ fn random_pool_deck(shared: &Shared, seed: u64) -> ygo_engine::DeckList {
     let pool = &shared.pool;
     let ids: Vec<_> = (0..pool.len() as u16)
         .map(|i| pool.get(CardIndex(i)))
-        .filter(|s| !s.is_extra_deck())
+        .filter(|s| s.is_main_deck())
         .map(|s| s.id)
         .collect();
     let mut x = seed

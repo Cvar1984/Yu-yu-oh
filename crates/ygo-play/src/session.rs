@@ -174,6 +174,13 @@ impl PlaySession {
             Some(VisibleCard::Known { card, .. }) => Some(*card),
             _ => obs.chain.iter().find(|l| l.instance == id).map(|l| l.card),
         }?;
+        if let Some(t) = self.cards.token(known) {
+            let maker = self.cards.get(t.made_by).map_or("", |c| c.name.as_str());
+            return Some(format!(
+                "{}\nToken · Level {} · {} {} · {}/{}\n\nCreated by {maker}; gone once it leaves the field.",
+                t.name, t.level, t.attribute, t.race, t.atk, t.def
+            ));
+        }
         let c = self.cards.get(known)?;
         // Name, then a line such as "Normal Monster · Level 4 · WATER
         // Spellcaster · 1200/2000" or "Trap Card · Counter", then the text.

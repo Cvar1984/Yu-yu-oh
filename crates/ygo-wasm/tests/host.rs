@@ -32,6 +32,7 @@ fn init_command(extra_decks: &[(&str, String)]) -> Value {
         "rules": read("config/rules.toml"),
         "cards": read("data/cards.json"),
         "banlist": read("data/banlist.json"),
+        "tokens": read("data/tokens.json"),
         "styles": read("config/styles.toml"),
         "card_values": read("config/card_values.toml"),
         "decks": decks,

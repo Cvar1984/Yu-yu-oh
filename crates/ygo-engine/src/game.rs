@@ -264,7 +264,11 @@ fn lookup(
         .pool
         .index_of(id)
         .ok_or(SetupError::UnknownCard { player, id })?;
-    Ok((index, shared.pool.get(index)))
+    let stats = shared.pool.get(index);
+    if stats.token {
+        return Err(SetupError::TokenInDeck { player, id });
+    }
+    Ok((index, stats))
 }
 
 /// Fisher-Yates with the game's own RNG, so no `rand` dependency and the

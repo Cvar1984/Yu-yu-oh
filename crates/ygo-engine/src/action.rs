@@ -259,6 +259,10 @@ pub enum Event {
     AttackReplay {
         attacker: InstanceId,
     },
+    /// A Token left the field and stopped existing.
+    TokenRemoved {
+        card: InstanceId,
+    },
     /// An effect moved the attack under way to a new target (Shift).
     AttackRetargeted {
         attacker: InstanceId,

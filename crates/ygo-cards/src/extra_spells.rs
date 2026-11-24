@@ -4,7 +4,7 @@
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
     CardScript, Effect, EffectCtx, Flow, Game, InstanceId, Lingering, LingeringKind, Location,
-    Phase, PlayerId, Position, Registry, Source, TargetSets,
+    Phase, PlayerId, Position, Registry, Source, Tag, TargetSets,
 };
 
 use crate::continuous::{equip_resolve, equipped_bonus, face_up_monsters};
@@ -12,6 +12,9 @@ use crate::positions;
 
 pub const ANCIENT_TELESCOPE: CardId = CardId(17092736);
 pub const SOUL_EXCHANGE: CardId = CardId(68005187);
+pub const SCAPEGOAT: CardId = CardId(73915051);
+/// Scapegoat's Token (`data/tokens.json`).
+pub const SHEEP_TOKEN: CardId = CardId(73915052);
 pub const CARD_DESTRUCTION: CardId = CardId(72892473);
 pub const DE_SPELL: CardId = CardId(19159413);
 pub const DIAN_KETO_THE_CURE_MASTER: CardId = CardId(84257639);
@@ -145,7 +148,64 @@ fn flute_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
     }
 }
 
+/// Free Monster Zones `player` may use.
+fn free_monster_zones(g: &Game, player: PlayerId) -> usize {
+    g.player(player)
+        .monster_zones
+        .iter()
+        .enumerate()
+        .filter(|&(i, z)| z.is_none() && !g.zone_locked(player, i))
+        .count()
+}
+
 pub fn register(r: &mut Registry) {
+    // Special Summon 4 Sheep Tokens in Defense Position; they cannot be
+    // Tributed for a Tribute Summon. You cannot Summon other monsters the
+    // turn you activate this card (you can Normal Set), so not after a
+    // summon either.
+    r.register(
+        SCAPEGOAT,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![Effect {
+                timing: |g, s, _| {
+                    !g.player(s.controller).summoned
+                        && free_monster_zones(g, s.controller) >= 4
+                        && g.can_special_summon(s.controller)
+                        && g.shared().pool.index_of(SHEEP_TOKEN).is_some()
+                },
+                ..Effect::activate(2, |g, ctx| {
+                    if free_monster_zones(g, ctx.controller) >= 4
+                        && g.can_special_summon(ctx.controller)
+                    {
+                        for _ in 0..4 {
+                            g.special_summon_token(
+                                SHEEP_TOKEN,
+                                ctx.controller,
+                                Position::FaceUpDefense,
+                            );
+                        }
+                    }
+                    let turn = g.turn();
+                    g.add_lingering(Lingering {
+                        source: ctx.source,
+                        kind: LingeringKind::NoSummons {
+                            player: ctx.controller,
+                        },
+                        expires_turn: turn,
+                    });
+                    Flow::Done
+                })
+            }],
+        },
+    );
+    r.register(
+        SHEEP_TOKEN,
+        CardScript {
+            tags: vec![Tag::NoTributeSummon],
+            effects: Vec::new(),
+        },
+    );
     // Target 1 monster your opponent controls: this turn your Tribute
     // Summons must Tribute it, as if you controlled it. No Battle Phase the
     // turn you activate this card, so only before one (Main Phase 1).

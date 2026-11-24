@@ -58,7 +58,7 @@ pub fn normal_deck(n: usize) -> DeckList {
     let mut ids: Vec<CardId> = (0..pool.len() as u16)
         .map(crate::CardIndex)
         .map(|i| pool.get(i))
-        .filter(|c| c.kind == CardKind::Normal)
+        .filter(|c| c.kind == CardKind::Normal && !c.token)
         .map(|c| c.id)
         .collect();
     ids.sort();
@@ -270,7 +270,24 @@ pub fn check_invariants(g: &Game) {
         }
         assert!(usize::from(s.summons_used) <= rules.summon.normal_or_tribute_per_turn);
     }
-    assert_eq!(seen.len(), g.instances().len(), "every card is somewhere");
+    let gone = g
+        .instances()
+        .iter()
+        .filter(|i| i.location == Location::Gone)
+        .count();
+    assert_eq!(
+        seen.len() + gone,
+        g.instances().len(),
+        "every card is somewhere"
+    );
+    for (i, inst) in g.instances().iter().enumerate() {
+        let token = g.stats(InstanceId(i as u8)).token;
+        assert!(
+            !token || inst.location.on_field() || inst.location == Location::Gone,
+            "a Token exists only on the field"
+        );
+        assert!(token || inst.location != Location::Gone, "only Tokens go");
+    }
     assert!(g.turn() <= g.max_turns());
     let any_dead = PlayerId::BOTH.iter().any(|p| g.player(*p).lp == 0);
     assert_eq!(

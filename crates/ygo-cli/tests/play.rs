@@ -235,3 +235,69 @@ fn the_record_is_saved_where_asked() {
         PathBuf::from("records/human/1000-42.jsonl")
     );
 }
+
+#[test]
+fn a_tokens_card_text_names_the_card_that_made_it() {
+    use std::sync::Arc;
+    use ygo_engine::{Action, PlayerId, Position};
+    let b = bundle();
+    let shared = Arc::new(ygo_engine::Shared::new(
+        b.rules.clone(),
+        &b.cards,
+        ygo_cards::registry(),
+    ));
+    let scapegoat = ygo_data::CardId(73915051);
+    let pad = ygo_engine::testing::MAMMOTH_GRAVEYARD;
+    let mut main = vec![scapegoat; 5];
+    main.resize(40, pad);
+    let mut setup = GameSetup::new(
+        [
+            ygo_engine::DeckList {
+                main: main.clone(),
+                extra: vec![],
+            },
+            ygo_engine::DeckList {
+                main: vec![pad; 40],
+                extra: vec![],
+            },
+        ],
+        1,
+    );
+    setup.shuffle = false;
+    setup.first_player = Some(PlayerId(0));
+    let bot = Box::new(ygo_ai::RandomPlayer::new(1));
+    let mut s = PlaySession::new(
+        shared,
+        Arc::new(b.cards),
+        &setup,
+        PlayerId(0),
+        bot,
+        "random",
+    )
+    .unwrap();
+    let goat = s
+        .actions()
+        .iter()
+        .position(|a| matches!(a, Action::Activate { .. }))
+        .expect("Scapegoat is offered");
+    assert!(s.play(goat));
+    while !s.actions().iter().any(|a| matches!(a, Action::EndTurn)) {
+        let pass = s.actions().iter().position(|a| *a == Action::Pass).unwrap();
+        assert!(s.play(pass));
+    }
+    let obs = s.observation();
+    let sheep = obs
+        .me()
+        .monster_zones
+        .iter()
+        .flatten()
+        .find(|m| m.position() == Position::FaceUpDefense)
+        .expect("a Sheep Token")
+        .instance();
+    let text = s.card_text(sheep).unwrap();
+    assert!(
+        text.starts_with("Sheep Token\nToken · Level 1 · EARTH Beast · 0/0"),
+        "{text}"
+    );
+    assert!(text.contains("Created by Scapegoat"), "{text}");
+}

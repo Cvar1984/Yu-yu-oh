@@ -45,6 +45,9 @@ impl Game {
 
     /// Removes a card from play (any location) to its owner's banished pile.
     pub fn banish(&mut self, card: InstanceId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         if from == Location::Banished {
             return;
@@ -176,7 +179,8 @@ impl Game {
                 let rules = &self.shared.rules.summon;
                 let state = &self.players[player.index()];
                 let cap = rules.max_monsters_entering_per_turn;
-                (cap == 0 || usize::from(state.monsters_entered) < cap)
+                !self.summons_locked(player)
+                    && (cap == 0 || usize::from(state.monsters_entered) < cap)
                     && (!rules.special_summon_counts_toward_limit
                         || usize::from(state.summons_used) < rules.normal_or_tribute_per_turn)
             })
@@ -399,6 +403,9 @@ impl Game {
 
     /// Moves a card from anywhere (Deck, Graveyard, field) to its owner's hand.
     pub fn add_to_hand(&mut self, card: InstanceId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         if from == Location::Hand || self.send_to_extra_deck_instead(card) {
             return;
@@ -480,6 +487,7 @@ impl Game {
         let state = &self.players[player.index()];
         let cap = rules.max_monsters_entering_per_turn;
         self.free_monster_zone(player).is_some()
+            && !self.summons_locked(player)
             && (cap == 0 || usize::from(state.monsters_entered) < cap)
             && (!rules.special_summon_counts_toward_limit
                 || usize::from(state.summons_used) < rules.normal_or_tribute_per_turn)
@@ -563,6 +571,7 @@ impl Game {
         let state = &mut self.players[player.index()];
         state.monster_zones[zone] = Some(card);
         state.monsters_entered += 1;
+        state.summoned = true;
         if counts {
             state.summons_used += 1;
         }
@@ -684,6 +693,7 @@ impl Game {
                 | LingeringKind::StatChangesReversed
                 | LingeringKind::MustTribute { .. }
                 | LingeringKind::NoBattlePhase { .. }
+                | LingeringKind::NoSummons { .. }
                 | LingeringKind::BattleShield { .. } => {}
             }
         }
@@ -906,6 +916,9 @@ impl Game {
     /// Puts `card` face-up into `player`'s Deck and shuffles it (Parasite
     /// Paracide); it stays its owner's card.
     pub fn put_face_up_in_deck(&mut self, card: InstanceId, player: PlayerId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         self.remove_from_current_place(card);
         if from.on_field() {
@@ -1237,6 +1250,13 @@ impl Game {
         })
     }
 
+    /// Whether `player` may not Summon this turn, only Set (Scapegoat).
+    pub fn summons_locked(&self, player: PlayerId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::NoSummons { player })
+    }
+
     pub(crate) fn battle_phase_forbidden(&self, player: PlayerId) -> bool {
         self.lingering
             .iter()
@@ -1398,7 +1418,7 @@ impl Game {
 
     /// Places a card from anywhere on top of its owner's Deck.
     pub fn place_on_top_of_deck(&mut self, card: InstanceId) {
-        if self.send_to_extra_deck_instead(card) {
+        if self.token_leaves(card) || self.send_to_extra_deck_instead(card) {
             return;
         }
         self.remove_from_current_place(card);
@@ -1422,6 +1442,9 @@ impl Game {
     /// Returns a card from anywhere to the bottom of its owner's Deck;
     /// the caller shuffles if the card says so.
     pub fn return_to_deck(&mut self, card: InstanceId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         if from == Location::Deck || self.send_to_extra_deck_instead(card) {
             return;
@@ -1656,6 +1679,60 @@ impl Game {
 
     /// An Extra Deck monster that would go to the hand or the Deck goes
     /// back to its owner's Extra Deck instead. Returns whether it did.
+    /// A Token sent anywhere off the field stops existing instead.
+    /// Returns whether `card` was such a Token.
+    fn token_leaves(&mut self, card: InstanceId) -> bool {
+        let from = self.instances[card.index()].location;
+        if !self.stats(card).token || from == Location::Gone {
+            return false;
+        }
+        self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Gone;
+        inst.position = Position::FaceUp;
+        inst.controller = inst.owner;
+        inst.turn_set = None;
+        inst.turn_entered_field = None;
+        inst.equipped_to = None;
+        self.emit(Event::TokenRemoved { card });
+        true
+    }
+
+    /// Special Summons a new Token `id` (from `tokens.json`) to `player`'s
+    /// field: a Token instance that is gone is reused, or a new one made.
+    /// `None` when the pool has no such Token, `player` has no free Monster
+    /// Zone, or the game holds as many cards as instance ids allow.
+    pub fn special_summon_token(
+        &mut self,
+        id: ygo_data::CardId,
+        player: PlayerId,
+        position: Position,
+    ) -> Option<InstanceId> {
+        let index = self.shared.pool.index_of(id)?;
+        if !self.shared.pool.get(index).token || self.free_monster_zone(player).is_none() {
+            return None;
+        }
+        let reused = self
+            .instances
+            .iter()
+            .position(|i| i.card == index && i.owner == player && i.location == Location::Gone);
+        let card = match reused {
+            Some(i) => InstanceId(i as u8),
+            None if self.instances.len() <= usize::from(u8::MAX) => {
+                let mut inst = crate::CardInstance::in_deck(index, player);
+                inst.location = Location::Gone;
+                self.instances.push(inst);
+                InstanceId((self.instances.len() - 1) as u8)
+            }
+            None => return None,
+        };
+        self.special_summon_unchecked(card, player, position)
+            .then_some(card)
+    }
+
     fn send_to_extra_deck_instead(&mut self, card: InstanceId) -> bool {
         let from = self.instances[card.index()].location;
         if !self.stats(card).is_extra_deck() || from == Location::Extra {
@@ -2018,11 +2095,15 @@ impl Game {
                 let owner = inst.owner;
                 self.players[owner.index()].graveyard.retain(|&c| c != card);
             }
+            Location::Gone => {}
         }
     }
 
     /// Moves a card from wherever it is to its owner's Graveyard.
     pub(crate) fn send_to_graveyard(&mut self, card: InstanceId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         if from == Location::Graveyard {
             return;

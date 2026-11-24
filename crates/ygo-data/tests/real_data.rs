@@ -113,3 +113,27 @@ fn every_deck_is_legal_and_owned_decks_fit_their_collection() {
         "the six enemy decks"
     );
 }
+
+#[test]
+fn the_sheep_token_loads_outside_the_535_cards() {
+    let b = bundle();
+    let sheep = b.cards.token(CardId(73915052)).expect("tokens.json loads");
+    assert_eq!(sheep.name, "Sheep Token");
+    assert_eq!(b.cards.get(sheep.made_by).unwrap().name, "Scapegoat");
+    assert_eq!((sheep.level, sheep.atk, sheep.def), (1, 0, 0));
+    assert!(!b.cards.contains(sheep.id), "never a deck card");
+    assert_eq!(b.cards.len(), 535);
+}
+
+#[test]
+fn a_token_must_have_its_own_id_and_a_maker_in_the_pool() {
+    let b = bundle();
+    let mut token = b.cards.token(CardId(73915052)).unwrap().clone();
+    // The 535 cards without their Tokens.
+    let cards = || ygo_data::CardDb::from_cards(b.cards.iter().cloned().collect()).unwrap();
+    token.id = CardId(73915051); // Scapegoat's own id
+    assert!(cards().with_tokens(vec![token.clone()]).is_err());
+    token.id = CardId(1);
+    token.made_by = CardId(2);
+    assert!(cards().with_tokens(vec![token]).is_err());
+}
