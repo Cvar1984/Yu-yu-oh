@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use ygo_ai::{HeuristicPlayer, Player, SearchPlayer, SearchSettings, play_game};
+use ygo_ai::{HeuristicPlayer, Player, Prior, SearchPlayer, SearchSettings, play_game};
 use ygo_cards::spells::DARK_HOLE;
 use ygo_data::{CardId, CardValues, Styles};
 use ygo_engine::testing::{
@@ -142,4 +142,42 @@ fn a_zero_time_limit_still_answers_like_the_playout_bot() {
     };
     let mut s = SearchPlayer::new(heuristic("beatdown", 5), settings, 5);
     assert_eq!(pick(&mut s, &g), pick(&mut heuristic("beatdown", 5), &g));
+}
+
+/// A prior that puts nearly everything on one action.
+struct Favour(usize);
+
+impl Prior for Favour {
+    fn prior(&mut self, view: &PlayerView) -> Vec<f64> {
+        let n = view.actions().len();
+        let rest = 0.01 / (n - 1) as f64;
+        (0..n)
+            .map(|i| if i == self.0 { 0.99 } else { rest })
+            .collect()
+    }
+}
+
+#[test]
+fn a_prior_steers_the_visits_of_the_decision() {
+    let g = game(&[CELTIC_GUARDIAN, DARK_HOLE], &[]);
+    let view = PlayerView::new(&g).unwrap();
+    assert!(view.actions().len() > 2);
+    let settings = SearchSettings {
+        iterations: 60,
+        prior_weight: 50.0,
+        ..SearchSettings::default()
+    };
+    for favoured in [0, view.actions().len() - 1] {
+        let analyse = || {
+            SearchPlayer::new(heuristic("beatdown", 2), settings.clone(), 2)
+                .with_prior(Box::new(Favour(favoured)))
+                .analyse(&view)
+        };
+        let a = analyse();
+        assert_eq!(a, analyse(), "the same seed gives the same analysis");
+        assert_eq!(a.iter().map(|(_, v, _)| v).sum::<u32>(), 60);
+        let most = (0..a.len()).max_by_key(|&i| a[i].1).unwrap();
+        assert_eq!(most, favoured, "{a:?}");
+        assert!(a[favoured].1 >= 50, "{a:?}");
+    }
 }

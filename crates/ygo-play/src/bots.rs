@@ -103,6 +103,19 @@ impl Bots {
                 NeuralPlayer::new(net, cpu(), 0.0, seed).with_lookahead(Lookahead::default());
             return Ok(Box::new(player));
         }
+        // The search bot with the network's policy as its prior.
+        #[cfg(feature = "neural")]
+        if let Some(path) = name.strip_prefix("neural-search:") {
+            use ygo_ai::neural::{Net, NeuralPlayer, cpu};
+            let net = Net::load(Path::new(path), &cpu())?;
+            let prior = NeuralPlayer::new(net, cpu(), 0.0, seed);
+            let rollout = self
+                .heuristic(DEFAULT_ROLLOUT_STYLE, false, seed)?
+                .with_lookahead(self.rollout_lookahead);
+            let player =
+                SearchPlayer::new(rollout, self.search.clone(), seed).with_prior(Box::new(prior));
+            return Ok(Box::new(player));
+        }
         // `search` plays out its samples with the default heuristic style.
         let (search, style_name) = match name {
             "search" => (true, Some(DEFAULT_ROLLOUT_STYLE)),
@@ -113,7 +126,7 @@ impl Bots {
         };
         let style = style_name.and_then(|s| self.styles.get(s)).ok_or_else(|| {
             format!(
-                "unknown bot `{name}`; available: {}, search:<style>, heuristic:<style> (no lookahead), neural:<checkpoint>, neural-lookahead:<checkpoint>",
+                "unknown bot `{name}`; available: {}, search:<style>, heuristic:<style> (no lookahead), neural:<checkpoint>, neural-lookahead:<checkpoint>, neural-search:<checkpoint>",
                 self.names().join(", ")
             )
         })?;

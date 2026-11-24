@@ -5,6 +5,12 @@
 //! the heuristic bot on both sides for a few turns, scores the position
 //! it reaches, and credits that score to every move on the way. The most
 //! visited first move is played.
+//!
+//! With a [`Prior`] (a policy network), the moves of the decision being
+//! made are picked by PUCT instead (AlphaZero): the average result plus
+//! `prior_weight` times the prior's share, shrinking as a move gathers
+//! visits. Deeper moves keep UCB1. One prior per decision, so the network
+//! costs one forward pass while the playouts stay cheap.
 
 use std::time::Duration;
 
@@ -36,6 +42,9 @@ pub struct SearchSettings {
     pub hand_worth: f64,
     /// A lead of this many points scores about 0.73.
     pub score_scale: f64,
+    /// Weight of the prior against the average result (PUCT); used only
+    /// with a [`Prior`].
+    pub prior_weight: f64,
 }
 
 impl Default for SearchSettings {
@@ -49,8 +58,15 @@ impl Default for SearchSettings {
             lp_per_point: 50.0,
             hand_worth: 0.5,
             score_scale: 40.0,
+            prior_weight: 0.25,
         }
     }
+}
+
+/// Move probabilities for a decision: one per legal action of the view,
+/// in its order, summing to 1.
+pub trait Prior {
+    fn prior(&mut self, view: &PlayerView) -> Vec<f64>;
 }
 
 pub struct SearchPlayer {
@@ -58,6 +74,7 @@ pub struct SearchPlayer {
     rollout: HeuristicPlayer,
     settings: SearchSettings,
     rng: ChaCha8Rng,
+    prior: Option<Box<dyn Prior>>,
 }
 
 /// One move from a tree node, as some player made it in some samples.
@@ -83,6 +100,15 @@ impl SearchPlayer {
             rollout,
             settings,
             rng: ChaCha8Rng::seed_from_u64(seed),
+            prior: None,
+        }
+    }
+
+    /// Picks the moves of each decision by PUCT with these priors.
+    pub fn with_prior(self, prior: Box<dyn Prior>) -> Self {
+        Self {
+            prior: Some(prior),
+            ..self
         }
     }
 
@@ -95,6 +121,10 @@ impl SearchPlayer {
     pub fn analyse(&mut self, view: &PlayerView) -> Vec<(Action, u32, f64)> {
         let mut tree = vec![Node::default()];
         let started = self.settings.time_limit.map(|_| std::time::Instant::now());
+        let priors: Option<Vec<(Action, f64)>> = self
+            .prior
+            .as_mut()
+            .map(|p| view.actions().iter().cloned().zip(p.prior(view)).collect());
         for _ in 0..self.settings.iterations {
             if let (Some(limit), Some(t)) = (self.settings.time_limit, started)
                 && t.elapsed() >= limit
@@ -102,7 +132,7 @@ impl SearchPlayer {
                 break;
             }
             let sample = view.sample(self.rng.next_u64());
-            self.iterate(&mut tree, sample);
+            self.iterate(&mut tree, sample, priors.as_deref());
         }
         let root = &tree[0];
         view.actions()
@@ -120,7 +150,7 @@ impl SearchPlayer {
 
     /// One iteration: down the tree, one new move, a playout, the result
     /// back up the path.
-    fn iterate(&mut self, tree: &mut Vec<Node>, mut g: Game) {
+    fn iterate(&mut self, tree: &mut Vec<Node>, mut g: Game, priors: Option<&[(Action, f64)]>) {
         let turn = g.turn();
         let mut node = 0;
         let mut path: Vec<(usize, usize)> = Vec::new();
@@ -132,6 +162,19 @@ impl SearchPlayer {
                 continue;
             }
             let player = decision.player;
+            if node == 0
+                && let Some(priors) = priors
+            {
+                let (edge, expanded) = self.puct(&mut tree[0], &g, player, priors);
+                path.push((0, edge));
+                let action = tree[0].edges[edge].action.clone();
+                g.apply(&action).expect("legal in this sample");
+                if expanded {
+                    break;
+                }
+                node = self.child(tree, 0, edge);
+                continue;
+            }
             let mut legal = Vec::new();
             let mut untried = Vec::new();
             for action in g.actions() {
@@ -171,15 +214,7 @@ impl SearchPlayer {
             path.push((node, best));
             let action = tree[node].edges[best].action.clone();
             g.apply(&action).expect("legal in this sample");
-            node = match tree[node].edges[best].child {
-                Some(child) => child,
-                None => {
-                    tree.push(Node::default());
-                    let child = tree.len() - 1;
-                    tree[node].edges[best].child = Some(child);
-                    child
-                }
-            };
+            node = self.child(tree, node, best);
         }
         let first = self.playout(&mut g, turn);
         for (n, e) in path {
@@ -191,6 +226,86 @@ impl SearchPlayer {
                 1.0 - first
             };
         }
+    }
+
+    /// The node below `edge` of `node`, made on the first visit.
+    fn child(&self, tree: &mut Vec<Node>, node: usize, edge: usize) -> usize {
+        match tree[node].edges[edge].child {
+            Some(child) => child,
+            None => {
+                tree.push(Node::default());
+                let child = tree.len() - 1;
+                tree[node].edges[edge].child = Some(child);
+                child
+            }
+        }
+    }
+
+    /// The root move by PUCT among the moves legal in `g`: average result
+    /// (the root's average for a move not yet tried) plus `prior_weight`
+    /// times its prior times sqrt(root visits) / (1 + its visits). Returns
+    /// its edge and whether the edge is new.
+    fn puct(
+        &self,
+        root: &mut Node,
+        g: &Game,
+        player: PlayerId,
+        priors: &[(Action, f64)],
+    ) -> (usize, bool) {
+        let (visits, reward) = root
+            .edges
+            .iter()
+            .fold((0, 0.0), |(n, r), e| (n + e.visits, r + e.reward));
+        let first_try = if visits == 0 {
+            0.5
+        } else {
+            reward / f64::from(visits)
+        };
+        let scale = self.settings.prior_weight * f64::from(visits.max(1)).sqrt();
+        let mut best: Option<(f64, &Action, Option<usize>)> = None;
+        for action in g.actions() {
+            let prior = priors
+                .iter()
+                .find(|(a, _)| a == action)
+                .map_or(0.0, |(_, p)| *p);
+            let edge = root
+                .edges
+                .iter()
+                .position(|e| e.player == player && &e.action == action);
+            let (n, q) = match edge {
+                Some(i) => {
+                    let e = &root.edges[i];
+                    let n = f64::from(e.visits);
+                    (
+                        n,
+                        if e.visits == 0 {
+                            first_try
+                        } else {
+                            e.reward / n
+                        },
+                    )
+                }
+                None => (0.0, first_try),
+            };
+            let score = q + scale * prior / (1.0 + n);
+            if best.as_ref().is_none_or(|b| score > b.0) {
+                best = Some((score, action, edge));
+            }
+        }
+        let (_, action, edge) = best.expect("a choice has two or more actions");
+        if let Some(i) = edge {
+            root.edges[i].available += 1;
+            return (i, false);
+        }
+        root.edges.push(Edge {
+            player,
+            action: action.clone(),
+            visits: 0,
+            available: 1,
+            reward: 0.0,
+            child: None,
+        });
+        (root.edges.len() - 1, true)
     }
 
     /// Plays on with the heuristic bot on both sides until the horizon or

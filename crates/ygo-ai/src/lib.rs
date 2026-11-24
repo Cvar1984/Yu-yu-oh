@@ -12,7 +12,7 @@ mod search;
 pub use eval::Worth;
 
 pub use heuristic::HeuristicPlayer;
-pub use search::{SearchPlayer, SearchSettings};
+pub use search::{Prior, SearchPlayer, SearchSettings};
 
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};

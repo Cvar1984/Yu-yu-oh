@@ -23,8 +23,8 @@ use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
 use ygo_engine::{Action, DecisionKind, Game, GameResult, PlayerId, PlayerView};
 
-use crate::Player;
 use crate::encode::{ACTION_F, CARD_F, DECK_FLAG, Encoded, GLOBAL_F, LINGER_F, encode};
+use crate::{Player, Prior};
 
 const CARD_H: usize = 128;
 const LINGER_H: usize = 64;
@@ -349,6 +349,17 @@ impl NeuralPlayer {
         let logits: Vec<f32> = logits.into_data().try_to_vec::<f32>().expect("f32 logits");
         let value: Vec<f32> = value.into_data().try_to_vec::<f32>().expect("f32 value");
         (logits[..k].to_vec(), value[0])
+    }
+}
+
+/// The policy as the search bot's prior: the softmax of the logits.
+impl Prior for NeuralPlayer {
+    fn prior(&mut self, view: &PlayerView) -> Vec<f64> {
+        let (logits, _) = self.evaluate(view);
+        let top = logits.iter().copied().fold(f32::MIN, f32::max);
+        let weights: Vec<f64> = logits.iter().map(|x| f64::from(x - top).exp()).collect();
+        let total: f64 = weights.iter().sum();
+        weights.into_iter().map(|w| w / total).collect()
     }
 }
 
