@@ -18,7 +18,7 @@ mod rules;
 mod token;
 
 pub use banlist::{Banlist, CardLimit};
-pub use bot::{CardValues, MAX_CARD_VALUE, Style, Styles, ValueDefaults};
+pub use bot::{CardValues, MAX_CARD_VALUE, ReviveFrom, Style, Styles, ValueDefaults};
 pub use bundle::Bundle;
 pub use card::{Card, CardDb, CardFile, CardId, CardKind, CardType, GameIndex, Images, Printing};
 pub use check::{DeckProblem, check_deck};

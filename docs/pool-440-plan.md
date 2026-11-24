@@ -91,7 +91,8 @@ calculation, and a negated Spell goes to the Graveyard exactly once.
 | 3. Batch 2 A | `1fe2f51` | D. Tribe, Riryoku Field, Shift; 6 tests in `tests/extra_2.rs`; 5 pending |
 | 4. Batch 2 B | `bb687a8` | Reverse Trap, Light of Intervention, Soul Exchange; 4 more tests; 2 pending |
 | 5. Batch 2 C | `ce4b30d` | Scapegoat (Tokens), Ultimate Offering; 6 more tests and a card-text test; none pending: every non-Normal card of the 535 is scripted |
-| 6. Acceptance cases | this commit | 76 of the prototype's 77 cases covered and passing (`docs/acceptance.md`), 6 new tests in `tests/acceptance.rs` and 1 in `ygo-ai/tests/lookahead.rs`, both prototype bugs pinned; the engine now replays an attack when the defender's number of monsters changes; 1 bot case open (discard plan) |
+| 6. Acceptance cases | `5ab8941` | 76 of the prototype's 77 cases covered and passing (`docs/acceptance.md`), 6 new tests in `tests/acceptance.rs` and 1 in `ygo-ai/tests/lookahead.rs`, both prototype bugs pinned; the engine now replays an attack when the defender's number of monsters changes; 1 bot case open (discard plan) |
+| 6b. Discard plan | this commit | revive potential in the position score (`[revive]` in `card_values.toml`, style `revive_worth`): 77 of 77; no strength change in 6,000 mirror games |
 
 Batch 1 added to the engine: piercing damage (`Effect::pierce`), stopping
 an attack already declared (`cancel_attack`; Spellbinding Circle now

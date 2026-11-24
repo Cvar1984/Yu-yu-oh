@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
-use ygo_data::{CardDb, CardId, CardKind, CardValues, Style};
+use ygo_data::{CardDb, CardId, CardKind, CardValues, ReviveFrom, Style};
 use ygo_engine::Tag;
 use ygo_engine::{
     Action, CardStats, DecisionKind, Game, InstanceId, Location, Observation, Place, PlayerId,
@@ -33,6 +33,8 @@ pub struct HeuristicPlayer {
     style: Style,
     /// Card value by pool index, style overrides applied.
     values: Vec<f64>,
+    /// Revive cards by pool index (`[revive]` in `card_values.toml`).
+    revive: Vec<Option<ReviveFrom>>,
     hidden: f64,
     rng: ChaCha8Rng,
     /// Activations made this turn, so a repeatable effect loses appeal.
@@ -75,16 +77,28 @@ impl HeuristicPlayer {
                 f64::from(v.unwrap_or(config.defaults.hidden))
             })
             .collect();
+        let revive = (0..pool.len() as u16)
+            .map(|i| {
+                config
+                    .revive
+                    .get(&pool.get(ygo_engine::CardIndex(i)).id)
+                    .copied()
+            })
+            .collect();
         Self {
             shared,
             style: style.clone(),
             values,
+            revive,
             hidden: f64::from(config.defaults.hidden),
             rng: ChaCha8Rng::seed_from_u64(seed),
             turn: 0,
             activated: Vec::new(),
             lookahead: false,
-            worth: Worth::default(),
+            worth: Worth {
+                revive_worth: style.revive_worth,
+                ..Worth::default()
+            },
         }
     }
 
@@ -115,7 +129,6 @@ impl HeuristicPlayer {
                 _ => None,
             })
             .collect();
-        let value = |c| self.card_value(c);
         let blind = self.fresh(seed).with_lookahead(false);
         options
             .iter()
@@ -130,7 +143,7 @@ impl HeuristicPlayer {
                 let mut next = g.clone();
                 next.apply(a).ok()?;
                 settle(&mut next, &mut blind.clone(), SETTLE_CAP);
-                Some(lead(&next, player, &value, self.worth, &ignore) - cost)
+                Some(lead(&next, player, self, self.worth, &ignore) - cost)
             })
             .collect()
     }
@@ -238,6 +251,16 @@ impl HeuristicPlayer {
     /// What a card is worth to this style.
     pub(crate) fn card_value(&self, card: ygo_engine::CardIndex) -> f64 {
         self.values[card.0 as usize]
+    }
+
+    /// Whose Graveyard `card` revives from, if it is a revive card.
+    pub(crate) fn revive_from(&self, card: ygo_engine::CardIndex) -> Option<ReviveFrom> {
+        self.revive[card.0 as usize]
+    }
+
+    /// The share of its worth a revivable monster counts for.
+    pub(crate) fn revive_worth(&self) -> f64 {
+        self.worth.revive_worth
     }
 
     fn stats(&self, id: CardId) -> Option<&CardStats> {

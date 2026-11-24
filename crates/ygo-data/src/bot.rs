@@ -30,19 +30,41 @@ pub struct ValueDefaults {
     pub hidden: i32,
 }
 
+/// Whose Graveyard a revive card can bring a monster back from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ReviveFrom {
+    /// Its controller's own Graveyard (Call of the Haunted).
+    Own,
+    /// Either player's Graveyard (Monster Reborn).
+    Either,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NamedRevive {
+    #[allow(dead_code)]
+    name: String,
+    from: ReviveFrom,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CardValuesFile {
     schema_version: u32,
     defaults: ValueDefaults,
     values: BTreeMap<String, NamedValue>,
+    #[serde(default)]
+    revive: BTreeMap<String, NamedRevive>,
 }
 
-/// `card_values.toml`: what each card is worth, 0 to 100.
+/// `card_values.toml`: what each card is worth, 0 to 100, and which cards
+/// bring a monster back from a Graveyard.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CardValues {
     pub defaults: ValueDefaults,
     pub values: BTreeMap<CardId, i32>,
+    pub revive: BTreeMap<CardId, ReviveFrom>,
 }
 
 pub const MAX_CARD_VALUE: i32 = 100;
@@ -72,9 +94,15 @@ impl CardValues {
                 d.monster_stat_divisor
             ));
         }
+        let mut revive = BTreeMap::new();
+        for (key, entry) in file.revive {
+            let id = card_id(FILE, "revive", &key, cards)?;
+            revive.insert(id, entry.from);
+        }
         Ok(Self {
             values: card_table(FILE, "values", file.values, cards)?,
             defaults: file.defaults,
+            revive,
         })
     }
 
@@ -109,6 +137,10 @@ pub struct Style {
     /// With lookahead: activating a Spell or Trap Card must gain this share
     /// of the card's worth in the hand (what keeping it is worth).
     pub use_cost: f64,
+    /// With lookahead: a monster a held revive card could bring back from a
+    /// Graveyard (`[revive]` in `card_values.toml`) counts for this share
+    /// of its worth.
+    pub revive_worth: f64,
     /// Card values that replace those in `card_values.toml`.
     #[serde(skip)]
     pub values: BTreeMap<CardId, i32>,
@@ -156,6 +188,7 @@ impl Styles {
                 ("aggression", style.aggression),
                 ("lp_weight", style.lp_weight),
                 ("caution", style.caution),
+                ("revive_worth", style.revive_worth),
             ] {
                 if !(w.is_finite() && w >= 0.0) {
                     return invalid(format!(
@@ -201,6 +234,22 @@ fn check_value(what: &str, v: i32) -> Result<(), DataError> {
     }
 }
 
+/// A table key as a card id of the pool.
+fn card_id(
+    file: &'static str,
+    table: &str,
+    key: &str,
+    cards: &CardDb,
+) -> Result<CardId, DataError> {
+    let Ok(id) = key.parse::<u32>().map(CardId) else {
+        return invalid(format!("{table}: key {key:?} is not a card id"));
+    };
+    if cards.get(id).is_none() {
+        return Err(DataError::UnknownCard { file, id });
+    }
+    Ok(id)
+}
+
 /// Turns string keys into card ids that exist in the pool, values in range.
 fn card_table(
     file: &'static str,
@@ -210,12 +259,7 @@ fn card_table(
 ) -> Result<BTreeMap<CardId, i32>, DataError> {
     let mut out = BTreeMap::new();
     for (key, entry) in raw {
-        let Ok(id) = key.parse::<u32>().map(CardId) else {
-            return invalid(format!("{table}: key {key:?} is not a card id"));
-        };
-        if cards.get(id).is_none() {
-            return Err(DataError::UnknownCard { file, id });
-        }
+        let id = card_id(file, table, &key, cards)?;
         check_value(&format!("{table}.{key}"), entry.value)?;
         out.insert(id, entry.value);
     }

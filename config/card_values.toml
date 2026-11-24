@@ -16,6 +16,15 @@ monster_stat_divisor = 50
 # A card the bot cannot identify (face-down or in the opponent's hand).
 hidden = 40
 
+# Cards that bring a monster back from a Graveyard at their player's will:
+# with lookahead, a monster one of them held could revive counts for the
+# style's `revive_worth` share of its worth. `from` is "own" or "either".
+# The Shallow Grave is left out: it revives for the opponent too.
+[revive]
+83764718 = { name = "Monster Reborn", from = "either" }
+97077563 = { name = "Call of the Haunted", from = "own" }
+70828912 = { name = "Premature Burial", from = "own" }
+
 [values]
 55144522 = { name = "Pot of Greed", value = 95 }
 12580477 = { name = "Raigeki", value = 92 }

@@ -50,6 +50,7 @@ tribute_needs_cover = false
 counter_min_value = 50
 facedown_attack_min_atk = 1400
 use_cost = 0.5
+revive_worth = 0.75
 "#;
 
 #[test]
@@ -131,4 +132,23 @@ fn mistakes_in_styles_are_refused() {
     assert!(e.contains("unknown card id 1"), "{e}");
     let e = styles_error("schema_version = 1\n[styles]\n");
     assert!(e.contains("no style"), "{e}");
+}
+
+#[test]
+fn revive_cards_name_whose_graveyard_they_reach() {
+    use ygo_data::ReviveFrom;
+    let cards = cards();
+    let values = CardValues::load(&root().join("config/card_values.toml"), &cards).unwrap();
+    assert_eq!(values.revive.len(), 3);
+    assert_eq!(values.revive[&CardId(83764718)], ReviveFrom::Either);
+    assert_eq!(values.revive[&CardId(97077563)], ReviveFrom::Own);
+    let bad_from = format!(
+        "{VALUES}[revive]\n83764718 = {{ name = \"Monster Reborn\", from = \"theirs\" }}\n"
+    );
+    assert!(CardValues::load(&temp("r1.toml", &bad_from), &cards).is_err());
+    let unknown = format!("{VALUES}[revive]\n1 = {{ name = \"Nothing\", from = \"own\" }}\n");
+    assert!(matches!(
+        CardValues::load(&temp("r2.toml", &unknown), &cards),
+        Err(DataError::UnknownCard { .. })
+    ));
 }

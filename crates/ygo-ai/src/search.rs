@@ -240,9 +240,9 @@ impl SearchPlayer {
         let w = crate::eval::Worth {
             lp_per_point: set.lp_per_point,
             hand_worth: set.hand_worth,
+            revive_worth: self.rollout.revive_worth(),
         };
-        let value = |c| self.rollout.card_value(c);
-        let side = |p: PlayerId| crate::eval::side_worth(g, p, &value, w, &[]);
+        let side = |p: PlayerId| crate::eval::side_worth(g, p, &self.rollout, w, &[]);
         let diff = side(PlayerId(0)) - side(PlayerId(1));
         1.0 / (1.0 + (-diff / set.score_scale).exp())
     }
