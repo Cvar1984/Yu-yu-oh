@@ -11,7 +11,14 @@ ygo-data.workspace = true
 ygo-engine.workspace = true
 rand_core = "0.10"
 rand_chacha = "0.10"
+burn = { workspace = true, optional = true }
+
+[features]
+# The neural policy and value (`neural.rs`), with burn. Off for the
+# browser build; the CLI turns it on.
+neural = ["dep:burn"]
 
 [dev-dependencies]
+burn = { workspace = true, features = ["autodiff", "optim"] }
 ygo-cards.workspace = true
 ygo-engine = { workspace = true, features = ["test-support"] }

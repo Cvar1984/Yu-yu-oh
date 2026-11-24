@@ -75,6 +75,9 @@ enum At {
 /// The place, side and position numbers at the end of every card vector.
 const PLACE_F: usize = 10 + 2 + 5;
 
+/// Within a card vector: the flag of the place "the viewer's own Deck".
+pub const DECK_FLAG: usize = CARD_F - PLACE_F + 9;
+
 /// Numbers per card.
 pub const CARD_F: usize = 2 // known, hidden
     + 6 // kind

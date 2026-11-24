@@ -111,6 +111,28 @@ averages, or normalises, every pooled set.
    until they want it). `NeuralPlayer` implements `Player`: the policy
    picks among the legal actions, the value scores positions.
    Checkpoints are files in `checkpoints/` (git-ignored).
+   **Done (2026-11-24):** `crates/ygo-ai/src/neural.rs` behind the
+   `neural` feature (burn pinned at `=0.22.1`, CPU `flex` backend; the
+   CLI turns the feature on through `ygo-play`, the browser build does
+   not). `Net`: a per-card net (133→128→128) averaged over the cards in
+   play and, apart, over the decider's own Deck; a lingering-effect net
+   (305→64→64) averaged; state MLP (411→256→256); each action scored
+   from its features plus the state (429→128, one logit); value head
+   (256→1, tanh). `Inputs` pads a batch with masks. `NeuralPlayer`
+   implements `Player` (most likely action, or sampled at a
+   temperature); `evaluate` gives the logits and the value. Checkpoints:
+   `Net::save` writes next to the file and renames it into place,
+   `Net::load` reads it whole into memory (burn reads lazily otherwise,
+   which a test caught), 1.26 MB; `checkpoints/` is git-ignored. Bot
+   name `neural:<checkpoint>` in `ygo play` and `ygo sim`.
+   Tests (`crates/ygo-ai/tests/neural.rs`, `crates/ygo-cli/tests/neural.rs`):
+   an untrained bot plays whole games with legal actions; a padded batch
+   gives what each decision alone gives (to 1e-4); checkpoints round-trip
+   exactly and a missing one is a clear error; 30 Adam steps halve the
+   loss on a fixed batch; `ygo sim` plays a saved network by name.
+   Untrained (random weights, greedy) against the random bot: 26.0% ±6.1
+   (200 games, Removal against Big Beatdown); 27 games/s with one neural
+   side, about 0.3 ms a neural decision.
 4. **Imitation start** (`ygo-train`). Record games of the lookahead and
    search bots on the six enemy decks; train the policy on their choices
    and the value on the results. Check: the imitating bot against the

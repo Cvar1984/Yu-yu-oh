@@ -50,10 +50,10 @@ enum Command {
     Sim {
         deck_a: PathBuf,
         deck_b: PathBuf,
-        /// Player A: `random`, `heuristic:<style>` or `search[:<style>]`.
+        /// Player A: `random`, `lookahead:<style>`, `heuristic:<style>`, `search[:<style>]` or `neural:<checkpoint>`.
         #[arg(long, default_value = "random")]
         bot_a: String,
-        /// Player B: `random`, `heuristic:<style>` or `search[:<style>]`.
+        /// Player B: `random`, `lookahead:<style>`, `heuristic:<style>`, `search[:<style>]` or `neural:<checkpoint>`.
         #[arg(long, default_value = "random")]
         bot_b: String,
         /// Number of games; each player goes first in half of them.
