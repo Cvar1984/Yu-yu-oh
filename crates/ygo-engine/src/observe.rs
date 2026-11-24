@@ -178,6 +178,9 @@ pub struct Observation {
     /// The labelled options of a pending `Ask` decision for the viewer.
     pub question: Vec<String>,
     pub lingering: Vec<Lingering>,
+    /// Face-up monsters whose current Type is not their printed one (DNA
+    /// Surgery, D. Tribe), with that Type.
+    pub types: Vec<(InstanceId, String)>,
 }
 
 impl Observation {
@@ -191,6 +194,25 @@ impl Observation {
 }
 
 impl Game {
+    /// Face-up monsters whose current Type differs from the printed one.
+    fn changed_types(&self) -> Vec<(InstanceId, String)> {
+        if self.hooks & crate::pool::HOOK_RACE == 0 {
+            return Vec::new();
+        }
+        let mut out = Vec::new();
+        for state in &self.players {
+            for id in state.monsters() {
+                if self.instances[id.index()].position.is_face_up() {
+                    let race = self.race(id);
+                    if race != self.stats(id).race {
+                        out.push((id, race.to_string()));
+                    }
+                }
+            }
+        }
+        out
+    }
+
     /// The state with everything `viewer` may not know removed: the
     /// opponent's hand and every face-down card are `Hidden`.
     pub fn observe(&self, viewer: PlayerId) -> Observation {
@@ -207,15 +229,10 @@ impl Game {
             .map(|p| p.card);
         let side = |player: PlayerId| {
             let state: &PlayerState = &self.players[player.index()];
-            let own = player == viewer;
             let see = |id: InstanceId, in_hand: bool| {
                 let inst = &self.instances[id.index()];
-                let revealed = match inst.location {
-                    Location::Hand => own || hand_revealed[player.index()] || declared == Some(id),
-                    Location::Graveyard => true,
-                    Location::Banished => inst.position.is_face_up() || own,
-                    _ => inst.position.is_face_up() || own,
-                };
+                let revealed = self.sees_now(viewer, id, hand_revealed, declared)
+                    || self.remembers(viewer, id);
                 let position = if in_hand {
                     Position::FaceDown
                 } else {
@@ -303,6 +320,7 @@ impl Game {
             revealed,
             question,
             lingering: self.lingering.clone(),
+            types: self.changed_types(),
         }
     }
 }

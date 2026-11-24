@@ -32,6 +32,19 @@ impl<'a> PlayerView<'a> {
         &self.observation
     }
 
+    /// The cards in the decider's Deck, sorted by id, never their order:
+    /// what they know of their own Deck from its list and what left it.
+    pub fn own_deck(&self) -> Vec<ygo_data::CardId> {
+        let mut ids: Vec<ygo_data::CardId> = self
+            .game
+            .deck(self.player())
+            .iter()
+            .map(|&c| self.game.stats(c).id)
+            .collect();
+        ids.sort_unstable();
+        ids
+    }
+
     /// The rules, card pool and scripts: public data, the same for both
     /// players.
     pub fn shared(&self) -> &crate::Shared {
@@ -108,6 +121,12 @@ impl<'a> PlayerView<'a> {
         }
         if let Some(card) = self.game.resolving_card() {
             known[card.index()] = true;
+        }
+        // A card face-up in a Deck (Parasite Paracide) is seen by both.
+        for (i, inst) in self.game.instances.iter().enumerate() {
+            if inst.location == Location::Deck && inst.position.is_face_up() {
+                known[i] = true;
+            }
         }
         (0..known.len())
             .filter(|&i| !known[i])

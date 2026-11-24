@@ -83,6 +83,7 @@ impl Game {
         });
         self.decision = Some(decision);
         self.actions = actions;
+        self.update_memory();
     }
 
     /// Applies one legal action, then advances until the next decision or
