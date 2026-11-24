@@ -100,4 +100,3 @@ fn a_sample_that_looks_the_same_encodes_the_same() {
     }
     assert!(compared > 500, "{compared} decisions compared");
 }
-
