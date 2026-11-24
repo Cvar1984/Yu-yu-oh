@@ -346,6 +346,7 @@ impl Game {
             p.summons_used = 0;
             p.monsters_to_graveyard = 0;
             p.monsters_entered = 0;
+            p.summoned = false;
             p.names_used.clear();
             p.names_locked.clear();
         }

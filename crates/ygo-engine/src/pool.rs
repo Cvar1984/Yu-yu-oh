@@ -68,6 +68,8 @@ pub struct CardStats {
     pub attribute: Option<String>,
     /// A Flip monster (Nobleman of Crossout checks this).
     pub flip: bool,
+    /// A Token (`tokens.json`): never in a deck, gone once it leaves the field.
+    pub token: bool,
 }
 
 impl CardStats {
@@ -80,9 +82,15 @@ impl CardStats {
         self.kind == CardKind::Fusion
     }
 
+    /// May be put in a Main Deck: not an Extra Deck card, not a Token.
+    pub fn is_main_deck(&self) -> bool {
+        !self.is_extra_deck() && !self.token
+    }
+
     /// May be Normal Summoned or Set from the hand, given its script.
     pub fn can_normal_summon(&self, script: Option<&CardScript>) -> bool {
         matches!(self.kind, CardKind::Normal | CardKind::Effect)
+            && !self.token
             && !script.is_some_and(|s| s.has(Tag::CannotNormalSummon))
     }
 }
@@ -113,7 +121,22 @@ impl CardPool {
                 },
                 attribute: c.attribute.clone(),
                 flip: c.card_type == ygo_data::CardType::FlipEffectMonster,
+                token: false,
             })
+            // A Token without effects is treated as a Normal Monster.
+            .chain(db.tokens().map(|t| CardStats {
+                id: t.id,
+                name: t.name.clone(),
+                kind: CardKind::Normal,
+                subtype: SpellTrapType::None,
+                level: t.level,
+                atk: t.atk,
+                def: t.def,
+                race: t.race.clone(),
+                attribute: Some(t.attribute.clone()),
+                flip: false,
+                token: true,
+            }))
             .collect();
         cards.sort_by_key(|c| c.id);
         let by_id = cards

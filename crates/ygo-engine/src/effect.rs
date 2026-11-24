@@ -56,6 +56,8 @@ pub enum Tag {
     /// Its ATK/DEF changes set, swap or multiply values instead of adding
     /// or subtracting (Megamorph, Shield & Sword): Reverse Trap leaves them.
     StatsSetOrScaled,
+    /// Cannot be Tributed for a Tribute Summon (Scapegoat's Sheep Tokens).
+    NoTributeSummon,
     /// While face-up on the field, no monster can be Set or turned
     /// face-down; a Set becomes a Normal Summon in face-up Defense
     /// Position (Light of Intervention).

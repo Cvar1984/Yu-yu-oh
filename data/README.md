@@ -5,6 +5,7 @@
 | `cards.json` | The 535 cards of the owner's game: LOB, MRD, SRL and PSV (Pharaoh's Servant, added 2026-11-21) (479) plus 56 EXTRA cards; `in_game_index` says which list each sits under | yes, from the data bundle |
 | `extra_cards.txt` | Names of the 56 EXTRA cards, for `refresh_cards.py` | yes |
 | `banlist.json` | Copy limits (0, 1 or 2) from the owner's game, kept by hand; every player follows them | yes |
+| `tokens.json` | Tokens cards create (Scapegoat's Sheep Token): id and name from YGOPRODeck, stats from the making card's text; never in a deck or collection (owner, 2026-11-23) | yes |
 | `collection.json` | Save A: the owner's cards and copy counts | yes, from the data bundle |
 | `collection_save_b.json` | Save B | yes, from the data bundle |
 | `decks/*.json` | Six enemy decks, save A's best overall (`save_a_best_overall_40`), control and current decks, and save B's best, with results in `notes`; `for` says whose cards a deck uses | yes |

@@ -2,8 +2,9 @@
 
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
-    CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Lingering, LingeringKind,
-    Location, Phase, PlayerId, Registry, Source, StatMod, Tag, TargetSets, Window, WindowKind,
+    CardScript, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Lingering,
+    LingeringKind, Location, Phase, PlayerId, Registry, Source, StatMod, Tag, TargetSets, Window,
+    WindowKind,
 };
 
 use crate::continuous::face_up_monsters;
@@ -29,6 +30,7 @@ pub const RIRYOKU_FIELD: CardId = CardId(70344351);
 pub const SHIFT: CardId = CardId(59560625);
 pub const LIGHT_OF_INTERVENTION: CardId = CardId(62867251);
 pub const REVERSE_TRAP: CardId = CardId(77622396);
+pub const ULTIMATE_OFFERING: CardId = CardId(80604092);
 /// Not in the pool: Gryphon Wing can never be activated here.
 pub const HARPIES_FEATHER_DUSTER: CardId = CardId(18144506);
 
@@ -202,7 +204,107 @@ fn shift_targets(g: &Game, s: Source) -> TargetSets {
     }
 }
 
+/// Ultimate Offering: monsters in the hand `player` could Normal Summon or
+/// Set now with their own monsters as Tributes (Sheep Tokens excluded).
+fn offering_monsters(g: &Game, player: PlayerId) -> Vec<InstanceId> {
+    let tributes = offering_tributes(g, player, &[]).len();
+    let free = g.free_monster_zone(player).is_some();
+    g.hand(player)
+        .iter()
+        .copied()
+        .filter(|&c| {
+            let stats = g.stats(c);
+            let needed = g.tributes_needed(stats.level);
+            stats.can_normal_summon(g.script(c)) && needed <= tributes && (free || needed > 0)
+        })
+        .collect()
+}
+
+fn offering_tributes(g: &Game, player: PlayerId, chosen: &[InstanceId]) -> Vec<InstanceId> {
+    g.monsters_controlled(player)
+        .into_iter()
+        .filter(|m| !chosen.contains(m))
+        .filter(|&m| !g.script(m).is_some_and(|s| s.has(Tag::NoTributeSummon)))
+        .collect()
+}
+
+/// Ultimate Offering's summon: `ctx.cost` holds the monster, then its
+/// Tributes as they are chosen; then Summon or Set.
+fn offering_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
+    let card = ctx.cost[0];
+    let needed = g.tributes_needed(g.stats(card).level);
+    if ctx.cost.len() - 1 < needed {
+        let options = offering_tributes(g, ctx.controller, &ctx.cost[1..]);
+        if options.is_empty() {
+            return Flow::Done;
+        }
+        return Flow::Choose {
+            options,
+            then: |g, ctx, t| {
+                ctx.cost.push(t);
+                offering_next(g, ctx)
+            },
+        };
+    }
+    let mut options = vec!["Set it (face-down Defense Position)"];
+    if !g.summons_locked(ctx.controller) {
+        options.insert(0, "Normal Summon it (face-up Attack Position)");
+    }
+    Flow::Ask {
+        options,
+        then: |g, ctx, option| {
+            let set = option == 1 || g.summons_locked(ctx.controller);
+            let (card, tributes) = (ctx.cost[0], ctx.cost[1..].to_vec());
+            g.normal_summon_by_effect(card, &tributes, set);
+            Flow::Done
+        },
+    }
+}
+
 pub fn register(r: &mut Registry) {
+    // Continuous Trap. During your Main Phase or your opponent's Battle
+    // Phase: pay 500 LP; right after this effect resolves, Normal Summon or
+    // Set 1 monster (an extra one).
+    r.register(
+        ULTIMATE_OFFERING,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![
+                Effect::activate(2, ygo_engine::nothing),
+                Effect {
+                    kind: EffectKind::Quick,
+                    speed: 2,
+                    timing: |g, s, _| {
+                        let mine = g.turn_player() == s.controller;
+                        let phase_ok = match g.phase() {
+                            Phase::Main1 | Phase::Main2 => mine,
+                            Phase::Battle(_) => !mine,
+                            _ => false,
+                        };
+                        phase_ok
+                            && g.on_field(s.card)
+                            && g.instance(s.card).position.is_face_up()
+                            && g.can_pay_lp(s.controller, 500)
+                            && !offering_monsters(g, s.controller).is_empty()
+                    },
+                    cost: Some(|g, ctx| g.pay_lp(ctx.controller, 500)),
+                    ..Effect::ignition(|g, ctx| {
+                        let options = offering_monsters(g, ctx.controller);
+                        if options.is_empty() {
+                            return Flow::Done;
+                        }
+                        Flow::Choose {
+                            options,
+                            then: |g, ctx, card| {
+                                ctx.cost = vec![card];
+                                offering_next(g, ctx)
+                            },
+                        }
+                    })
+                },
+            ],
+        },
+    );
     // Until the End Phase, every ATK/DEF addition subtracts and every
     // subtraction adds (multiplications and set values are untouched:
     // `Tag::StatsSetOrScaled`).

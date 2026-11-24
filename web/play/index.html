@@ -250,14 +250,15 @@ async function fetchText(path) {
 
 async function boot(data) {
   try {
-    const [rules, cards, banlist, styles, values, deckIndex] = await Promise.all([
+    const [rules, cards, banlist, tokens, styles, values, deckIndex] = await Promise.all([
       fetchText("data/rules.toml"), fetchText("data/cards.json"), fetchText("data/banlist.json"),
+      fetchText("data/tokens.json"),
       fetchText("data/styles.toml"), fetchText("data/card_values.toml"), fetchText("data/decks.json"),
       Engine.load(),
     ]);
     const files = JSON.parse(deckIndex);
     const decks = await Promise.all(files.map(async (file) => ({ file, text: await fetchText("data/decks/" + file) })));
-    state.initArgs = { cmd: "init", rules, cards, banlist, styles, card_values: values, decks };
+    state.initArgs = { cmd: "init", rules, cards, banlist, tokens, styles, card_values: values, decks };
     state.init = Engine.call(state.initArgs);
     const resume = data?.game ?? loadSaved();
     if (resume && resume.choices) {

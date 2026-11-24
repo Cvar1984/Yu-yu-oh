@@ -89,7 +89,7 @@ fn random_deck(seed: u64, main: usize) -> DeckList {
         let c = pool.get(CardIndex(i));
         if c.is_extra_deck() {
             extras.push(c.id);
-        } else {
+        } else if c.is_main_deck() {
             mains.push(c.id);
         }
     }

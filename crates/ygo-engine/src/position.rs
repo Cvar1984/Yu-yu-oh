@@ -20,9 +20,10 @@ impl Game {
 
     fn flip_summon_allowed(&self, player: PlayerId) -> bool {
         let rules = &self.shared.rules.summon;
-        !rules.flip_summon_counts_toward_limit
-            || usize::from(self.players[player.index()].summons_used)
-                < rules.normal_or_tribute_per_turn
+        !self.summons_locked(player)
+            && (!rules.flip_summon_counts_toward_limit
+                || usize::from(self.players[player.index()].summons_used)
+                    < rules.normal_or_tribute_per_turn)
     }
 
     pub(crate) fn position_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {

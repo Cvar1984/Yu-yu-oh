@@ -50,6 +50,9 @@ pub enum Location {
     Graveyard,
     Extra,
     Banished,
+    /// A Token that left the field: it no longer exists, and the instance
+    /// waits to be reused for a new Token.
+    Gone,
 }
 
 impl Location {
@@ -151,6 +154,9 @@ pub enum LingeringKind {
     MustTribute { player: PlayerId, card: InstanceId },
     /// `player` cannot enter the Battle Phase (Soul Exchange).
     NoBattlePhase { player: PlayerId },
+    /// `player` cannot Normal, Flip or Special Summon, but may still Normal
+    /// Set (Scapegoat).
+    NoSummons { player: PlayerId },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.
@@ -270,6 +276,9 @@ pub struct PlayerState {
     pub monsters_to_graveyard: u8,
     /// Monsters that entered the field this turn, for `max_monsters_entering_per_turn`.
     pub monsters_entered: u8,
+    /// Summoned a monster this turn (Normal, Flip or Special; a Set is no
+    /// summon): Scapegoat cannot be activated after one.
+    pub summoned: bool,
     /// Card names whose "only once per turn" effect this player used this
     /// turn (Sangan, Witch of the Black Forest).
     pub names_used: Vec<CardId>,
@@ -299,6 +308,7 @@ impl PlayerState {
             summons_used: 0,
             monsters_to_graveyard: 0,
             monsters_entered: 0,
+            summoned: false,
             names_used: Vec::new(),
             names_locked: Vec::new(),
             skip_draw: false,

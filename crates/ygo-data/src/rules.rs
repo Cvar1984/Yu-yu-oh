@@ -105,6 +105,10 @@ pub struct CardRules {
     pub cards: PathBuf,
     /// Path to `banlist.json`, relative to the data root.
     pub banlist: PathBuf,
+    /// Path to `tokens.json`, relative to the data root. Without it no card
+    /// can create Tokens (records made before Tokens existed omit it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tokens: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -411,6 +411,10 @@ impl Game {
         let inst = &self.instances[card.index()];
         let stats = self.stats(card);
         match (inst.location, stats.kind, stats.subtype) {
+            // The fast effect of a face-up Spell or Trap (Ultimate Offering).
+            (Location::SpellTrapZone(_), _, _) if effect.kind == EffectKind::Quick => {
+                inst.position.is_face_up()
+            }
             (Location::SpellTrapZone(_), CardKind::Trap, _) => {
                 inst.position == Position::FaceDown
                     && (self.shared.rules.turn.trap_activation_turn_set
@@ -490,6 +494,9 @@ impl Game {
                 .targets
                 .map_or_else(|| vec![Vec::new()], |f| f(self, source));
             if effect.kind == EffectKind::Procedure {
+                if self.summons_locked(source.controller) {
+                    continue;
+                }
                 for cost in &costs {
                     for position in [Position::FaceUpAttack, Position::FaceUpDefense] {
                         actions.push(Action::ProcedureSummon {
@@ -597,7 +604,8 @@ impl Game {
     }
 
     /// Ignition effects of the turn player's face-up monsters, and of cards
-    /// in their hand or Graveyard that say so, as Main Phase actions.
+    /// in their hand or Graveyard that say so, as Main Phase actions; also
+    /// the fast effects of their face-up Spells and Traps.
     pub(crate) fn ignition_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
         if !matches!(self.phase, Phase::Main1 | Phase::Main2) || !self.pending.is_empty() {
             return;
@@ -618,11 +626,17 @@ impl Game {
             if inst.location.on_field() && !inst.position.is_face_up() {
                 continue;
             }
+            // A face-up Spell or Trap's fast effect may be used as a Main
+            // Phase action too (Ultimate Offering).
+            let spell_trap = matches!(inst.location, Location::SpellTrapZone(_));
             self.push_activations(
                 player,
                 card,
                 &window,
-                |_, e| matches!(e.kind, EffectKind::Ignition | EffectKind::Procedure),
+                |_, e| {
+                    matches!(e.kind, EffectKind::Ignition | EffectKind::Procedure)
+                        || (spell_trap && e.kind == EffectKind::Quick)
+                },
                 actions,
             );
         }

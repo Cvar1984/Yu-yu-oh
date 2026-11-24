@@ -96,7 +96,7 @@ fn random_deck(bots: &Bots, rng: &mut ChaCha8Rng) -> DeckList {
     let pool = &bots.shared.pool;
     let ids: Vec<CardId> = (0..pool.len() as u16)
         .map(|i| pool.get(CardIndex(i)))
-        .filter(|s| !s.is_extra_deck())
+        .filter(|s| s.is_main_deck())
         .map(|s| s.id)
         .collect();
     let mut main = Vec::with_capacity(40);

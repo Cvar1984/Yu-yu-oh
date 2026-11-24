@@ -88,8 +88,9 @@ calculation, and a negated Spell goes to the Graveyard exactly once.
 | --- | --- | --- |
 | 1. Data | `874320f` | 440 cards, 13 limited, 2 collections, 15 decks load and check; 44 scripts pending |
 | 2. Batch 1 | batch 1 | 36 cards scripted (Fairy Meteor Crush moved here from batch 2), 29 tests in `tests/extra.rs`; 8 pending |
-| 3. Batch 2 A | A | D. Tribe, Riryoku Field, Shift; 6 tests in `tests/extra_2.rs`; 5 pending |
-| 4. Batch 2 B | this commit | Reverse Trap, Light of Intervention, Soul Exchange; 4 more tests; 2 pending |
+| 3. Batch 2 A | `1fe2f51` | D. Tribe, Riryoku Field, Shift; 6 tests in `tests/extra_2.rs`; 5 pending |
+| 4. Batch 2 B | `bb687a8` | Reverse Trap, Light of Intervention, Soul Exchange; 4 more tests; 2 pending |
+| 5. Batch 2 C | this commit | Scapegoat (Tokens), Ultimate Offering; 6 more tests and a card-text test; none pending: every non-Normal card of the 535 is scripted |
 
 Batch 1 added to the engine: piercing damage (`Effect::pierce`), stopping
 an attack already declared (`cancel_attack`; Spellbinding Circle now
@@ -139,6 +140,27 @@ stats go in a data file, `data/tokens.json`.
   activated; Soul Exchange binds Tribute Summons only (not Ritual
   Summons or Tribute costs), and is activated only in Main Phase 1,
   before any Battle Phase.
+- **C**: Scapegoat and Ultimate Offering. Data: `data/tokens.json` (named
+  by `[cards] tokens` in `rules.toml`; `CardDb::with_tokens`, `Token`,
+  `TokenFile`); the pool gives Tokens `CardStats.token` (treated as Normal
+  Monsters, `is_main_deck` false) and no deck may hold one
+  (`SetupError::TokenInDeck`). Engine: `special_summon_token` reuses a
+  gone Token instance or appends one (instance ids stay below 256);
+  a Token sent anywhere off the field goes to `Location::Gone` instead
+  (`Event::TokenRemoved`); `Tag::NoTributeSummon` on the Sheep Token;
+  `PlayerState.summoned` and lingering `NoSummons` (Scapegoat's lock,
+  Sets stay open); `normal_summon_by_effect`; a face-up Spell or Trap's
+  Quick effect may be activated, in windows and as a Main Phase action.
+  The browser page loads `tokens.json` too (`init` takes `tokens`), and
+  the play screen describes a Token. Simplifications: a Token leaving the
+  field never touches the Graveyard (no "sent to the Graveyard" event);
+  Scapegoat's lock starts when it resolves, after its Tokens (a negated
+  Scapegoat locks nothing); Ultimate Offering's summon happens inside the
+  chain and opens no summon windows of its own, does not use Soul
+  Exchange's monster, and a monster Set during an attack does not
+  replay it (the engine replays only when the target leaves).
+  Speed: callgrind counts 1.1% more instructions for the same 300 random
+  games (Removal against Big Beatdown) than before batch 2.
 
 ## Deck crafting from save A (2026-11-20)
 

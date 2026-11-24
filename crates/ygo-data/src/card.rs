@@ -209,6 +209,8 @@ pub struct CardFile {
 #[derive(Debug, Clone, Default)]
 pub struct CardDb {
     cards: HashMap<CardId, Card>,
+    /// Tokens cards create; never deck cards (`tokens.json`).
+    pub(crate) tokens: Vec<crate::Token>,
 }
 
 impl CardDb {
@@ -256,7 +258,10 @@ impl CardDb {
                 return Err(DataError::DuplicateCardId(id));
             }
         }
-        Ok(Self { cards: by_id })
+        Ok(Self {
+            cards: by_id,
+            tokens: Vec::new(),
+        })
     }
 
     pub fn get(&self, id: CardId) -> Option<&Card> {
