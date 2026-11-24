@@ -1,0 +1,14 @@
+[package]
+name = "nn-spike-burn"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Not a member of the Yu-yu-oh workspace.
+[workspace]
+
+[dependencies]
+burn = { version = "0.22.1", default-features = false, features = ["std", "optim", "flex", "autodiff"] }
+
+[features]
+cuda = ["burn/cuda"]
