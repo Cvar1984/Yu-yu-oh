@@ -5,6 +5,8 @@
 pub mod encode;
 mod eval;
 mod heuristic;
+#[cfg(feature = "neural")]
+pub mod neural;
 mod search;
 
 pub use eval::Worth;

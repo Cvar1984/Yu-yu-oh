@@ -15,3 +15,5 @@ ygo-ai.workspace = true
 [features]
 # Helpers for other crates' tests.
 test-support = []
+# Neural bots by name (`neural:<checkpoint>`).
+neural = ["ygo-ai/neural"]
