@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::{audit, bots, decks, play, replay, sim, tui};
+use ygo_cli::{audit, bots, decks, distill, play, replay, sim, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -125,6 +125,45 @@ enum Command {
         holdout: usize,
         #[arg(long, default_value_t = 1)]
         seed: u64,
+    },
+    /// Train the network on its own games against the opponents, the
+    /// network-guided search labelling its decisions (DAgger, M6 step 5).
+    Distill {
+        /// The deck both sides play.
+        deck: PathBuf,
+        /// The network to start from.
+        #[arg(long)]
+        from: PathBuf,
+        /// Where to save the network (and `<stem>-r<round>.bpk` each round).
+        #[arg(long)]
+        out: PathBuf,
+        /// Opponents, comma-separated; every reference bot when empty.
+        #[arg(long, default_value = "")]
+        opponents: String,
+        #[arg(long, default_value_t = 4)]
+        rounds: usize,
+        /// Games per round.
+        #[arg(long, default_value_t = 1400)]
+        games: u32,
+        /// Chance of playing the search's move instead of the network's,
+        /// per round, comma-separated (the last repeats).
+        #[arg(long, default_value = "0.5,0.25,0")]
+        mix: String,
+        /// Epochs over all labelled games after each round.
+        #[arg(long, default_value_t = 2)]
+        epochs: usize,
+        #[arg(long, default_value_t = 128)]
+        batch: usize,
+        #[arg(long, default_value_t = 3e-4)]
+        learning_rate: f64,
+        #[arg(long, default_value_t = 10)]
+        holdout: usize,
+        #[arg(long, default_value_t = 1)]
+        seed: u64,
+        #[arg(long, default_value_t = 4)]
+        threads: usize,
+        #[command(flatten)]
+        search: SearchArgs,
     },
     /// Play against a bot in a full-screen terminal UI.
     Play {
@@ -365,6 +404,68 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     holdout,
                     seed,
                     ..Default::default()
+                },
+            )?;
+            Ok(true)
+        }
+        Command::Distill {
+            deck,
+            from,
+            out,
+            opponents,
+            rounds,
+            games,
+            mix,
+            epochs,
+            batch,
+            learning_rate,
+            holdout,
+            seed,
+            threads,
+            search,
+        } => {
+            let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            search.apply(&mut bots)?;
+            let deck = decks::load_legal(&deck, &bundle)?;
+            let opponents: Vec<String> = if opponents.is_empty() {
+                let styles = ["beatdown", "control", "stall", "burn", "exodia", "patient"];
+                std::iter::once("random".to_string())
+                    .chain(styles.iter().map(|s| format!("heuristic:{s}")))
+                    .chain(styles.iter().map(|s| format!("lookahead:{s}")))
+                    .chain(std::iter::once("search".to_string()))
+                    .collect()
+            } else {
+                opponents.split(',').map(str::to_string).collect()
+            };
+            let mix = mix
+                .split(',')
+                .map(|m| {
+                    m.trim()
+                        .parse::<f64>()
+                        .map_err(|e| format!("--mix {m}: {e}"))
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            let net = ygo_ai::neural::Net::load(&from, &ygo_ai::neural::cpu())?;
+            distill::run(
+                &bots,
+                net,
+                &distill::DistillOptions {
+                    deck: &deck,
+                    opponents: &opponents,
+                    rounds,
+                    games,
+                    mix: &mix,
+                    train: ygo_train::imitation::Options {
+                        epochs,
+                        batch,
+                        learning_rate,
+                        holdout,
+                        seed,
+                        ..Default::default()
+                    },
+                    out: &out,
+                    seed,
+                    threads,
                 },
             )?;
             Ok(true)
