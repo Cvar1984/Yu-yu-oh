@@ -98,6 +98,9 @@ impl Game {
     /// Bell), or the opponent has a face-up card that reveals it (The Eye of
     /// Truth).
     pub fn hand_revealed(&self, player: PlayerId) -> bool {
+        if self.hooks & crate::pool::HOOK_REVEAL == 0 {
+            return false;
+        }
         let mut revealed = false;
         self.for_each_face_up_script(|controller, script| {
             if script.has(Tag::RevealHands)
@@ -2020,6 +2023,7 @@ impl Game {
     /// Shuffles which of these face-down monsters of one player is which:
     /// each keeps its zone, the cards trade places (Magical Hats).
     pub fn shuffle_set_monsters(&mut self, cards: &[InstanceId]) {
+        self.forget(cards);
         let before: Vec<crate::CardInstance> = cards
             .iter()
             .map(|c| self.instances[c.index()].clone())

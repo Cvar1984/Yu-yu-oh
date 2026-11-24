@@ -185,9 +185,19 @@ pub(crate) const HOOK_FORBID: u8 = 2;
 pub(crate) const HOOK_RACE: u8 = 4;
 /// A script with a `spell_immune` or `unattackable` hook.
 pub(crate) const HOOK_SELF: u8 = 8;
+/// A script that reveals hands (The Eye of Truth, Respect Play).
+pub(crate) const HOOK_REVEAL: u8 = 16;
 
 fn hooks_of(script: &CardScript) -> u8 {
-    script.effects.iter().fold(0, |bits, e| {
+    let reveals = [
+        Tag::RevealHands,
+        Tag::RevealOpponentHand,
+        Tag::RevealTurnPlayerHand,
+    ]
+    .iter()
+    .any(|t| script.has(*t));
+    let start = if reveals { HOOK_REVEAL } else { 0 };
+    script.effects.iter().fold(start, |bits, e| {
         bits | if e.negate.is_some() { HOOK_NEGATE } else { 0 }
             | if e.forbid.is_some() { HOOK_FORBID } else { 0 }
             | if e.race.is_some() { HOOK_RACE } else { 0 }

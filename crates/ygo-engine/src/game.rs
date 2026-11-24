@@ -48,6 +48,8 @@ pub struct Game {
     /// The `HOOK_*` bits of every card in this game: a hook no card has is
     /// never looked for.
     pub(crate) hooks: u8,
+    /// What each player remembers of cards hidden again (`memory.rs`).
+    pub(crate) memory: [crate::memory::Memory; 2],
 }
 
 impl Game {
@@ -176,6 +178,7 @@ impl Game {
             decision: None,
             actions: Vec::with_capacity(64),
             hooks: 0,
+            memory: Default::default(),
         };
         game.hooks = game
             .instances

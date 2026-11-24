@@ -16,6 +16,7 @@ mod chain;
 mod effect;
 mod error;
 mod game;
+mod memory;
 mod observe;
 mod ops;
 mod pool;

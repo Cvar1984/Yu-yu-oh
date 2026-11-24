@@ -328,13 +328,18 @@ pub fn check_invariants(g: &Game) {
                 opp.hand
                     .iter()
                     .all(|c| matches!(c, VisibleCard::Hidden { .. })
-                        || Some(c.instance()) == declared),
-                "only a declared face-up summon is visible in the opponent's hand"
+                        || Some(c.instance()) == declared
+                        || g.remembers(viewer, c.instance())),
+                "only a declared face-up summon or a remembered card is visible in the opponent's hand"
             );
         }
         for zone in opp.monster_zones.iter().flatten() {
             let face_up = g.instance(zone.instance()).position.is_face_up();
-            assert_eq!(matches!(zone, VisibleCard::Known { .. }), face_up);
+            let remembered = g.remembers(viewer, zone.instance());
+            assert_eq!(
+                matches!(zone, VisibleCard::Known { .. }),
+                face_up || remembered
+            );
         }
         assert!(
             obs.me()
