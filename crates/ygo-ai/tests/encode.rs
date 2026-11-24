@@ -3,7 +3,7 @@
 //! looks the same to the decider encodes the same, so no hidden card
 //! reaches the network.
 
-use ygo_ai::encode::{ACTION_F, CARD_F, GLOBAL_F, encode};
+use ygo_ai::encode::{ACTION_F, CARD_F, GLOBAL_F, LINGER_F, encode};
 use ygo_ai::{Player, RandomPlayer};
 use ygo_engine::testing::shared_from;
 use ygo_engine::{CardIndex, DeckList, Game, GameSetup, PlayerView, Shared};
@@ -40,7 +40,7 @@ fn random_pool_deck(shared: &Shared, seed: u64) -> DeckList {
 #[test]
 fn every_decision_of_random_games_encodes() {
     let shared = shared();
-    let (mut decisions, mut most_cards, mut most_actions) = (0, 0, 0);
+    let (mut decisions, mut most_cards, mut most_actions, mut most_lingering) = (0, 0, 0, 0);
     for seed in 0..30 {
         let decks = [
             random_pool_deck(&shared, seed),
@@ -53,19 +53,36 @@ fn every_decision_of_random_games_encodes() {
             assert_eq!(e.cards.len() % CARD_F, 0);
             assert_eq!(e.globals.len(), GLOBAL_F);
             assert_eq!(e.actions.len(), view.actions().len() * ACTION_F);
-            assert!(e.card_count() > 0, "at least the decider's cards");
-            for x in e.cards.iter().chain(&e.globals).chain(&e.actions) {
+            assert_eq!(
+                e.lingering.len(),
+                view.observation().lingering.len() * LINGER_F
+            );
+            assert!(
+                e.card_count() >= view.own_deck().len(),
+                "the decider's Deck is among the cards"
+            );
+            for x in e
+                .cards
+                .iter()
+                .chain(&e.globals)
+                .chain(&e.actions)
+                .chain(&e.lingering)
+            {
                 assert!(x.is_finite() && x.abs() <= 10.0, "{x}");
             }
             decisions += 1;
             most_cards = most_cards.max(e.card_count());
             most_actions = most_actions.max(e.action_count());
+            most_lingering = most_lingering.max(e.lingering_count());
             let a = bots[view.player().index()].choose(&view);
             g.apply(&a).unwrap();
         }
     }
     assert!(decisions > 1000, "{decisions} decisions");
-    eprintln!("{decisions} decisions, up to {most_cards} cards and {most_actions} actions");
+    assert!(most_lingering > 0, "some lingering effect was encoded");
+    eprintln!(
+        "{decisions} decisions, up to {most_cards} cards, {most_actions} actions and {most_lingering} lingering effects"
+    );
 }
 
 #[test]
@@ -88,6 +105,10 @@ fn a_sample_that_looks_the_same_encodes_the_same() {
             let other = encode(&seen);
             assert_eq!(real.cards, other.cards, "cards differ at step {step}");
             assert_eq!(real.globals, other.globals, "game differs at step {step}");
+            assert_eq!(
+                real.lingering, other.lingering,
+                "lingering differs at step {step}"
+            );
             // Legal actions can depend on a hidden card (documented on
             // `PlayerView::sample`); compare them when they are the same.
             if view.actions() == seen.actions() {
@@ -99,4 +120,56 @@ fn a_sample_that_looks_the_same_encodes_the_same() {
         }
     }
     assert!(compared > 500, "{compared} decisions compared");
+}
+
+/// The race block of a card vector starts after known/hidden (2), kind
+/// (6), subtype (7), stats (5) and the attribute block (8).
+const RACE_START: usize = 28;
+const WARRIOR: usize = 22;
+const DRAGON: usize = 7;
+
+// A Type changed by D. Tribe is the Type the network sees.
+#[test]
+fn a_changed_type_is_encoded() {
+    use ygo_engine::testing::{
+        CELTIC_GUARDIAN, MAMMOTH_GRAVEYARD, next_turn, pass_all, play, stacked, summon,
+    };
+    let shared = shared();
+    let mut g = Game::new(
+        shared,
+        &stacked(
+            [&[CELTIC_GUARDIAN, ygo_cards::extra_traps::D_TRIBE], &[]],
+            MAMMOTH_GRAVEYARD,
+        ),
+    )
+    .unwrap();
+    let celtic = ygo_engine::testing::in_hand(&g, ygo_engine::PlayerId(0), CELTIC_GUARDIAN);
+    play(&mut g, summon(celtic));
+    pass_all(&mut g);
+    let tribe =
+        ygo_engine::testing::in_hand(&g, ygo_engine::PlayerId(0), ygo_cards::extra_traps::D_TRIBE);
+    play(&mut g, ygo_engine::Action::SetSpellTrap { card: tribe });
+    pass_all(&mut g);
+    next_turn(&mut g);
+    next_turn(&mut g);
+    // The vector of the viewer's face-up monster: place "Monster", mine.
+    let monster_race = |g: &Game| -> usize {
+        let e = encode(&PlayerView::new(g).unwrap());
+        let place = CARD_F - 17;
+        let v = e
+            .cards
+            .chunks(CARD_F)
+            .find(|v| v[place + 1] == 1.0 && v[place + 10] == 1.0)
+            .expect("a monster of the viewer's");
+        (0..27).find(|&i| v[RACE_START + i] == 1.0).unwrap()
+    };
+    assert_eq!(monster_race(&g), WARRIOR);
+    let a = g
+        .legal_actions()
+        .into_iter()
+        .find(|a| matches!(a, ygo_engine::Action::Activate { card, .. } if *card == tribe))
+        .unwrap();
+    play(&mut g, a);
+    pass_all(&mut g);
+    assert_eq!(monster_race(&g), DRAGON);
 }
