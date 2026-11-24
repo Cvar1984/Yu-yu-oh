@@ -64,6 +64,31 @@ pub enum Tag {
     NoFaceDownMonsters,
 }
 
+impl Tag {
+    /// Every tag, in declaration order. New tags go at the end, so a
+    /// tag's place in this list (the neural encoding's slot) never moves.
+    pub const ALL: [Tag; 18] = [
+        Tag::CannotNormalSummon,
+        Tag::ExodiaPiece,
+        Tag::ExodiaHead,
+        Tag::StaysOnField,
+        Tag::DirectAttacker,
+        Tag::Toon,
+        Tag::RevealHands,
+        Tag::BanishInsteadOfGraveyard,
+        Tag::HandPlayToll,
+        Tag::ControlWhileEquipped,
+        Tag::StaysWithoutTarget,
+        Tag::OnlyByProcedure,
+        Tag::RevealOpponentHand,
+        Tag::RevealTurnPlayerHand,
+        Tag::SecondAttack,
+        Tag::StatsSetOrScaled,
+        Tag::NoTributeSummon,
+        Tag::NoFaceDownMonsters,
+    ];
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EffectKind {
     /// Main Phase effect of a monster on the field, speed 1.
@@ -413,5 +438,42 @@ impl Registry {
 
     pub fn ids(&self) -> impl Iterator<Item = CardId> + '_ {
         self.scripts.keys().copied()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Tag;
+
+    /// Exhaustive on purpose: a new tag fails to compile here until it is
+    /// added at the end of `Tag::ALL`.
+    fn place(tag: Tag) -> usize {
+        match tag {
+            Tag::CannotNormalSummon => 0,
+            Tag::ExodiaPiece => 1,
+            Tag::ExodiaHead => 2,
+            Tag::StaysOnField => 3,
+            Tag::DirectAttacker => 4,
+            Tag::Toon => 5,
+            Tag::RevealHands => 6,
+            Tag::BanishInsteadOfGraveyard => 7,
+            Tag::HandPlayToll => 8,
+            Tag::ControlWhileEquipped => 9,
+            Tag::StaysWithoutTarget => 10,
+            Tag::OnlyByProcedure => 11,
+            Tag::RevealOpponentHand => 12,
+            Tag::RevealTurnPlayerHand => 13,
+            Tag::SecondAttack => 14,
+            Tag::StatsSetOrScaled => 15,
+            Tag::NoTributeSummon => 16,
+            Tag::NoFaceDownMonsters => 17,
+        }
+    }
+
+    #[test]
+    fn all_tags_lists_every_tag_in_order() {
+        for (i, tag) in Tag::ALL.iter().enumerate() {
+            assert_eq!(place(*tag), i, "{tag:?}");
+        }
     }
 }
