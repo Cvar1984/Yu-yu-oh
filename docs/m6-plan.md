@@ -137,6 +137,41 @@ averages, or normalises, every pooled set.
    search bots on the six enemy decks; train the policy on their choices
    and the value on the results. Check: the imitating bot against the
    plain heuristic bot with `ygo sim`.
+   **Done (2026-11-24, owner: "both" teachers):** `ygo-train`'s
+   `imitation` module and `ygo imitate <record dirs> --out <checkpoint>`.
+   Records stay small (the actions); each epoch replays them and encodes
+   every decision of a teacher (a player whose label is not `random`, or
+   `--teachers` prefixes) that had a choice, with the action it took and
+   the result for it, mixing them in a pool of 2,048 before batches of
+   128 (Adam, 1e-3). One record in ten is held out; epoch 0 is the
+   untrained baseline.
+   Data (`tools/imitation_data.sh`): 4,800 lookahead games (Beatdown
+   against Control style; the six enemy mirrors, 500 each, and six cross
+   pairs, 300 each) and 1,200 search games (search against
+   search-with-Control-playouts, the six mirrors, 200 each), 66 MB.
+   Training (4 epochs, 444,338 samples each, about 400 s an epoch on one
+   core): held-out agreement with the teacher 32.9% untrained, then
+   69.6%, 71.3%, 71.5%, 72.0%; value error 1.021, then 0.817 to 0.838.
+   Strength (`tools/neural_eval.sh`, `checkpoints/imitation-1.bpk`, each
+   enemy mirror, 500 games, seed 90000):
+
+   | Deck | Network vs plain Beatdown | Network vs lookahead Beatdown | Lookahead vs plain (same seeds) |
+   | --- | --- | --- | --- |
+   | E1 Toon | 46.2% ±4.4 | 37.6% ±4.2 | 61.2% ±4.3 |
+   | E2 Special Summon | 44.4% ±4.4 | 42.2% ±4.3 | 51.4% ±4.4 |
+   | E3 Removal | 71.0% ±4.0 | 46.2% ±4.4 | 72.0% ±3.9 |
+   | E4 Big Beatdown | 61.4% ±4.3 | 47.2% ±4.4 | 61.8% ±4.3 |
+   | E5 DARK + Plasma Zone | 56.8% ±4.3 | 47.4% ±4.4 | 56.6% ±4.3 |
+   | E6 Gate Guardian | 49.6% ±4.4 | 42.4% ±4.3 | 57.6% ±4.3 |
+   | Pooled (3,000 games) | 54.9% ±1.8 | 43.8% ±1.8 | 60.1% ±1.8 |
+
+   The network, one forward pass a decision and no search, beats the
+   plain heuristic bot (its interval excludes 50%) and matches the
+   lookahead bot's result on the Removal, Big Beatdown and DARK decks; it
+   trails on Toon, Special Summon and Gate Guardian, the decks with summon
+   procedures and combos. Agreement stops rising after the second epoch,
+   so more of the same data adds little; self-play (step 5) is the next
+   source of strength.
 5. **Self-play** (`ygo train --config <file>`). The search bot guided by
    the network (policy as priors, value at the leaves, AlphaZero-style)
    plays itself; games go to a replay buffer; the network trains on the
