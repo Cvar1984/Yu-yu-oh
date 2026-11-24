@@ -4,5 +4,15 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Training the neural bot: imitation, self-play, checkpoints"
 
 [dependencies]
+ygo-engine.workspace = true
+ygo-ai = { workspace = true, features = ["neural"] }
+burn = { workspace = true, features = ["autodiff", "optim"] }
+rand_core = "0.10"
+rand_chacha = "0.10"
+
+[dev-dependencies]
+ygo-cards.workspace = true
+ygo-engine = { workspace = true, features = ["test-support"] }
