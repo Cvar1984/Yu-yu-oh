@@ -249,10 +249,14 @@ impl Game {
                     self.pending.pop();
                     self.complete_summon(ps);
                 }
-                Some(Pending::DamageStep { attacker, target }) => {
-                    let (attacker, target) = (*attacker, *target);
+                Some(Pending::DamageStep {
+                    attacker,
+                    target,
+                    monsters,
+                }) => {
+                    let (attacker, target, monsters) = (*attacker, *target, *monsters);
                     self.pending.pop();
-                    self.damage_step(attacker, target);
+                    self.damage_step(attacker, target, monsters);
                 }
                 Some(Pending::DamageCalc { attacker, target }) => {
                     let (attacker, target) = (*attacker, *target);

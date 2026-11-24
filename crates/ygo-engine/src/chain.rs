@@ -98,9 +98,12 @@ pub(crate) enum Pending {
     ResolveChain,
     CompleteSummon(PendingSummon),
     /// After the attack-declaration window: start the Damage Step.
+    /// `monsters` is how many monsters the defender had when the attack was
+    /// declared: a different number by then means a replay.
     DamageStep {
         attacker: InstanceId,
         target: Option<InstanceId>,
+        monsters: u8,
     },
     /// After the damage-calculation window: calculate and apply damage.
     DamageCalc {

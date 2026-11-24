@@ -94,6 +94,7 @@ impl Game {
             Pending::DamageStep {
                 attacker: a,
                 target,
+                ..
             } if *a == attacker => Some(target),
             _ => None,
         });
@@ -126,7 +127,12 @@ impl Game {
         self.current_attack = Some((attacker, target));
         self.emit(Event::AttackDeclared { attacker, target });
         self.run_attack_hooks(attacker);
-        self.pending.push(Pending::DamageStep { attacker, target });
+        let monsters = self.defender_monsters(attacker);
+        self.pending.push(Pending::DamageStep {
+            attacker,
+            target,
+            monsters,
+        });
         self.open_window(WindowKind::AttackDeclared, self.turn_player);
     }
 
@@ -138,18 +144,36 @@ impl Game {
             Some(target) => {
                 self.current_attack = Some((attacker, target));
                 self.emit(Event::AttackDeclared { attacker, target });
-                self.pending.push(Pending::DamageStep { attacker, target });
+                let monsters = self.defender_monsters(attacker);
+                self.pending.push(Pending::DamageStep {
+                    attacker,
+                    target,
+                    monsters,
+                });
                 self.open_window(WindowKind::AttackDeclared, self.turn_player);
             }
             None => self.emit(Event::AttackCancelled { attacker }),
         }
     }
 
+    /// How many monsters the opponent of `attacker`'s controller has.
+    fn defender_monsters(&self, attacker: InstanceId) -> u8 {
+        let defender = self.instances[attacker.index()].controller.opponent();
+        self.players[defender.index()].monsters().count() as u8
+    }
+
     /// After the attack-declaration window. The attack goes ahead only if
-    /// the attacker is still a face-up Attack Position monster and the
-    /// target, if any, is still on the field (no replays yet). A face-down
-    /// target is flipped, then the damage-calculation window opens.
-    pub(crate) fn damage_step(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
+    /// the attacker is still a face-up Attack Position monster. If the
+    /// target left the field, or the defender's number of monsters changed
+    /// since the declaration (Scapegoat against a direct attack), the
+    /// attacker's controller replays: a new target, the same one, or stop.
+    /// A face-down target is flipped, then the damage-calculation window opens.
+    pub(crate) fn damage_step(
+        &mut self,
+        attacker: InstanceId,
+        target: Option<InstanceId>,
+        monsters: u8,
+    ) {
         let attacker_ok = matches!(
             self.instances[attacker.index()].location,
             Location::MonsterZone(_)
@@ -161,7 +185,7 @@ impl Game {
             self.emit(Event::AttackCancelled { attacker });
             return;
         }
-        if !target_ok {
+        if !target_ok || self.defender_monsters(attacker) != monsters {
             // A replay: the attacker's controller picks another target or stops.
             self.emit(Event::AttackReplay { attacker });
             self.pending.push(Pending::Replay { attacker });

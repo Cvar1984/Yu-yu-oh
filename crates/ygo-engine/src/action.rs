@@ -72,7 +72,8 @@ pub enum DecisionKind {
     Respond,
     /// Order (and for optional ones, choose) the triggers that fired.
     Triggers,
-    /// The attack target left the field: attack another monster, or stop.
+    /// A replay: the attack target left the field, or the defender's
+    /// number of monsters changed; attack again (any target), or stop.
     Replay,
 }
 

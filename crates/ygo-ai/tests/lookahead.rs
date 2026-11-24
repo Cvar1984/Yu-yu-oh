@@ -89,3 +89,42 @@ fn does_not_pay_its_last_life_points_to_keep_messenger_of_peace() {
         Action::Answer { option: 1 }
     );
 }
+
+const RED_EYES: CardId = CardId(74677422);
+const DARK_ASSAILANT: CardId = CardId(41949033);
+
+// Prototype v9 "Discard plan off without a revive card": Tribute to the
+// Doomed's discard is not Red-Eyes when nothing can revive it.
+#[test]
+fn keeps_red_eyes_without_a_revive_card() {
+    use ygo_cards::spells::TRIBUTE_TO_THE_DOOMED;
+    for lookahead in [false, true] {
+        let shared = shared_from(ygo_cards::registry());
+        let mut g = Game::new(
+            shared.clone(),
+            &stacked(
+                [
+                    &[TRIBUTE_TO_THE_DOOMED, RED_EYES, DARK_ASSAILANT],
+                    &[CELTIC_GUARDIAN],
+                ],
+                PAD,
+            ),
+        )
+        .unwrap();
+        next_turn(&mut g);
+        let celtic = in_hand(&g, ygo_engine::PlayerId(1), CELTIC_GUARDIAN);
+        play(&mut g, summon(celtic));
+        pass_all(&mut g);
+        next_turn(&mut g);
+        let mut b = bot(shared, lookahead);
+        assert!(
+            g.legal_actions().iter().any(|a| matches!(a,
+                Action::Activate { cost, .. } if cost.len() == 1 && g.stats(cost[0]).id == RED_EYES)),
+            "discarding Red-Eyes is offered"
+        );
+        let choice = pick(&mut b, &g);
+        let discards_red_eyes = matches!(&choice,
+            Action::Activate { cost, .. } if cost.iter().any(|&c| g.stats(c).id == RED_EYES));
+        assert!(!discards_red_eyes, "lookahead {lookahead}: {choice:?}");
+    }
+}
