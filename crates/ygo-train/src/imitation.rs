@@ -7,9 +7,9 @@
 //! Every `holdout`-th record is kept out of training to measure how often
 //! the network agrees with the teacher on games it never saw.
 
-use burn::nn::loss::CrossEntropyLossConfig;
 use burn::optim::{AdamConfig, GradientsParams};
 use burn::prelude::*;
+use burn::tensor::activation::log_softmax;
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
 use ygo_ai::encode::{Encoded, encode};
@@ -22,6 +22,9 @@ pub struct Sample {
     pub encoded: Encoded,
     /// The teacher's action, as an index into the legal actions.
     pub action: usize,
+    /// The target over the legal actions, summing to 1: all on `action`
+    /// for a recorded choice, the search's visit shares when distilling.
+    pub policy: Vec<f32>,
     /// The game's result for the decider: 1 won, -1 lost, 0 drawn.
     pub value: f32,
 }
@@ -49,9 +52,12 @@ pub fn samples(
                 Some(GameResult::Win { .. }) => -1.0,
                 _ => 0.0,
             };
+            let mut policy = vec![0.0; view.actions().len()];
+            policy[action] = 1.0;
             out.push(Sample {
                 encoded: encode(&view),
                 action,
+                policy,
                 value,
             });
         }
@@ -126,10 +132,29 @@ fn evaluate(net: &Net, samples: &[Sample], batch: usize, device: &Device) -> (f3
 /// Trains `net` on the teacher decisions of `records`, calling `report`
 /// before training (epoch 0) and after each epoch. Returns the trained network, ready to play.
 pub fn train(
-    mut net: Net,
+    net: Net,
     records: &[GameRecord],
     shared: &Shared,
     teacher: &dyn Fn(&str) -> bool,
+    opts: &Options,
+    report: &mut dyn FnMut(&Epoch),
+) -> Result<Net, RecordError> {
+    train_on(
+        net,
+        records.len(),
+        &|i| samples(&records[i], shared, teacher),
+        opts,
+        report,
+    )
+}
+
+/// Trains `net` on the samples of `games` games, `samples_of(i)` giving
+/// game `i`'s (encoded again each epoch, so memory holds only the games).
+/// The policy loss is the cross-entropy against each sample's target.
+pub fn train_on(
+    mut net: Net,
+    games: usize,
+    samples_of: &dyn Fn(usize) -> Result<Vec<Sample>, RecordError>,
     opts: &Options,
     report: &mut dyn FnMut(&Epoch),
 ) -> Result<Net, RecordError> {
@@ -141,11 +166,11 @@ pub fn train(
     let device = plain.clone().autodiff();
     let mut held_out = Vec::new();
     let mut training = Vec::new();
-    for (i, r) in records.iter().enumerate() {
+    for i in 0..games {
         if opts.holdout > 0 && i % opts.holdout == opts.holdout - 1 {
-            held_out.extend(samples(r, shared, teacher)?);
+            held_out.extend(samples_of(i)?);
         } else {
-            training.push(r);
+            training.push(i);
         }
     }
     // Epoch 0: the network before training, as a baseline.
@@ -161,7 +186,6 @@ pub fn train(
     });
     let mut trained = net.fork(&device).train();
     let mut optimizer = AdamConfig::new().init();
-    let ce = CrossEntropyLossConfig::new().init(&device);
     let mut rng = ChaCha8Rng::seed_from_u64(opts.seed);
     for epoch in 1..=opts.epochs {
         let started = std::time::Instant::now();
@@ -176,19 +200,19 @@ pub fn train(
             let encoded: Vec<Encoded> = batch.iter().map(|s| s.encoded.clone()).collect();
             let x = Inputs::new(&encoded, &device);
             let n = batch.len();
-            let target = Tensor::<1, Int>::from_data(
-                TensorData::new(
-                    batch.iter().map(|s| s.action as i64).collect::<Vec<_>>(),
-                    vec![n],
-                ),
-                &device,
-            );
+            let width = x.action_mask.dims()[1];
+            let mut policy = vec![0.0f32; n * width];
+            for (i, s) in batch.iter().enumerate() {
+                policy[i * width..i * width + s.policy.len()].copy_from_slice(&s.policy);
+            }
+            let target = Tensor::<2>::from_data(TensorData::new(policy, vec![n, width]), &device);
             let value = Tensor::<1>::from_data(
                 TensorData::new(batch.iter().map(|s| s.value).collect::<Vec<_>>(), vec![n]),
                 &device,
             );
             let (logits, v) = trained.forward(&x);
-            let loss = ce.forward(logits, target) + (v - value).powf_scalar(2.0).mean();
+            let cross_entropy = -(log_softmax(logits, 1) * target).sum_dim(1).mean();
+            let loss = cross_entropy + (v - value).powf_scalar(2.0).mean();
             let l = loss.clone().into_scalar::<f32>();
             let grads = GradientsParams::from_grads(loss.backward(), &trained);
             (optimizer.step(opts.learning_rate, trained, grads), l)
@@ -212,7 +236,7 @@ pub fn train(
                 }
             };
         for &i in &order {
-            pool.extend(samples(training[i], shared, teacher)?);
+            pool.extend(samples_of(training[i])?);
             if pool.len() >= opts.pool {
                 drain(&mut pool, false, &mut trained, &mut rng);
             }
