@@ -92,7 +92,7 @@ calculation, and a negated Spell goes to the Graveyard exactly once.
 | 4. Batch 2 B | `bb687a8` | Reverse Trap, Light of Intervention, Soul Exchange; 4 more tests; 2 pending |
 | 5. Batch 2 C | `ce4b30d` | Scapegoat (Tokens), Ultimate Offering; 6 more tests and a card-text test; none pending: every non-Normal card of the 535 is scripted |
 | 6. Acceptance cases | `5ab8941` | 76 of the prototype's 77 cases covered and passing (`docs/acceptance.md`), 6 new tests in `tests/acceptance.rs` and 1 in `ygo-ai/tests/lookahead.rs`, both prototype bugs pinned; the engine now replays an attack when the defender's number of monsters changes; 1 bot case open (discard plan) |
-| 6b. Discard plan | this commit | revive potential in the position score (`[revive]` in `card_values.toml`, style `revive_worth`): 77 of 77; no strength change in 6,000 mirror games |
+| 6b. Discard plan | `f27cfee` | revive potential in the position score (`[revive]` in `card_values.toml`, style `revive_worth`): 77 of 77; no strength change in 6,000 mirror games |
 
 Batch 1 added to the engine: piercing damage (`Effect::pierce`), stopping
 an attack already declared (`cancel_attack`; Spellbinding Circle now
@@ -163,6 +163,35 @@ stats go in a data file, `data/tokens.json`.
   replay rule of step 4).
   Speed: callgrind counts 1.1% more instructions for the same 300 random
   games (Removal against Big Beatdown) than before batch 2.
+
+## Step 5: card values and bot reruns on the 535-card pool (2026-11-24)
+
+**Card values.** `card_values.toml` holds the 51 values of the
+prototype's first table (`ygo_sim2.py`); its later versions
+(`ygo_sim3.py` to `ygo_sim9.py`) value 103 more cards, among them most
+EXTRA cards (Graceful Charity 90, Premature Burial 82, Scapegoat 70) and
+the Toons; none of the 51 changed. PSV came after the prototype. The 103
+were tried as a style override on the lookahead bot, against the same bot
+with today's values (`lookahead:beatdown`, mirrors, 1,000 games each,
+seed 88):
+
+| Deck | New values win |
+| --- | --- |
+| Enemy E1 Toon | 45.2% ±3.1 |
+| Enemy E2 Special Summon | 48.8% ±3.1 |
+| Enemy E3 Removal | 50.9% ±3.1 |
+| Enemy E4 Big Beatdown | 49.5% ±3.1 |
+| Enemy E5 DARK + Plasma Zone | 51.9% ±3.1 |
+| Enemy E6 Gate Guardian | 51.7% ±3.1 |
+| Save A Beatdown | 54.1% ±3.1 |
+
+Pooled 3,521 of 7,000 (50.3%): no gain overall, a loss on the Toon deck
+and a gain on save A's Beatdown deck. Leaving Graceful Charity at its
+default did not change that (44.4% and 54.3%); leaving Toon World at its
+default brought the Toon deck to 47.1%. The prototype's values were set
+for its own, simpler bot; tuning them card by card against one deck would
+fit the noise. **Kept as they are**: new cards use the defaults (Spells
+and Traps 30, monsters by their stats), and the lookahead does the rest.
 
 ## Deck crafting from save A (2026-11-20)
 
