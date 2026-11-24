@@ -8,15 +8,23 @@
 //! - the game is a `GLOBAL_F` vector: Life Points, turn, phase, decision,
 //!   window, zone counts, the chain;
 //! - every legal action is an `ACTION_F` vector: its kind and details,
-//!   then the card vectors of its subject, its targets and its costs.
+//!   then the card vectors of its subject, its targets and its costs;
+//! - every lingering effect (Swords' lock, Change of Heart's return, a
+//!   stat change until the End Phase) is a `LINGER_F` vector.
+//!
+//! The viewer's own Deck is among the cards, by contents only (place
+//! "Deck", never its order); cards they remember show as known
+//! (`ygo-engine/src/memory.rs`); a monster's Type is its current one; the
+//! house rules are part of the game vector.
 //!
 //! Each block has a fixed width: Types, attributes and tags have reserved
 //! slots, so a slot's meaning never shifts.
 
-use ygo_data::CardKind;
+use ygo_data::{CardId, CardKind, HandLimitCheck};
 use ygo_engine::{
-    Action, BattleStep, CardStats, DecisionKind, EffectKind, InstanceId, Observation, Phase, Place,
-    PlayerView, Position, Shared, SpellTrapType, Tag, VisibleCard, WindowKind,
+    Action, BattleStep, CardStats, DecisionKind, EffectKind, InstanceId, Lingering, LingeringKind,
+    Observation, Phase, Place, PlayerView, Position, Shared, SpellTrapType, Tag, VisibleCard,
+    WindowKind,
 };
 
 /// The official monster Types; any other Type takes the last slot.
@@ -53,6 +61,19 @@ const ATTRIBUTES: [&str; 7] = ["DARK", "DIVINE", "EARTH", "FIRE", "LIGHT", "WATE
 const TAG_SLOTS: usize = 32;
 /// Answer options told apart (`Action::Answer`); later ones share the last.
 const OPTION_SLOTS: usize = 8;
+/// Slots kept for lingering effect kinds.
+const LINGER_SLOTS: usize = 32;
+
+/// Where a card is, for the encoding: the observation's places, plus the
+/// viewer's own Deck.
+#[derive(Clone, Copy)]
+enum At {
+    Seen(Place),
+    Deck,
+}
+
+/// The place, side and position numbers at the end of every card vector.
+const PLACE_F: usize = 10 + 2 + 5;
 
 /// Numbers per card.
 pub const CARD_F: usize = 2 // known, hidden
@@ -66,7 +87,7 @@ pub const CARD_F: usize = 2 // known, hidden
     + 3 // fastest speed, once per turn, Damage Step
     + 15 // continuous hooks, targets, costs
     + TAG_SLOTS
-    + 9 // place
+    + 10 // place (with the viewer's Deck)
     + 2 // the viewer's, the opponent's
     + 5; // position
 
@@ -78,7 +99,8 @@ pub const GLOBAL_F: usize = 2 // Life Points
     + 9 // window kind (or none)
     + 1 // the viewer holds priority
     + 2 * 8 // zone counts, each side
-    + 6; // chain, its top link the viewer's, question, revealed, summon pending, lingering
+    + 6 // chain, its top link the viewer's, question, revealed, summon pending, lingering
+    + 25; // the house rules
 
 /// Numbers per legal action.
 pub const ACTION_F: usize = 14 // kind
@@ -89,14 +111,22 @@ pub const ACTION_F: usize = 14 // kind
     + 4 // targets, costs, tributes, a direct attack
     + 3 * CARD_F; // the card, its targets (mean), its costs or tributes (mean)
 
+/// Numbers per lingering effect.
+pub const LINGER_F: usize = LINGER_SLOTS
+    + 3 // the player it names: the viewer, the opponent, none
+    + 2 // ATK and DEF change
+    + 2 // turns left, a count (a zone, Standby Phases)
+    + 2 * CARD_F; // its source, the card it names
+
 /// One decision as numbers. `cards` holds `cards.len() / CARD_F` card
 /// vectors; `actions` one vector per legal action, in `view.actions()`
-/// order.
+/// order; `lingering` one per lingering effect.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Encoded {
     pub cards: Vec<f32>,
     pub globals: Vec<f32>,
     pub actions: Vec<f32>,
+    pub lingering: Vec<f32>,
 }
 
 impl Encoded {
@@ -106,6 +136,10 @@ impl Encoded {
 
     pub fn action_count(&self) -> usize {
         self.actions.len() / ACTION_F
+    }
+
+    pub fn lingering_count(&self) -> usize {
+        self.lingering.len() / LINGER_F
     }
 }
 
@@ -117,6 +151,19 @@ pub fn encode(view: &PlayerView) -> Encoded {
     };
     let mut cards = Vec::new();
     enc.all_cards(&mut cards);
+    for id in view.own_deck() {
+        let start = cards.len();
+        enc.known(
+            id,
+            None,
+            None,
+            At::Deck,
+            Some(true),
+            Position::FaceDown,
+            &mut cards,
+        );
+        debug_assert_eq!(cards.len() - start, CARD_F);
+    }
     let mut globals = Vec::with_capacity(GLOBAL_F);
     enc.globals(&mut globals);
     debug_assert_eq!(globals.len(), GLOBAL_F);
@@ -126,10 +173,18 @@ pub fn encode(view: &PlayerView) -> Encoded {
         enc.action(a, &mut actions);
         debug_assert_eq!(actions.len() - start, ACTION_F, "{a:?}");
     }
+    let lingering_effects = &view.observation().lingering;
+    let mut lingering = Vec::with_capacity(lingering_effects.len() * LINGER_F);
+    for l in lingering_effects {
+        let start = lingering.len();
+        enc.lingering(l, &mut lingering);
+        debug_assert_eq!(lingering.len() - start, LINGER_F, "{l:?}");
+    }
     Encoded {
         cards,
         globals,
         actions,
+        lingering,
     }
 }
 
@@ -152,10 +207,7 @@ fn flag(out: &mut Vec<f32>, on: bool) {
 }
 
 impl Encoder<'_> {
-    fn stats(
-        &self,
-        card: ygo_data::CardId,
-    ) -> Option<(&CardStats, Option<&ygo_engine::CardScript>)> {
+    fn stats(&self, card: CardId) -> Option<(&CardStats, Option<&ygo_engine::CardScript>)> {
         let pool = &self.shared.pool;
         let index = pool.index_of(card)?;
         Some((pool.get(index), self.shared.script(index)))
@@ -200,8 +252,9 @@ impl Encoder<'_> {
         for link in &self.obs.chain {
             self.known(
                 link.card,
+                Some(link.instance),
                 None,
-                Place::Chain,
+                At::Seen(Place::Chain),
                 Some(link.controller == viewer),
                 Position::FaceUp,
                 out,
@@ -212,27 +265,37 @@ impl Encoder<'_> {
     fn card(&self, c: &VisibleCard, place: Place, mine: Option<bool>, out: &mut Vec<f32>) {
         match c {
             VisibleCard::Known {
+                instance,
                 card,
                 position,
                 stats,
-                ..
-            } => self.known(*card, *stats, place, mine, *position, out),
+            } => self.known(
+                *card,
+                Some(*instance),
+                *stats,
+                At::Seen(place),
+                mine,
+                *position,
+                out,
+            ),
             VisibleCard::Hidden { position, .. } => {
                 let start = out.len();
                 flag(out, false);
                 flag(out, true);
-                out.resize(start + CARD_F - 9 - 2 - 5, 0.0);
-                self.where_and_how(place, mine, *position, out);
+                out.resize(start + CARD_F - PLACE_F, 0.0);
+                self.where_and_how(At::Seen(place), mine, *position, out);
                 debug_assert_eq!(out.len() - start, CARD_F);
             }
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn known(
         &self,
-        card: ygo_data::CardId,
+        card: CardId,
+        instance: Option<InstanceId>,
         current: Option<(i32, i32)>,
-        place: Place,
+        place: At,
         mine: Option<bool>,
         position: Position,
         out: &mut Vec<f32>,
@@ -242,7 +305,7 @@ impl Encoder<'_> {
             // Not in the pool: cannot happen in a game; encode as hidden.
             flag(out, false);
             flag(out, true);
-            out.resize(start + CARD_F - 9 - 2 - 5, 0.0);
+            out.resize(start + CARD_F - PLACE_F, 0.0);
             self.where_and_how(place, mine, position, out);
             return;
         };
@@ -287,10 +350,13 @@ impl Encoder<'_> {
                 .unwrap_or(ATTRIBUTES.len())
         });
         one_hot(out, ATTRIBUTES.len() + 1, attribute.filter(|_| monster));
+        // The current Type, when an effect changed it (DNA Surgery).
+        let changed = instance.and_then(|i| self.obs.types.iter().find(|t| t.0 == i));
+        let race_now = changed.map_or(s.race.as_str(), |t| t.1.as_str());
         let race = monster.then(|| {
             RACES
                 .iter()
-                .position(|r| *r == s.race)
+                .position(|r| *r == race_now)
                 .unwrap_or(RACES.len())
         });
         one_hot(out, RACES.len() + 1, race);
@@ -355,26 +421,21 @@ impl Encoder<'_> {
         }
     }
 
-    /// Place, side and position: the last 16 numbers of every card.
-    fn where_and_how(
-        &self,
-        place: Place,
-        mine: Option<bool>,
-        position: Position,
-        out: &mut Vec<f32>,
-    ) {
+    /// Place, side and position: the last `PLACE_F` numbers of every card.
+    fn where_and_how(&self, place: At, mine: Option<bool>, position: Position, out: &mut Vec<f32>) {
         let p = match place {
-            Place::Hand => 0,
-            Place::Monster(_) => 1,
-            Place::SpellTrap(_) => 2,
-            Place::Field => 3,
-            Place::Graveyard => 4,
-            Place::Banished => 5,
-            Place::Extra => 6,
-            Place::Revealed => 7,
-            Place::Chain => 8,
+            At::Seen(Place::Hand) => 0,
+            At::Seen(Place::Monster(_)) => 1,
+            At::Seen(Place::SpellTrap(_)) => 2,
+            At::Seen(Place::Field) => 3,
+            At::Seen(Place::Graveyard) => 4,
+            At::Seen(Place::Banished) => 5,
+            At::Seen(Place::Extra) => 6,
+            At::Seen(Place::Revealed) => 7,
+            At::Seen(Place::Chain) => 8,
+            At::Deck => 9,
         };
-        one_hot(out, 9, Some(p));
+        one_hot(out, 10, Some(p));
         flag(out, mine == Some(true));
         flag(out, mine == Some(false));
         let pos = match position {
@@ -453,6 +514,95 @@ impl Encoder<'_> {
         out.push(obs.revealed.len() as f32 / 10.0);
         flag(out, obs.pending_summon.is_some());
         out.push(obs.lingering.len() as f32 / 10.0);
+        self.rules(out);
+    }
+
+    /// The house rules (`rules.toml`), so one network can play under any.
+    fn rules(&self, out: &mut Vec<f32>) {
+        let r = &self.shared.rules;
+        out.extend([
+            r.deck.main_min as f32 / 60.0,
+            r.deck.main_max as f32 / 60.0,
+            r.deck.extra_max as f32 / 15.0,
+            r.deck.default_copy_limit as f32 / 3.0,
+            r.field.monster_zones as f32 / 5.0,
+            r.field.spell_trap_zones as f32 / 5.0,
+            r.field.field_spells_on_field as f32 / 2.0,
+            r.hand.opening_size as f32 / 10.0,
+            r.hand.max_size as f32 / 10.0,
+            r.life.starting_lp as f32 / 8000.0,
+            r.summon.normal_or_tribute_per_turn as f32 / 5.0,
+            r.summon.tributes_level_5_6 as f32 / 3.0,
+            r.summon.tributes_level_7_plus as f32 / 3.0,
+            r.summon.max_monsters_entering_per_turn as f32 / 5.0,
+        ]);
+        flag(out, r.hand.hand_limit_check == HandLimitCheck::AfterDraw);
+        for on in [
+            r.turn.first_player_skips_draw,
+            r.turn.second_player_skips_draw,
+            r.turn.first_player_can_attack,
+            r.turn.trap_activation_turn_set,
+            r.turn.spell_target_monster_set_this_turn,
+            r.summon.summon_in_main_phase_2,
+            r.summon.flip_summon_counts_toward_limit,
+            r.summon.special_summon_counts_toward_limit,
+            r.summon.fusion_summons,
+            r.summon.ritual_summons,
+        ] {
+            flag(out, on);
+        }
+    }
+
+    /// One lingering effect: its kind, the player and card it names, its
+    /// numbers, and its source. Exhaustive on purpose: a new kind needs a
+    /// slot here.
+    fn lingering(&self, l: &Lingering, out: &mut Vec<f32>) {
+        use LingeringKind as K;
+        // (slot, the card it names, the player it names, ATK, DEF, a count)
+        let (slot, card, player, atk, def, count) = match l.kind {
+            K::ReturnControl { card, to } => (0, Some(card), Some(to), 0, 0, 0),
+            K::Stats { card, atk, def } => (1, Some(card), None, atk, def, 0),
+            K::Destroy { card } => (2, Some(card), None, 0, 0, 0),
+            K::CannotAttack { card } => (3, Some(card), None, 0, 0, 0),
+            K::DamageCalcStats { card, atk, def } => (4, Some(card), None, atk, def, 0),
+            K::Marked { card } => (5, Some(card), None, 0, 0, 0),
+            K::BattleShield { player } => (6, None, Some(player), 0, 0, 0),
+            K::PositionLocked { card } => (7, Some(card), None, 0, 0, 0),
+            K::NoSpellsOrTraps => (8, None, None, 0, 0, 0),
+            K::Negated { card } => (9, Some(card), None, 0, 0, 0),
+            K::ZoneLocked { player, zone } => (10, None, Some(player), 0, 0, zone),
+            K::ReturnToHand {
+                card,
+                player,
+                standbys,
+            } => (11, Some(card), Some(player), 0, 0, standbys),
+            K::ReturnToField {
+                card, player, zone, ..
+            } => (12, Some(card), Some(player), 0, 0, zone),
+            K::Borrowed { card, player } => (13, Some(card), Some(player), 0, 0, 0),
+            K::HatMonster { card } => (14, Some(card), None, 0, 0, 0),
+            K::Race { card } => (15, Some(card), None, 0, 0, 0),
+            K::StatChangesReversed => (16, None, None, 0, 0, 0),
+            K::MustTribute { player, card } => (17, Some(card), Some(player), 0, 0, 0),
+            K::NoBattlePhase { player } => (18, None, Some(player), 0, 0, 0),
+            K::NoSummons { player } => (19, None, Some(player), 0, 0, 0),
+        };
+        one_hot(out, LINGER_SLOTS, Some(slot));
+        let viewer = self.obs.viewer;
+        flag(out, player == Some(viewer));
+        flag(out, player == Some(viewer.opponent()));
+        flag(out, player.is_none());
+        out.extend([
+            atk as f32 / 5000.0,
+            def as f32 / 5000.0,
+            l.expires_turn.saturating_sub(self.obs.turn).min(8) as f32 / 4.0,
+            f32::from(count) / 5.0,
+        ]);
+        self.instance(l.source, out);
+        match card {
+            Some(c) => self.instance(c, out),
+            None => out.resize(out.len() + CARD_F, 0.0),
+        }
     }
 
     /// The card vector of instance `id` as the viewer sees it; a hidden
@@ -464,8 +614,9 @@ impl Encoder<'_> {
         } else if let Some(link) = self.obs.chain.iter().find(|l| l.instance == id) {
             self.known(
                 link.card,
+                Some(id),
                 None,
-                Place::Chain,
+                At::Seen(Place::Chain),
                 Some(link.controller == viewer),
                 Position::FaceUp,
                 out,

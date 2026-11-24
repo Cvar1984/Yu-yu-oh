@@ -81,8 +81,31 @@ averages, or normalises, every pooled set.
    games a sample that looks the same to the decider encodes the same.
    Speed: 5.7 µs per decision (release, one core, 10,134 decisions of 50
    random games), next to about 75 µs for the trial network.
-   Simplification: a monster's Type is its printed one (DNA Surgery's
-   change is not shown).
+   **Additions (owner, 2026-11-24), after reviewing what the bot sees:**
+   - its own Deck: the cards left, never their order
+     (`PlayerView::own_deck`), as card vectors with the place "Deck";
+   - memory (`ygo-engine/src/memory.rs`): a card it saw that is hidden
+     again (bounced to the opponent's hand, turned face-down, shown by a
+     reveal or a private look) stays known while it stays there; it is
+     forgotten when the card moves, enters a Deck or changes identity
+     (Magical Hats). The sampler keeps remembered cards, so search and
+     lookahead bots know them too. Cost: 4.0% more instructions in random
+     games, 3.0% for the Beatdown bot (callgrind; a first version cost
+     57%, the bit-set one replaced it);
+   - each lingering effect as a 305-number vector (`LINGER_F`): its kind
+     (32 reserved slots), the player and card it names, its ATK/DEF change,
+     turns left, and its source card;
+   - current Types (`Observation::types`: DNA Surgery, D. Tribe);
+   - the house rules: 25 numbers in the game vector.
+   Card vectors are now 133 numbers (a "Deck" place), the game vector 91.
+   Tests: sizes over 5,894 decisions (up to 122 cards, 52 actions and 5
+   lingering effects), samples encode the same (lingering included), a
+   D. Tribe Type change reaches the vector (and the test fails without
+   it), memory tests in `ygo-cards/tests/memory.rs`. Encoding takes 13.4 µs
+   a decision (release, Removal against Big Beatdown).
+   Found on the way: the sampler redealt a card face-up in a Deck
+   (Parasite Paracide); it is public now. Still left out on purpose: the
+   meaning of a question's options (only their order).
 3. **Network and neural bot** (`ygo-ai`, burn behind a cargo feature
    `neural`, so the browser build and the other crates stay as they are
    until they want it). `NeuralPlayer` implements `Player`: the policy
