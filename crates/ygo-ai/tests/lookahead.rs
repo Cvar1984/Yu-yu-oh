@@ -128,3 +128,68 @@ fn keeps_red_eyes_without_a_revive_card() {
         assert!(!discards_red_eyes, "lookahead {lookahead}: {choice:?}");
     }
 }
+
+/// Plays player 0's decisions with `bot` (the opponent passes) until
+/// player 0's next Main Phase decision.
+fn settle_with(bot: &mut HeuristicPlayer, g: &mut Game) {
+    while let Some(d) = g.pending_decision() {
+        if d.player == P0 && d.kind == DecisionKind::MainPhase {
+            return;
+        }
+        let a = if d.player == P0 {
+            pick(bot, g)
+        } else {
+            Action::Pass
+        };
+        play(g, a);
+    }
+}
+
+// Prototype v9 "Discard plan": with Monster Reborn in hand, Graceful
+// Charity discards Red-Eyes (it needs two Tributes from the hand, none from
+// the Graveyard), and Monster Reborn brings it back.
+#[test]
+fn graceful_charity_discards_red_eyes_for_monster_reborn() {
+    use ygo_cards::extra_spells::GRACEFUL_CHARITY;
+    use ygo_cards::spells::MONSTER_REBORN;
+    let shared = shared_from(ygo_cards::registry());
+    let mut g = Game::new(
+        shared.clone(),
+        &stacked(
+            [
+                &[
+                    GRACEFUL_CHARITY,
+                    RED_EYES,
+                    MONSTER_REBORN,
+                    CELTIC_GUARDIAN,
+                    DARK_ASSAILANT,
+                ],
+                &[],
+            ],
+            DARK_ASSAILANT,
+        ),
+    )
+    .unwrap();
+    let mut b = bot(shared, true);
+    let charity = in_hand(&g, P0, GRACEFUL_CHARITY);
+    let a = g
+        .legal_actions()
+        .into_iter()
+        .find(|a| matches!(a, Action::Activate { card, .. } if *card == charity))
+        .unwrap();
+    play(&mut g, a);
+    settle_with(&mut b, &mut g);
+    let red_eyes = in_graveyard(&g, RED_EYES).expect("Red-Eyes was discarded");
+    let reborn = pick(&mut b, &g);
+    assert!(
+        matches!(&reborn, Action::Activate { targets, .. } if targets == &vec![red_eyes]),
+        "Monster Reborn on Red-Eyes: {reborn:?}"
+    );
+}
+
+fn in_graveyard(g: &Game, id: CardId) -> Option<ygo_engine::InstanceId> {
+    g.graveyard(P0)
+        .iter()
+        .copied()
+        .find(|&c| g.stats(c).id == id)
+}

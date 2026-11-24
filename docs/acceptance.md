@@ -2,7 +2,7 @@
 
 The handoff asks for the Python prototype's scenario tests (`reference/python_prototype/test_v8.py`, 40 cases, and `test_v9.py`, 37) to hold in the Rust engine. Each case below names the Rust test that covers it. Where the prototype's simplified rules differ from the modern rules, the Rust test follows the modern rules and the note says how. New tests for this port live in `crates/ygo-cards/tests/acceptance.rs` (cases no rulings test covered, and the two engine bugs the prototype found) and `crates/ygo-ai/tests/lookahead.rs` (the bot cases).
 
-Result (2026-11-24): 76 of 77 covered and passing. One finding changed the engine: an attack now replays when the defender's number of monsters changes after the declaration (modern rule), not only when the target leaves. One bot case is open (see the end).
+Result (2026-11-24): all 77 covered and passing. One finding changed the engine: an attack now replays when the defender's number of monsters changes after the declaration (modern rule), not only when the target leaves. One changed the bot: the discard plan (see the end).
 
 ## The prototype's two engine bugs
 
@@ -87,10 +87,30 @@ Result (2026-11-24): 76 of 77 covered and passing. One finding changed the engin
 | v9 | Insect Soldiers +1000 vs WIND | `insect_soldiers_gain_1000_only_while_attacking_a_wind_monster` (monsters_a.rs) |  |
 | v9 | Castle of Dark Illusions grows Zombies | `castle_of_dark_illusions_powers_up_zombies_for_four_standby_phases` (flips.rs) |  |
 | v9 | Sogen, Luminous Spark, Vile Germs, Final Flame, Germ Infection | `every_type_field_spell_changes_the_named_types` (tables.rs)<br>`every_attribute_field_spell_gives_500_atk_and_takes_400_def` (tables.rs)<br>`every_type_equip_boosts_only_its_type` (tables.rs)<br>`burn_and_heal_cards_change_life_points_by_their_numbers` (oneshot.rs)<br>`germ_infection_weakens_its_monster_each_of_its_controllers_standby_phases` (remaining.rs) |  |
-| v9 | Discard plan: Graceful Charity discards Red-Eyes, Monster Reborn brings it back | none | **Open (bot):** neither the plain nor the lookahead bot discards Red-Eyes here; the plan pays off a decision later, beyond the lookahead's reach. |
+| v9 | Discard plan: Graceful Charity discards Red-Eyes, Monster Reborn brings it back | `graceful_charity_discards_red_eyes_for_monster_reborn` (ygo-ai: lookahead.rs) | The lookahead bot, with revive potential (below). |
 | v9 | Discard plan off without a revive card | `keeps_red_eyes_without_a_revive_card` (lookahead.rs) | Both bots. |
 | v9 | Queen's Double attacks directly | `direct_attackers_may_attack_over_monsters` (monsters_a.rs) |  |
 
-## Open
+## The discard plan (owner, 2026-11-24: fix it now; both Graveyards are public)
 
-- **Discard plan** (v9): with Graceful Charity, Red-Eyes Black Dragon and Monster Reborn in hand, the prototype's bot discards Red-Eyes to revive it. Our bots discard other cards: the lookahead bot plays on only to the next open decision, so a revive that pays off later is out of its sight. This is bot strategy, not a rule; the owner decides whether the heuristic bot gets a rule for it or M6's trained policy should learn it.
+At first neither bot discarded Red-Eyes here: the lookahead plays on only
+to the next open decision, so a revive that pays off later was out of its
+sight, and the position score gave a Graveyard monster no worth. Now the
+score counts revive potential: each revive card a player holds (in the
+hand or Set) takes the best monster it could bring back that may be
+Special Summoned, worth the style's `revive_worth` share of its value
+(0.75). Which cards revive, and from whose Graveyard, is card knowledge in
+`card_values.toml` (`[revive]`: Monster Reborn from either Graveyard, Call
+of the Haunted and Premature Burial from their player's own; The Shallow
+Grave is left out because it revives for the opponent too). Both
+Graveyards are public, so Monster Reborn weighs the best target in either
+one: discarding a monster is only worth it if it beats what is already
+there. A share above the hand's 0.5 is needed: at 0.5 or less the bot still
+keeps Red-Eyes (checked at 0, 0.5 and 0.6).
+
+Strength, lookahead Beatdown with the score against the same bot without
+it, mirrors of the six decks that run a revive card, 1,000 games each
+(seed 77): 48.4% to 51.3% (±3.1), 2,999 of 6,000 pooled. The fix plays the
+prototype's case right without a measurable gain or loss overall: each deck
+holds one Monster Reborn and the case is rare. The search bot scores its
+playouts the same way (its rollout style's `revive_worth`).

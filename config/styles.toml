@@ -13,6 +13,9 @@
 # use_cost                with lookahead (bot `lookahead:<style>`): activating
 #                         a Spell or Trap Card must gain this share of its
 #                         worth in the hand
+# revive_worth            with lookahead: a monster that a held revive card
+#                         ([revive] in card_values.toml) could bring back
+#                         from a Graveyard counts for this share of its worth
 # [<style>.values]        card values that replace those in card_values.toml
 
 schema_version = 1
@@ -26,6 +29,7 @@ tribute_needs_cover = false
 counter_min_value = 50
 facedown_attack_min_atk = 1400
 use_cost = 0.5
+revive_worth = 0.75
 
 [styles.control]
 aggression = 0.8
@@ -36,6 +40,7 @@ tribute_needs_cover = false
 counter_min_value = 40
 facedown_attack_min_atk = 1600
 use_cost = 0.5
+revive_worth = 0.75
 
 [styles.stall]
 aggression = 0.4
@@ -46,6 +51,7 @@ tribute_needs_cover = false
 counter_min_value = 30
 facedown_attack_min_atk = 2000
 use_cost = 0.5
+revive_worth = 0.75
 
 [styles.burn]
 aggression = 1.0
@@ -56,6 +62,7 @@ tribute_needs_cover = false
 counter_min_value = 50
 facedown_attack_min_atk = 1600
 use_cost = 0.5
+revive_worth = 0.75
 
 [styles.burn.values]
 46918794 = { name = "Tremendous Fire", value = 75 }
@@ -71,6 +78,7 @@ tribute_needs_cover = false
 counter_min_value = 40
 facedown_attack_min_atk = 2000
 use_cost = 0.5
+revive_worth = 0.75
 
 # The pieces are never discarded or given away; draw power comes next.
 [styles.exodia.values]
@@ -99,3 +107,4 @@ tribute_needs_cover = true
 counter_min_value = 60
 facedown_attack_min_atk = 1600
 use_cost = 0.5
+revive_worth = 0.75
