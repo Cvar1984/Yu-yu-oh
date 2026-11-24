@@ -90,7 +90,8 @@ calculation, and a negated Spell goes to the Graveyard exactly once.
 | 2. Batch 1 | batch 1 | 36 cards scripted (Fairy Meteor Crush moved here from batch 2), 29 tests in `tests/extra.rs`; 8 pending |
 | 3. Batch 2 A | `1fe2f51` | D. Tribe, Riryoku Field, Shift; 6 tests in `tests/extra_2.rs`; 5 pending |
 | 4. Batch 2 B | `bb687a8` | Reverse Trap, Light of Intervention, Soul Exchange; 4 more tests; 2 pending |
-| 5. Batch 2 C | this commit | Scapegoat (Tokens), Ultimate Offering; 6 more tests and a card-text test; none pending: every non-Normal card of the 535 is scripted |
+| 5. Batch 2 C | `ce4b30d` | Scapegoat (Tokens), Ultimate Offering; 6 more tests and a card-text test; none pending: every non-Normal card of the 535 is scripted |
+| 6. Acceptance cases | this commit | 76 of the prototype's 77 cases covered and passing (`docs/acceptance.md`), 6 new tests in `tests/acceptance.rs` and 1 in `ygo-ai/tests/lookahead.rs`, both prototype bugs pinned; the engine now replays an attack when the defender's number of monsters changes; 1 bot case open (discard plan) |
 
 Batch 1 added to the engine: piercing damage (`Effect::pierce`), stopping
 an attack already declared (`cancel_attack`; Spellbinding Circle now
@@ -157,8 +158,8 @@ stats go in a data file, `data/tokens.json`.
   Scapegoat's lock starts when it resolves, after its Tokens (a negated
   Scapegoat locks nothing); Ultimate Offering's summon happens inside the
   chain and opens no summon windows of its own, does not use Soul
-  Exchange's monster, and a monster Set during an attack does not
-  replay it (the engine replays only when the target leaves).
+  Exchange's monster. A monster Set during an attack replays it (the
+  replay rule of step 4).
   Speed: callgrind counts 1.1% more instructions for the same 300 random
   games (Removal against Big Beatdown) than before batch 2.
 

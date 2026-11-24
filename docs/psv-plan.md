@@ -146,7 +146,8 @@ Batch 4:
   goes back to its owner's Graveyard in the End Phase.
 - Magical Hats: the three face-down monsters trade identities (their
   instance ids), so the opponent cannot follow which is which; an attack
-  under way goes on against its target instance, now any of the three.
+  under way replays, since the defender now has more monsters
+  (2026-11-24, `docs/acceptance.md`).
   The hats have no effects and are destroyed when the Battle Phase ends,
   however it ends (or in the End Phase, if their destruction was
   prevented).

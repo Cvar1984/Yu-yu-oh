@@ -382,9 +382,27 @@ fn ultimate_offering_sets_a_monster_in_the_opponents_battle_phase() {
     choose(&mut g, elf);
     answer(&mut g, 1);
     assert_eq!(g.instance(elf).position, Position::FaceDownDefense);
-    // 500 paid, and the direct attack goes on: the engine replays an
-    // attack only when its target leaves, not when a monster joins.
-    assert_eq!(lp(&g, P0), 8000 - 500 - 1500);
+    assert_eq!(lp(&g, P0), 8000 - 500);
+    // A monster joined the defender's field: the direct attack replays.
+    let d = g.pending_decision().unwrap();
+    assert_eq!((d.player, d.kind), (P1, DecisionKind::Replay));
+    assert!(
+        !g.legal_actions().contains(&Action::Attack {
+            attacker: koumori,
+            target: None
+        }),
+        "no direct attack over the Elf"
+    );
+    play(
+        &mut g,
+        Action::Attack {
+            attacker: koumori,
+            target: Some(elf),
+        },
+    );
+    ygo_engine::testing::pass_all(&mut g);
+    assert_eq!(lp(&g, P1), 8000 - 500, "1500 into the Elf's 2000 DEF");
+    assert_eq!(lp(&g, P0), 8000 - 500);
     check_invariants(&g);
 }
 
