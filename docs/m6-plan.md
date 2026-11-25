@@ -306,6 +306,28 @@ averages, or normalises, every pooled set.
       With search (`network-search`, 400 games, the owner's deck) 54.2%
       ±4.9. It replaced `data/networks/best.bpk`. Held-out value error
       stays near 0.8: the value head is still the weak part.
+      Runs 2 to 4 (2026-11-25, from that network, the owner's two save A
+      decks `save_a_tuned_40` and `save_a_owner_current_40` and the six
+      enemy decks, 800 games a generation) promoted nothing: six candidates
+      in a row scored 48.1% to 49.9% against the best. Run 2: visit shares,
+      100 iterations, learning rate 3e-4 (48.8%, 48.1%, 48.8%); run 3: 200
+      iterations, learning rate 1e-4 (48.2%); run 4: `--hard-targets`
+      (learn only the search's most visited move), 200 iterations (49.9%,
+      49.4%). Agreement with the search stayed near 86%.
+   6. *A wider network (owner, 2026-11-25):* `Widths::WIDE` doubles every
+      hidden layer (4.1 MB file); `Net::load` finds a file's widths by
+      trying each, so base checkpoints still load. Bootstrap: 8,000 games of
+      the shipped network's search against itself (1,000 a deck, 100
+      iterations), then `ygo imitate --wide` from scratch, 4 epochs of
+      762,747 samples (about 25 minutes each): held-out agreement 31.3%,
+      then 83.5%, 84.3%, 84.9%, 85.3%; value error 0.998, then 0.824.
+      `wide-1` alone against the shipped network alone, 250 games a deck:
+      47.3% ±2.2 (imitation only; the shipped network had self-play on top).
+      Found on the way: a Gate Guardian mirror never ended because Suijin's
+      "once while face-up" was counted on resolution, so in the Damage Step
+      the effect chained to itself forever; Sanga, Kazejin and Suijin now
+      count it at activation (rulings test extended). Next: self-play from
+      `wide-1` (first run's recipe), then against the shipped network.
    5. *The network in the browser (done):* `scripts/build-web.sh` ships
       `data/networks/best.bpk` as `data/network.bpk`; the page hands its
       bytes to the engine (`ygo_set_network`, `Host::set_network`) before
