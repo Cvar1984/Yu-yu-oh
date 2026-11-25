@@ -25,7 +25,11 @@ fn deck(name: &str) -> PathBuf {
 
 fn bots() -> Bots {
     let mut bots = Bots::new(&bundle());
-    bots.network = Some(root().join("data/networks/best.bpk"));
+    let net = ygo_ai::neural::Net::load(
+        &root().join("data/networks/best.bpk"),
+        &ygo_ai::neural::cpu(),
+    );
+    bots.network = Some(net.unwrap());
     bots
 }
 

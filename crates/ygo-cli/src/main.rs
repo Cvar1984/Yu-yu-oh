@@ -300,7 +300,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 })?;
             }
             let mut bots = bots::Bots::new(&bundle);
-            bots.network = Some(cli.network.clone());
+            load_network(&mut bots, &cli.network)?;
             search.apply(&mut bots)?;
             let deck_a = decks::load_legal(&deck_a, &bundle)?;
             let deck_b = decks::load_legal(&deck_b, &bundle)?;
@@ -414,7 +414,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 .unwrap_or_default();
             let seed = seed.unwrap_or(now.as_nanos() as u64);
             let mut bots = bots::Bots::new(&bundle);
-            bots.network = Some(cli.network.clone());
+            load_network(&mut bots, &cli.network)?;
             search.apply(&mut bots)?;
             let deck = decks::load_legal(&deck, &bundle)?;
             let bot_deck = bot_deck
@@ -456,6 +456,15 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             Ok(true)
         }
     }
+}
+
+/// The shipped network, when its file exists; the `network` bots refuse
+/// to play without it.
+fn load_network(bots: &mut bots::Bots, path: &Path) -> Result<(), String> {
+    if path.exists() {
+        bots.network = Some(ygo_ai::neural::Net::load(path, &ygo_ai::neural::cpu())?);
+    }
+    Ok(())
 }
 
 fn load_collection(path: &Path, bundle: &Bundle) -> Result<Collection, DataError> {

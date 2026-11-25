@@ -86,6 +86,9 @@ struct Loaded {
 /// Everything the page talks to: the loaded data and the game in play.
 #[derive(Default)]
 pub struct Host {
+    /// The trained network the bots play with (`set_network`, before
+    /// `init`).
+    network: Option<ygo_ai::neural::Net>,
     loaded: Option<Loaded>,
     session: Option<PlaySession>,
     /// The human's choices so far, so the page can resume the game.
@@ -93,6 +96,14 @@ pub struct Host {
 }
 
 impl Host {
+    /// Loads the trained network from the bytes of its file; the next
+    /// `init` offers the `network` and `network-search` bots.
+    pub fn set_network(&mut self, bytes: Vec<u8>) -> Result<(), String> {
+        let net = ygo_ai::neural::Net::from_bytes(bytes, &ygo_ai::neural::cpu())?;
+        self.network = Some(net);
+        Ok(())
+    }
+
     /// Runs one JSON command; the answer is `{ "ok": ... }` or
     /// `{ "error": "..." }`.
     pub fn handle(&mut self, request: &str) -> String {
@@ -146,7 +157,8 @@ impl Host {
         }
         let banlist = Banlist::parse(&data.banlist, Path::new("banlist.json")).map_err(err)?;
         let bundle = Bundle::from_parts(rules, cards, banlist).map_err(err)?;
-        let bots = Bots::new(&bundle);
+        let mut bots = Bots::new(&bundle);
+        bots.network = self.network.clone();
 
         let mut offered = Vec::new();
         let mut legal = Vec::new();

@@ -8,7 +8,6 @@
 //! - `neural:<checkpoint>`, `neural-search:<checkpoint>`: the same with
 //!   another saved network.
 
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use ygo_ai::{Player, RandomPlayer};
@@ -22,9 +21,10 @@ pub const DEFAULT_BOT: &str = "network";
 pub struct Bots {
     pub shared: Arc<Shared>,
     pub cards: Arc<CardDb>,
-    /// The shipped network file: what `network` and `network-search` play
+    /// The shipped network: what `network` and `network-search` play
     /// with.
-    pub network: Option<PathBuf>,
+    #[cfg(feature = "neural")]
+    pub network: Option<ygo_ai::neural::Net>,
     /// How hard search bots think.
     #[cfg(feature = "neural")]
     pub mcts: ygo_ai::mcts::MctsSettings,
@@ -39,6 +39,7 @@ impl Bots {
                 ygo_cards::registry(),
             )),
             cards: Arc::new(bundle.cards.clone()),
+            #[cfg(feature = "neural")]
             network: None,
             #[cfg(feature = "neural")]
             mcts: ygo_ai::mcts::MctsSettings::default(),
@@ -48,7 +49,8 @@ impl Bots {
     /// The bots to offer a player.
     pub fn names(&self) -> Vec<String> {
         let mut names = vec!["random".to_string()];
-        if cfg!(feature = "neural") && self.network.is_some() {
+        #[cfg(feature = "neural")]
+        if self.network.is_some() {
             names.splice(0..0, ["network".to_string(), "network-search".to_string()]);
         }
         names
@@ -58,22 +60,28 @@ impl Bots {
         if name == "random" {
             return Ok(Box::new(RandomPlayer::new(seed)));
         }
-        if let Some(kind) = match name {
-            "network" => Some("neural"),
-            "network-search" => Some("neural-search"),
-            _ => None,
-        } {
-            let path = self
-                .network
-                .as_ref()
-                .ok_or_else(|| format!("`{name}`: no network file is set"))?;
-            return self.make(&format!("{kind}:{}", path.display()), seed);
-        }
         #[cfg(feature = "neural")]
         {
             use std::path::Path;
             use ygo_ai::mcts::MctsPlayer;
             use ygo_ai::neural::{Net, NeuralPlayer, cpu};
+            let (net, search) = match name {
+                "network" | "network-search" => {
+                    let net = self.network.clone().ok_or_else(|| {
+                        format!("`{name}`: no network is loaded (--network <file>)")
+                    })?;
+                    (Some(net), name == "network-search")
+                }
+                _ => (None, false),
+            };
+            if let Some(net) = net {
+                let judge = NeuralPlayer::new(net, cpu(), 0.0, seed);
+                return Ok(if search {
+                    Box::new(MctsPlayer::new(judge, self.mcts.clone(), seed))
+                } else {
+                    Box::new(judge)
+                });
+            }
             // A saved network, playing its most likely action.
             if let Some(path) = name.strip_prefix("neural:") {
                 let net = Net::load(Path::new(path), &cpu())?;

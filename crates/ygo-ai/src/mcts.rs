@@ -85,12 +85,12 @@ impl MctsPlayer {
     /// average value for the decider, in the order of `view.actions()`.
     pub fn analyse(&mut self, view: &PlayerView) -> Vec<(Action, u32, f64)> {
         let mut tree = vec![Node::default()];
-        let started = Instant::now();
+        // The clock is read only with a time limit: the browser has none,
+        // and no clock either.
+        let started = self.settings.time_limit.map(|_| Instant::now());
         for _ in 0..self.settings.iterations {
-            if self
-                .settings
-                .time_limit
-                .is_some_and(|limit| started.elapsed() >= limit)
+            if let (Some(limit), Some(t)) = (self.settings.time_limit, started)
+                && t.elapsed() >= limit
             {
                 break;
             }

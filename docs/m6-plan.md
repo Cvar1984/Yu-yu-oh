@@ -284,8 +284,20 @@ averages, or normalises, every pooled set.
       itself; the network learns the search's visit shares and the
       results; a candidate replaces `data/networks/best.bpk` only if it
       beats it (step 6).
-   5. *The network in the browser:* the page loads the network and offers
-      `network` and `network-search`.
+   5. *The network in the browser (done):* `scripts/build-web.sh` ships
+      `data/networks/best.bpk` as `data/network.bpk`; the page hands its
+      bytes to the engine (`ygo_set_network`, `Host::set_network`) before
+      `init`, which then offers `network` (the default), `network-search`
+      and `random`. The WebAssembly module (3.7 MB) imports wasm-bindgen
+      glue that burn's dependencies link; the page answers the two it uses
+      (random bytes for hash tables from `crypto.getRandomValues`, and the
+      panic message) and stubs the rest with an error naming the import
+      (none is called on the CPU). The search reads the clock only with a
+      time limit: `wasm32-unknown-unknown` has none and panicked. Measured
+      in headless Chromium: 10 ms an engine move against `network`, 30 ms
+      with the page's rendering; in Node, 222 ms a human move against
+      `network-search` (100 iterations). Whole duels against both play
+      to the end with no errors.
 6. **Promotion and the gate.** Each candidate plays the current best
    (2,000 games, each player first in half); promoted only if the 95%
    interval excludes 50%. A ladder report beside it: random, the

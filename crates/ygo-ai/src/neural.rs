@@ -201,14 +201,18 @@ impl Net {
     /// A network with the weights saved at `path`, read into memory at
     /// once (the file may be replaced afterwards).
     pub fn load(path: &Path, device: &Device) -> Result<Self, String> {
-        let fail = |e: &dyn std::fmt::Display| format!("{}: {e}", path.display());
-        let bytes = std::fs::read(path).map_err(|e| fail(&e))?;
+        let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        Self::from_bytes(bytes, device).map_err(|e| format!("{}: {e}", path.display()))
+    }
+
+    /// A network from the bytes of a saved file (the browser has no files).
+    pub fn from_bytes(bytes: Vec<u8>, device: &Device) -> Result<Self, String> {
         let record =
             burn::store::ModuleRecord::from_bytes(burn::tensor::Bytes::from_bytes_vec(bytes))
-                .map_err(|e| fail(&e))?;
+                .map_err(|e| e.to_string())?;
         Net::new(device)
             .try_load_record(record)
-            .map_err(|e| fail(&e))
+            .map_err(|e| e.to_string())
     }
 }
 
