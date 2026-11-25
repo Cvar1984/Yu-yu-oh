@@ -1,38 +1,48 @@
 {
  "schema_version": 1,
- "name": "Owner's deck (screenshot 2026-11-19)",
+ "name": "Owner's deck (screenshot 2026-11-24)",
  "for": "save A",
- "notes": "Sim v9: 36% vs enemies.",
+ "notes": "The owner's Main Deck, read from their screenshot of 2026-11-24 (20 monsters, 14 Spells, 6 Traps); replaces the deck of 2026-11-19 (owner, 2026-11-25).",
  "main": [
   {
-   "id": 23771716,
-   "name": "7 Colored Fish",
-   "count": 3
-  },
-  {
-   "id": 15480588,
-   "name": "Armored Lizard",
-   "count": 3
-  },
-  {
-   "id": 94773007,
-   "name": "Jirai Gumo",
-   "count": 3
-  },
-  {
-   "id": 1184620,
-   "name": "Kojikocy",
-   "count": 3
-  },
-  {
-   "id": 83225447,
-   "name": "Stim-Pack",
-   "count": 3
-  },
-  {
-   "id": 41396436,
-   "name": "Blue-Winged Crown",
+   "id": 54652250,
+   "name": "Man-Eater Bug",
    "count": 2
+  },
+  {
+   "id": 34124316,
+   "name": "Cyber Jar",
+   "count": 1
+  },
+  {
+   "id": 20277860,
+   "name": "Armored Zombie",
+   "count": 1
+  },
+  {
+   "id": 78010363,
+   "name": "Witch of the Black Forest",
+   "count": 1
+  },
+  {
+   "id": 83011277,
+   "name": "Mystic Tomato",
+   "count": 3
+  },
+  {
+   "id": 24611934,
+   "name": "Ryu-Kishin Powered",
+   "count": 3
+  },
+  {
+   "id": 91996584,
+   "name": "Whiptail Crow",
+   "count": 3
+  },
+  {
+   "id": 97590748,
+   "name": "La Jinn the Mystical Genie of the Lamp",
+   "count": 1
   },
   {
    "id": 21417692,
@@ -40,9 +50,39 @@
    "count": 2
   },
   {
-   "id": 50152549,
-   "name": "Paralyzing Potion",
-   "count": 2
+   "id": 28279543,
+   "name": "Curse of Dragon",
+   "count": 1
+  },
+  {
+   "id": 70781052,
+   "name": "Summoned Skull",
+   "count": 1
+  },
+  {
+   "id": 39111158,
+   "name": "Tri-Horned Dragon",
+   "count": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "count": 1
+  },
+  {
+   "id": 66788016,
+   "name": "Fissure",
+   "count": 1
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "count": 1
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "count": 1
   },
   {
    "id": 79759861,
@@ -55,18 +95,33 @@
    "count": 1
   },
   {
+   "id": 40619825,
+   "name": "Axe of Despair",
+   "count": 1
+  },
+  {
    "id": 44763025,
    "name": "Delinquent Duo",
    "count": 1
   },
   {
-   "id": 66788016,
-   "name": "Fissure",
+   "id": 18161786,
+   "name": "Mystic Plasma Zone",
+   "count": 2
+  },
+  {
+   "id": 85602018,
+   "name": "Last Will",
    "count": 1
   },
   {
-   "id": 47879985,
-   "name": "Guardian of the Throne Room",
+   "id": 79571449,
+   "name": "Graceful Charity",
+   "count": 1
+  },
+  {
+   "id": 70828912,
+   "name": "Premature Burial",
    "count": 1
   },
   {
@@ -75,63 +130,23 @@
    "count": 1
   },
   {
-   "id": 83764718,
-   "name": "Monster Reborn",
+   "id": 12607053,
+   "name": "Waboku",
    "count": 1
   },
   {
-   "id": 93920745,
-   "name": "Penguin Soldier",
+   "id": 37580756,
+   "name": "Michizure",
+   "count": 2
+  },
+  {
+   "id": 59344077,
+   "name": "Magic Drain",
    "count": 1
   },
   {
-   "id": 55144522,
-   "name": "Pot of Greed",
-   "count": 1
-  },
-  {
-   "id": 12580477,
-   "name": "Raigeki",
-   "count": 1
-  },
-  {
-   "id": 26202165,
-   "name": "Sangan",
-   "count": 1
-  },
-  {
-   "id": 73915051,
-   "name": "Scapegoat",
-   "count": 1
-  },
-  {
-   "id": 29267084,
-   "name": "Shadow Spell",
-   "count": 1
-  },
-  {
-   "id": 41420027,
-   "name": "Solemn Judgment",
-   "count": 1
-  },
-  {
-   "id": 18807108,
-   "name": "Spellbinding Circle",
-   "count": 1
-  },
-  {
-   "id": 70781052,
-   "name": "Summoned Skull",
-   "count": 1
-  },
-  {
-   "id": 72302403,
-   "name": "Swords of Revealing Light",
-   "count": 1
-  },
-  {
-   "id": 78010363,
-   "name": "Witch of the Black Forest",
+   "id": 61740673,
+   "name": "Imperial Order",
    "count": 1
   }
  ],
