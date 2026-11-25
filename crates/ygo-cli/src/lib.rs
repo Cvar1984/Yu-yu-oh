@@ -7,4 +7,5 @@ pub use ygo_play::{bots, decks, describe, session};
 pub mod play;
 pub mod replay;
 pub mod sim;
+pub mod train;
 pub mod tui;
