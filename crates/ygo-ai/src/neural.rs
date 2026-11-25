@@ -26,10 +26,33 @@ use ygo_engine::{Action, PlayerView};
 use crate::Player;
 use crate::encode::{ACTION_F, CARD_F, DECK_FLAG, Encoded, GLOBAL_F, LINGER_F, encode};
 
-const CARD_H: usize = 128;
-const LINGER_H: usize = 64;
-const STATE_H: usize = 256;
-const ACTION_H: usize = 128;
+/// The sizes of the network's hidden layers. A checkpoint does not record
+/// them: `Net::load` tries each of `Widths::ALL` until one fits the file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Widths {
+    pub card: usize,
+    pub linger: usize,
+    pub state: usize,
+    pub action: usize,
+}
+
+impl Widths {
+    /// The network of M6 steps 3 to 5 (`owner-2`, the first self-play run).
+    pub const BASE: Widths = Widths {
+        card: 128,
+        linger: 64,
+        state: 256,
+        action: 128,
+    };
+    /// Twice as wide (owner, 2026-11-25: self-play stalled at the base size).
+    pub const WIDE: Widths = Widths {
+        card: 256,
+        linger: 128,
+        state: 512,
+        action: 256,
+    };
+    pub const ALL: [Widths; 2] = [Widths::BASE, Widths::WIDE];
+}
 
 #[derive(Module, Debug)]
 pub struct Net {
@@ -143,20 +166,39 @@ fn masked_mean(x: Tensor<3>, mask: Tensor<2>) -> Tensor<2> {
 }
 
 impl Net {
-    /// A new network with random weights on `device`.
+    /// A new network of the base widths with random weights on `device`.
     pub fn new(device: &Device) -> Self {
+        Self::with_widths(device, Widths::BASE)
+    }
+
+    /// A new network of widths `w` with random weights on `device`.
+    pub fn with_widths(device: &Device, w: Widths) -> Self {
         let l = |i, o| LinearConfig::new(i, o).init(device);
         Self {
-            card1: l(CARD_F, CARD_H),
-            card2: l(CARD_H, CARD_H),
-            linger1: l(LINGER_F, LINGER_H),
-            linger2: l(LINGER_H, LINGER_H),
-            state1: l(2 * CARD_H + LINGER_H + GLOBAL_F, STATE_H),
-            state2: l(STATE_H, STATE_H),
-            act: l(ACTION_F, ACTION_H),
-            act_state: l(STATE_H, ACTION_H),
-            act_out: l(ACTION_H, 1),
-            value: l(STATE_H, 1),
+            card1: l(CARD_F, w.card),
+            card2: l(w.card, w.card),
+            linger1: l(LINGER_F, w.linger),
+            linger2: l(w.linger, w.linger),
+            state1: l(2 * w.card + w.linger + GLOBAL_F, w.state),
+            state2: l(w.state, w.state),
+            act: l(ACTION_F, w.action),
+            act_state: l(w.state, w.action),
+            act_out: l(w.action, 1),
+            value: l(w.state, 1),
+        }
+    }
+
+    /// The widths of this network's hidden layers.
+    pub fn widths(&self) -> Widths {
+        let [_, card] = self.card1.weight.dims();
+        let [_, linger] = self.linger1.weight.dims();
+        let [_, state] = self.state1.weight.dims();
+        let [_, action] = self.act.weight.dims();
+        Widths {
+            card,
+            linger,
+            state,
+            action,
         }
     }
 
@@ -206,13 +248,22 @@ impl Net {
     }
 
     /// A network from the bytes of a saved file (the browser has no files).
+    /// The file does not record the widths: each of `Widths::ALL` is tried
+    /// until the weights fit.
     pub fn from_bytes(bytes: Vec<u8>, device: &Device) -> Result<Self, String> {
         let record =
             burn::store::ModuleRecord::from_bytes(burn::tensor::Bytes::from_bytes_vec(bytes))
                 .map_err(|e| e.to_string())?;
-        Net::new(device)
-            .try_load_record(record)
-            .map_err(|e| e.to_string())
+        let mut first_error = None;
+        for w in Widths::ALL {
+            match Net::with_widths(device, w).try_load_record(record.clone()) {
+                Ok(net) => return Ok(net),
+                Err(e) => {
+                    first_error.get_or_insert(e.to_string());
+                }
+            }
+        }
+        Err(first_error.unwrap_or_default())
     }
 }
 

@@ -83,6 +83,9 @@ enum Command {
         /// Start from this network instead of a new one.
         #[arg(long)]
         from: Option<PathBuf>,
+        /// A new network twice as wide (`Widths::WIDE`); ignored with --from.
+        #[arg(long)]
+        wide: bool,
         /// Learn from players whose label starts with one of these
         /// (comma-separated); all but `random` when empty.
         #[arg(long, default_value = "")]
@@ -327,6 +330,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             records,
             out,
             from,
+            wide,
             teachers,
             epochs,
             batch,
@@ -339,6 +343,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 &records,
                 &out,
                 from.as_deref(),
+                wide,
                 &teachers,
                 &ygo_train::imitation::Options {
                     epochs,
@@ -484,10 +489,11 @@ fn imitate(
     dirs: &[PathBuf],
     out: &std::path::Path,
     from: Option<&std::path::Path>,
+    wide: bool,
     teachers: &str,
     opts: &ygo_train::imitation::Options,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use ygo_ai::neural::{Net, cpu};
+    use ygo_ai::neural::{Net, Widths, cpu};
     let mut records = Vec::new();
     for dir in dirs {
         let mut files: Vec<PathBuf> = std::fs::read_dir(dir)?
@@ -515,6 +521,7 @@ fn imitate(
         ygo_engine::Shared::new(bundle.rules.clone(), &bundle.cards, ygo_cards::registry());
     let net = match from {
         Some(path) => Net::load(path, &cpu())?,
+        None if wide => Net::with_widths(&cpu(), Widths::WIDE),
         None => Net::new(&cpu()),
     };
     println!("{} records from {} directories", records.len(), dirs.len());
