@@ -55,7 +55,7 @@ fn every_choice_of_both_sides_is_labelled_and_the_record_replays() {
     }
     assert_eq!(g.record.replay(&shared).unwrap(), state);
 
-    let s = samples(&g, &shared).unwrap();
+    let s = samples(&g, &shared, false).unwrap();
     assert_eq!(s.len(), g.targets.len());
     for ((sample, (_, t)), who) in s.iter().zip(&g.targets).zip(&deciders) {
         assert_eq!(&sample.policy, t);
@@ -65,5 +65,13 @@ fn every_choice_of_both_sides_is_labelled_and_the_record_replays() {
             _ => 0.0,
         };
         assert_eq!(sample.value, value);
+    }
+    // Hard targets: everything on the most visited move.
+    let hard = samples(&g, &shared, true).unwrap();
+    for (h, soft) in hard.iter().zip(&s) {
+        assert_eq!(h.action, soft.action);
+        assert_eq!(h.policy.iter().sum::<f32>(), 1.0);
+        assert_eq!(h.policy[h.action], 1.0);
+        assert_eq!(h.value, soft.value);
     }
 }

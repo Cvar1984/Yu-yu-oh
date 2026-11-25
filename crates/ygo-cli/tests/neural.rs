@@ -115,6 +115,7 @@ fn a_training_generation_saves_a_candidate_and_gates_it() {
         games: 2,
         buffer: 1,
         explore_turns: 2,
+        hard_targets: false,
         gate_games: 4,
         search,
         train: ygo_train::imitation::Options {

@@ -123,6 +123,9 @@ enum Command {
         /// Turns in which moves are drawn by the search's visits.
         #[arg(long, default_value_t = 4)]
         explore_turns: u32,
+        /// Learn the search's most visited move instead of its visit shares.
+        #[arg(long)]
+        hard_targets: bool,
         /// Games of candidate against best (the gate).
         #[arg(long, default_value_t = 2000)]
         gate_games: u32,
@@ -356,6 +359,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             games,
             buffer,
             explore_turns,
+            hard_targets,
             gate_games,
             epochs,
             batch,
@@ -383,6 +387,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     games,
                     buffer,
                     explore_turns,
+                    hard_targets,
                     gate_games,
                     search: bots.mcts.clone(),
                     train: ygo_train::imitation::Options {

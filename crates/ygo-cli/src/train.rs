@@ -29,6 +29,8 @@ pub struct TrainOptions<'a> {
     /// Generations of games trained on.
     pub buffer: usize,
     pub explore_turns: u32,
+    /// Train on the search's most visited move instead of its visit shares.
+    pub hard_targets: bool,
     pub gate_games: u32,
     pub search: MctsSettings,
     pub train: Options,
@@ -177,7 +179,7 @@ pub fn run(bots: &Bots, start: Net, opts: &TrainOptions) -> Result<Net, String> 
         let candidate = imitation::train_on(
             best.clone(),
             all.len(),
-            &|i| selfplay::samples(all[i], &shared),
+            &|i| selfplay::samples(all[i], &shared, opts.hard_targets),
             &opts.train,
             &mut |e| {
                 println!(

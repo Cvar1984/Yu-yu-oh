@@ -87,9 +87,15 @@ pub fn play(
 }
 
 /// The training samples of a self-play game: each decision with a choice,
-/// encoded, with the visit shares as the policy target and the result for
-/// its decider as the value target.
-pub fn samples(game: &SelfPlayGame, shared: &Shared) -> Result<Vec<Sample>, RecordError> {
+/// encoded, with the result for its decider as the value target. The
+/// policy target is the search's visit shares, or with `hard` all on its
+/// most visited move (the network then learns the search's choices, not
+/// the moves it only explored).
+pub fn samples(
+    game: &SelfPlayGame,
+    shared: &Shared,
+    hard: bool,
+) -> Result<Vec<Sample>, RecordError> {
     let mut state = game.record.start(shared)?;
     let mut out = Vec::with_capacity(game.targets.len());
     let mut next = game.targets.iter().peekable();
@@ -104,10 +110,17 @@ pub fn samples(game: &SelfPlayGame, shared: &Shared) -> Result<Vec<Sample>, Reco
             let action = (0..shares.len())
                 .max_by(|&x, &y| shares[x].total_cmp(&shares[y]))
                 .expect("a decision with a choice has actions");
+            let policy = if hard {
+                let mut one = vec![0.0; shares.len()];
+                one[action] = 1.0;
+                one
+            } else {
+                shares.clone()
+            };
             out.push(Sample {
                 encoded: encode(&view),
                 action,
-                policy: shares.clone(),
+                policy,
                 value,
             });
         }
