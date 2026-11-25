@@ -15,5 +15,4 @@ rand_chacha = "0.10"
 
 [dev-dependencies]
 ygo-cards.workspace = true
-ygo-data.workspace = true
 ygo-engine = { workspace = true, features = ["test-support"] }

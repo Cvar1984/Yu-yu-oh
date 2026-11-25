@@ -33,8 +33,6 @@ fn init_command(extra_decks: &[(&str, String)]) -> Value {
         "cards": read("data/cards.json"),
         "banlist": read("data/banlist.json"),
         "tokens": read("data/tokens.json"),
-        "styles": read("config/styles.toml"),
-        "card_values": read("config/card_values.toml"),
         "decks": decks,
     })
 }
@@ -94,10 +92,8 @@ fn init_offers_the_legal_decks_and_every_bot() {
     assert_eq!(decks[3]["legal"], false);
     let problem = decks[3]["problem"].as_str().unwrap();
     assert!(problem.contains("2 copies of Raigeki"), "{problem}");
-    assert_eq!(answer["default_bot"], "lookahead:beatdown");
-    let bots = answer["bots"].as_array().unwrap();
-    assert_eq!(bots.len(), 8, "random, six styles, search");
-    assert!(bots.contains(&json!("search")));
+    assert_eq!(answer["default_bot"], "random");
+    assert_eq!(answer["bots"], json!(["random"]));
 
     let refused = call(
         &mut host,
@@ -113,11 +109,7 @@ fn init_offers_the_legal_decks_and_every_bot() {
 #[test]
 fn whole_games_through_json_commands_replay_from_their_record() {
     let shared = shared_from(ygo_cards::registry());
-    for (seed, bot) in [
-        (1u64, "heuristic:beatdown"),
-        (2, "random"),
-        (3, "heuristic:patient"),
-    ] {
+    for (seed, bot) in [(1u64, "random"), (2, "random"), (3, "random")] {
         let mut host = ready_host();
         let mut view = start(&mut host, seed, bot, &[])["view"].clone();
         let mut rng = seed;
@@ -163,7 +155,7 @@ fn the_json_never_names_a_hidden_card() {
     let shared = shared_from(ygo_cards::registry());
     for seed in 10..14u64 {
         let mut host = ready_host();
-        let mut answer = start(&mut host, seed, "heuristic:control", &[]);
+        let mut answer = start(&mut host, seed, "random", &[]);
         let mut rng = seed;
         while answer["view"]["result"].is_null() && answer["view"]["turn"].as_u64().unwrap() < 30 {
             let mut text = answer["view"].to_string();
@@ -205,8 +197,7 @@ fn the_json_never_names_a_hidden_card() {
 
 #[test]
 fn a_game_resumes_from_its_choices() {
-    // The search bot thinks again on a resume and must choose the same.
-    for (bot, moves) in [("heuristic:beatdown", 40), ("search", 15)] {
+    for (bot, moves) in [("random", 40)] {
         let mut host = ready_host();
         let mut answer = start(&mut host, 21, bot, &[]);
         let mut rng = 5u64;
@@ -256,7 +247,7 @@ fn bad_commands_are_answered_with_errors() {
     let mut host = ready_host();
     let answer = call(
         &mut host,
-        json!({ "cmd": "start", "deck": DECKS[0], "bot_deck": DECKS[0], "bot": "heuristic:nope", "seed": 1, "first": "me" }),
+        json!({ "cmd": "start", "deck": DECKS[0], "bot_deck": DECKS[0], "bot": "lookahead:beatdown", "seed": 1, "first": "me" }),
     );
     assert!(
         answer["error"].as_str().unwrap().contains("unknown bot"),

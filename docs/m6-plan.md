@@ -256,10 +256,40 @@ averages, or normalises, every pooled set.
        lookahead Beatdown, Burn and search (seed 31000), no better than
        `owner-2` (55.1%, 56.2%, 53.3%). Agreement with the teacher has
        levelled off near 83%: a larger network is the next lever.
+   **The network only (owner, 2026-11-25: "train the ML bot and delete
+   the other bots"; then AlphaZero-style self-play, ship the network,
+   the network in the browser).** In five parts:
+   1. *Ship the network (done):* `owner-2` is `data/networks/best.bpk`,
+      the bot `network` and the default opponent of `ygo play`
+      (`--network` names another file).
+   2. *AlphaZero search (done):* `ygo_ai::mcts::MctsPlayer` replaces the
+      heuristic playouts: PUCT at every node with the network's priors,
+      new positions judged by the network's value, finished games by the
+      result. Bot names `network-search` and `neural-search:<checkpoint>`;
+      100 iterations by default. Exploration weight against the network
+      alone (400 games each): 0.25 63.7%, 0.5 64.8%, 0.75 66.8%, 1.5 63.0%,
+      3 60.2%; 0.75 kept. Last measurement against the old bots (owner's
+      deck, 400 games, 100 iterations): **71.5% ±4.4 against the playout
+      search bot, 70.5% ±4.5 against lookahead Beatdown, 71.5% ±4.4
+      against lookahead Burn**; 3 to 8 games/s on 4 cores.
+   3. *Remove the old bots (done):* the heuristic, lookahead and playout
+      search bots (`heuristic.rs`, `search.rs`, `eval.rs`), their styles and
+      card values (`config/styles.toml`, `config/card_values.toml` and
+      their loaders), `ygo audit`, `neural-lookahead`, `ygo distill`, and
+      `tools/deck_eval.sh`, `deck_search.py`, `imitation_data.sh`,
+      `neural_eval.sh`, `neural_ladder.sh`. The browser offers the random
+      bot until part 5. Bots left: `network`, `network-search`, `random`,
+      `neural:<checkpoint>`, `neural-search:<checkpoint>`.
+   4. *Self-play (`ygo train`):* the search with the best network plays
+      itself; the network learns the search's visit shares and the
+      results; a candidate replaces `data/networks/best.bpk` only if it
+      beats it (step 6).
+   5. *The network in the browser:* the page loads the network and offers
+      `network` and `network-search`.
 6. **Promotion and the gate.** Each candidate plays the current best
    (2,000 games, each player first in half); promoted only if the 95%
-   interval excludes 50%. A ladder report beside it: random, heuristic,
-   lookahead and search bots, and the six enemy decks.
+   interval excludes 50%. A ladder report beside it: random, the
+   network alone and with search, and the six enemy decks.
 7. **Docs and gate report.** CLAUDE.md, this plan's progress, the numbers.
 
 Where it runs: the pipeline is built and checked here at small scale on

@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::{audit, bots, decks, distill, play, replay, sim, tui};
+use ygo_cli::{bots, decks, play, replay, sim, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -21,12 +21,6 @@ struct Cli {
     /// Directory that relative paths in the rules file resolve against.
     #[arg(long, global = true, default_value = ".")]
     data_root: PathBuf,
-    /// Playstyles for the heuristic bots.
-    #[arg(long, global = true, default_value = "config/styles.toml")]
-    styles: PathBuf,
-    /// Card values for the heuristic bots.
-    #[arg(long, global = true, default_value = "config/card_values.toml")]
-    card_values: PathBuf,
     /// The trained network the `network` and `network-search` bots play
     /// with.
     #[arg(long, global = true, default_value = "data/networks/best.bpk")]
@@ -54,10 +48,10 @@ enum Command {
     Sim {
         deck_a: PathBuf,
         deck_b: PathBuf,
-        /// Player A: `random`, `lookahead:<style>`, `heuristic:<style>`, `search[:<style>]`, `neural:<checkpoint>`, `neural-lookahead:<checkpoint>` or `neural-search:<checkpoint>`.
+        /// Player A: `network` (the shipped network), `network-search`, `random`, `neural:<checkpoint>` or `neural-search:<checkpoint>`.
         #[arg(long, default_value = "random")]
         bot_a: String,
-        /// Player B: `random`, `lookahead:<style>`, `heuristic:<style>`, `search[:<style>]`, `neural:<checkpoint>`, `neural-lookahead:<checkpoint>` or `neural-search:<checkpoint>`.
+        /// Player B: `network` (the shipped network), `network-search`, `random`, `neural:<checkpoint>` or `neural-search:<checkpoint>`.
         #[arg(long, default_value = "random")]
         bot_b: String,
         /// Number of games; each player goes first in half of them.
@@ -76,31 +70,6 @@ enum Command {
         threads: usize,
         #[command(flatten)]
         search: SearchArgs,
-    },
-    /// How well a heuristic bot plays its cards: at each activation,
-    /// answer or card choice, every option is tried on the real game and
-    /// the gap to the best is booked to the card (see `audit.rs`).
-    Audit {
-        /// Decks for both sides; random 40-card pool decks when none.
-        decks: Vec<PathBuf>,
-        #[arg(short = 'n', long, default_value_t = 200)]
-        games: u32,
-        #[arg(long, default_value_t = 1)]
-        seed: u64,
-        /// Heuristic style of both bots.
-        #[arg(long, default_value = "beatdown")]
-        style: String,
-        /// Audit the lookahead bot instead of the plain heuristic one.
-        #[arg(long)]
-        lookahead: bool,
-        /// A game still running after this many turns is a draw.
-        #[arg(long, default_value_t = ygo_engine::GameSetup::DEFAULT_MAX_TURNS)]
-        max_turns: u32,
-        #[arg(long, default_value_t = 1)]
-        threads: usize,
-        /// Cards listed in the report.
-        #[arg(long, default_value_t = 40)]
-        top: usize,
     },
     /// Train the neural bot to imitate the bots of recorded games
     /// (`ygo sim --record`): their choices and who won (M6 step 4).
@@ -129,45 +98,6 @@ enum Command {
         holdout: usize,
         #[arg(long, default_value_t = 1)]
         seed: u64,
-    },
-    /// Train the network on its own games against the opponents, the
-    /// network-guided search labelling its decisions (DAgger, M6 step 5).
-    Distill {
-        /// The deck both sides play.
-        deck: PathBuf,
-        /// The network to start from.
-        #[arg(long)]
-        from: PathBuf,
-        /// Where to save the network (and `<stem>-r<round>.bpk` each round).
-        #[arg(long)]
-        out: PathBuf,
-        /// Opponents, comma-separated; every reference bot when empty.
-        #[arg(long, default_value = "")]
-        opponents: String,
-        #[arg(long, default_value_t = 4)]
-        rounds: usize,
-        /// Games per round.
-        #[arg(long, default_value_t = 1400)]
-        games: u32,
-        /// Chance of playing the search's move instead of the network's,
-        /// per round, comma-separated (the last repeats).
-        #[arg(long, default_value = "0.5,0.25,0")]
-        mix: String,
-        /// Epochs over all labelled games after each round.
-        #[arg(long, default_value_t = 2)]
-        epochs: usize,
-        #[arg(long, default_value_t = 128)]
-        batch: usize,
-        #[arg(long, default_value_t = 3e-4)]
-        learning_rate: f64,
-        #[arg(long, default_value_t = 10)]
-        holdout: usize,
-        #[arg(long, default_value_t = 1)]
-        seed: u64,
-        #[arg(long, default_value_t = 4)]
-        threads: usize,
-        #[command(flatten)]
-        search: SearchArgs,
     },
     /// Play against a bot in a full-screen terminal UI.
     Play {
@@ -208,49 +138,35 @@ enum Command {
     },
 }
 
-/// How hard `search` bots think.
+/// How hard search bots (`network-search`, `neural-search:`) think.
 #[derive(clap::Args)]
 struct SearchArgs {
-    /// Playouts per decision for `search` bots [default: 200, or no
-    /// limit with --think].
+    /// Network evaluations per decision [default: 100, or no limit with
+    /// --think].
     #[arg(long)]
     iterations: Option<u32>,
-    /// Seconds a `search` bot thinks per decision (less if --iterations
-    /// runs out first).
+    /// Seconds a search bot thinks per decision (less if --iterations runs
+    /// out first).
     #[arg(long)]
     think: Option<f64>,
-    /// Turns a `search` bot plays ahead before scoring; 0 plays to the end.
-    #[arg(long, default_value_t = ygo_ai::SearchSettings::default().horizon_turns)]
-    horizon: u32,
-    /// `search` bots play out their samples with the lookahead heuristic bot.
-    #[arg(long)]
-    rollout_lookahead: bool,
-    /// Weight of the network's prior in `neural-search` bots (PUCT).
+    /// Weight of the network's prior against the average value (PUCT).
     #[arg(long, default_value_t = ygo_ai::mcts::MctsSettings::default().exploration)]
     exploration: f64,
 }
 
 impl SearchArgs {
     fn apply(&self, bots: &mut bots::Bots) -> Result<(), String> {
-        bots.search.iterations = match (self.iterations, self.think) {
+        let m = &mut bots.mcts;
+        m.exploration = self.exploration;
+        m.iterations = match (self.iterations, self.think) {
             (Some(n), _) => n,
             (None, Some(_)) => u32::MAX,
-            (None, None) => bots.search.iterations,
+            (None, None) => m.iterations,
         };
-        bots.search.horizon_turns = self.horizon;
-        bots.rollout_lookahead = self.rollout_lookahead;
-        bots.mcts.exploration = self.exploration;
-        if let Some(n) = self.iterations {
-            bots.mcts.iterations = n;
-        }
         if let Some(secs) = self.think {
             let limit = std::time::Duration::try_from_secs_f64(secs)
                 .map_err(|_| format!("--think {secs}: not a number of seconds"))?;
-            bots.search.time_limit = Some(limit);
-            bots.mcts.time_limit = Some(limit);
-            if self.iterations.is_none() {
-                bots.mcts.iterations = u32::MAX;
-            }
+            m.time_limit = Some(limit);
         }
         Ok(())
     }
@@ -341,7 +257,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     source,
                 })?;
             }
-            let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            let mut bots = bots::Bots::new(&bundle);
             bots.network = Some(cli.network.clone());
             search.apply(&mut bots)?;
             let deck_a = decks::load_legal(&deck_a, &bundle)?;
@@ -360,37 +276,6 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     threads,
                 },
             )?;
-            Ok(true)
-        }
-        Command::Audit {
-            decks,
-            games,
-            seed,
-            style,
-            lookahead,
-            max_turns,
-            threads,
-            top,
-        } => {
-            let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
-            bots.network = Some(cli.network.clone());
-            let decks = decks
-                .iter()
-                .map(|p| decks::load_legal(p, &bundle))
-                .collect::<Result<Vec<_>, _>>()?;
-            let report = audit::run(
-                &bots,
-                &audit::AuditOptions {
-                    decks: &decks,
-                    games,
-                    seed,
-                    style: &style,
-                    lookahead,
-                    max_turns,
-                    threads,
-                },
-            )?;
-            audit::print(&bots, &report, top);
             Ok(true)
         }
         Command::Imitate {
@@ -421,69 +306,6 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             )?;
             Ok(true)
         }
-        Command::Distill {
-            deck,
-            from,
-            out,
-            opponents,
-            rounds,
-            games,
-            mix,
-            epochs,
-            batch,
-            learning_rate,
-            holdout,
-            seed,
-            threads,
-            search,
-        } => {
-            let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
-            bots.network = Some(cli.network.clone());
-            search.apply(&mut bots)?;
-            let deck = decks::load_legal(&deck, &bundle)?;
-            let opponents: Vec<String> = if opponents.is_empty() {
-                let styles = ["beatdown", "control", "stall", "burn", "exodia", "patient"];
-                std::iter::once("random".to_string())
-                    .chain(styles.iter().map(|s| format!("heuristic:{s}")))
-                    .chain(styles.iter().map(|s| format!("lookahead:{s}")))
-                    .chain(std::iter::once("search".to_string()))
-                    .collect()
-            } else {
-                opponents.split(',').map(str::to_string).collect()
-            };
-            let mix = mix
-                .split(',')
-                .map(|m| {
-                    m.trim()
-                        .parse::<f64>()
-                        .map_err(|e| format!("--mix {m}: {e}"))
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            let net = ygo_ai::neural::Net::load(&from, &ygo_ai::neural::cpu())?;
-            distill::run(
-                &bots,
-                net,
-                &distill::DistillOptions {
-                    deck: &deck,
-                    opponents: &opponents,
-                    rounds,
-                    games,
-                    mix: &mix,
-                    train: ygo_train::imitation::Options {
-                        epochs,
-                        batch,
-                        learning_rate,
-                        holdout,
-                        seed,
-                        ..Default::default()
-                    },
-                    out: &out,
-                    seed,
-                    threads,
-                },
-            )?;
-            Ok(true)
-        }
         Command::Play {
             deck,
             bot_deck,
@@ -498,7 +320,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default();
             let seed = seed.unwrap_or(now.as_nanos() as u64);
-            let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            let mut bots = bots::Bots::new(&bundle);
             bots.network = Some(cli.network.clone());
             search.apply(&mut bots)?;
             let deck = decks::load_legal(&deck, &bundle)?;

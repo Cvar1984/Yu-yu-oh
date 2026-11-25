@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Players for the engine: random, heuristic, search and learned"
+description = "Players for the engine: the trained network, its search, and random"
 
 [dependencies]
 ygo-data.workspace = true
