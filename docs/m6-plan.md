@@ -280,10 +280,32 @@ averages, or normalises, every pooled set.
       `neural_eval.sh`, `neural_ladder.sh`. The browser offers the random
       bot until part 5. Bots left: `network`, `network-search`, `random`,
       `neural:<checkpoint>`, `neural-search:<checkpoint>`.
-   4. *Self-play (`ygo train`):* the search with the best network plays
-      itself; the network learns the search's visit shares and the
-      results; a candidate replaces `data/networks/best.bpk` only if it
-      beats it (step 6).
+   4. *Self-play (`ygo train`, done):* each generation the best network's
+      search plays itself (mirror games on the given decks; moves drawn by
+      visits in the first 4 turns), a candidate trains from the best on the
+      last 3 generations' games (visit shares and results, 2 epochs), and
+      it plays the best, both alone, over 2,000 games: promoted only if
+      its 95% interval lies above 50%. Checkpoints in `checkpoints/train/`.
+      First run (2026-11-25): the owner's screenshot deck and the six enemy
+      decks, 6 generations of 840 games at 100 iterations, about 11 minutes
+      a generation on 4 cores:
+
+      | Generation | Gate against the best | |
+      | --- | --- | --- |
+      | 1 | 58.7% ±2.2 | promoted |
+      | 2 | 52.8% ±2.2 | promoted |
+      | 3 | 51.9% ±2.2 | kept the best |
+      | 4 | 52.2% ±2.2 | promoted |
+      | 5 | 50.0% ±2.2 | kept the best |
+      | 6 | 54.3% ±2.2 | promoted |
+
+      The final best against the shipped `owner-2`, both alone, 2,000 games
+      a deck on fresh seeds (444000): the owner's deck 57.2% ±2.2, E1 Toon
+      74.2%, E2 Special Summon 74.2%, E3 Removal 68.6%, E4 Big Beatdown
+      68.1%, E5 DARK 57.6%, E6 Gate Guardian 69.8% (each ±1.9 to ±2.2).
+      With search (`network-search`, 400 games, the owner's deck) 54.2%
+      ±4.9. It replaced `data/networks/best.bpk`. Held-out value error
+      stays near 0.8: the value head is still the weak part.
    5. *The network in the browser (done):* `scripts/build-web.sh` ships
       `data/networks/best.bpk` as `data/network.bpk`; the page hands its
       bytes to the engine (`ygo_set_network`, `Host::set_network`) before
