@@ -9,7 +9,7 @@
 | `collection.json` | Save A: the owner's cards and copy counts | yes, from the data bundle |
 | `collection_save_b.json` | Save B | yes, from the data bundle |
 | `decks/*.json` | Six enemy decks, save A's best overall (`save_a_best_overall_40`), control and current decks, the current deck tuned with Snatch Steal, Call of the Haunted and Mirror Force (`save_a_tuned_40`), and save B's best, with results in `notes`; `for` says whose cards a deck uses | yes |
-| `networks/best.bpk` | The best trained network (burn checkpoint, from `ygo train`), the `network` bot, the default opponent of `ygo play` and the browser game; replaced only when a new one passes the M6 gate (`docs/m6-plan.md`) | yes |
+| `networks/best.bpk` | The best trained network (burn checkpoint, from `ygo train`; wide widths, 4.1 MB), the `network` bot, the default opponent of `ygo play` and the browser game; replaced only when a new one passes the M6 gate (`docs/m6-plan.md`) | yes |
 | `../images/full`, `../images/small` | One JPEG per card id | no: Konami-owned, fetched locally |
 
 Card id is the key everywhere: it is the card's official password, and every

@@ -335,8 +335,16 @@ averages, or normalises, every pooled set.
       error 0.70 to 0.74, against 86% and about 0.8). Its best against the
       shipped network, both alone, 250 games a deck on fresh seeds: 51.9%
       ±2.2 (ahead on six of the eight decks), short of the gate, so
-      `data/networks/best.bpk` stays. Self-play of the wide network
-      continues from that best.
+      `data/networks/best.bpk` stayed. A second wide run from that best
+      (same recipe): gates 49.5%, 49.9%, 51.4%, **52.9% (promoted)**, 49.5%,
+      50.8%. Its best against the shipped network, both alone, 250 games a
+      deck on fresh seeds: **53.4% ±2.2** (ahead on seven of the eight
+      decks), and 53.1% ±2.2 on a second seed set (4,000 games pooled:
+      53.25% ±1.55); with search on both sides 53.0% ±6.9 (200 games,
+      `save_a_tuned_40`). It passes the gate and is now
+      `data/networks/best.bpk` (wide, 4.1 MB). In the browser (WebAssembly,
+      Node): 12 ms a human move against `network`, 666 ms against
+      `network-search` (base: 16 ms and 222 ms); the page is 7.9 MB.
    5. *The network in the browser (done):* `scripts/build-web.sh` ships
       `data/networks/best.bpk` as `data/network.bpk`; the page hands its
       bytes to the engine (`ygo_set_network`, `Host::set_network`) before

@@ -195,6 +195,6 @@ fn a_checkpoint_loads_at_its_own_widths() {
         assert_eq!(floats(net.forward(&x).0), floats(loaded.forward(&x).0));
     }
     let shipped = ygo_engine::testing::root().join("data/networks/best.bpk");
-    assert_eq!(Net::load(&shipped, &device).unwrap().widths(), Widths::BASE);
+    assert_eq!(Net::load(&shipped, &device).unwrap().widths(), Widths::WIDE);
     assert!(Net::from_bytes(b"not a network".to_vec(), &device).is_err());
 }
