@@ -14,15 +14,16 @@ impl Game {
         let inst = &self.instances[card.index()];
         inst.turn_entered_field != Some(self.turn)
             && !inst.position_changed_this_turn
-            && !inst.attacked_this_turn
+            && inst.attacks_this_turn == 0
             && !self.position_locked(card)
     }
 
     fn flip_summon_allowed(&self, player: PlayerId) -> bool {
         let rules = &self.shared.rules.summon;
-        !rules.flip_summon_counts_toward_limit
-            || usize::from(self.players[player.index()].summons_used)
-                < rules.normal_or_tribute_per_turn
+        !self.summons_locked(player)
+            && (!rules.flip_summon_counts_toward_limit
+                || usize::from(self.players[player.index()].summons_used)
+                    < rules.normal_or_tribute_per_turn)
     }
 
     pub(crate) fn position_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {

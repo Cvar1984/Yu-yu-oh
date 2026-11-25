@@ -68,6 +68,8 @@ pub struct CardStats {
     pub attribute: Option<String>,
     /// A Flip monster (Nobleman of Crossout checks this).
     pub flip: bool,
+    /// A Token (`tokens.json`): never in a deck, gone once it leaves the field.
+    pub token: bool,
 }
 
 impl CardStats {
@@ -80,9 +82,15 @@ impl CardStats {
         self.kind == CardKind::Fusion
     }
 
+    /// May be put in a Main Deck: not an Extra Deck card, not a Token.
+    pub fn is_main_deck(&self) -> bool {
+        !self.is_extra_deck() && !self.token
+    }
+
     /// May be Normal Summoned or Set from the hand, given its script.
     pub fn can_normal_summon(&self, script: Option<&CardScript>) -> bool {
         matches!(self.kind, CardKind::Normal | CardKind::Effect)
+            && !self.token
             && !script.is_some_and(|s| s.has(Tag::CannotNormalSummon))
     }
 }
@@ -113,7 +121,22 @@ impl CardPool {
                 },
                 attribute: c.attribute.clone(),
                 flip: c.card_type == ygo_data::CardType::FlipEffectMonster,
+                token: false,
             })
+            // A Token without effects is treated as a Normal Monster.
+            .chain(db.tokens().map(|t| CardStats {
+                id: t.id,
+                name: t.name.clone(),
+                kind: CardKind::Normal,
+                subtype: SpellTrapType::None,
+                level: t.level,
+                atk: t.atk,
+                def: t.def,
+                race: t.race.clone(),
+                attribute: Some(t.attribute.clone()),
+                flip: false,
+                token: true,
+            }))
             .collect();
         cards.sort_by_key(|c| c.id);
         let by_id = cards
@@ -149,6 +172,41 @@ pub struct Shared {
     pub pool: CardPool,
     /// One slot per pool index; `None` for cards without a script.
     pub scripts: Vec<Option<CardScript>>,
+    /// One slot per pool index: which rarely used hooks the card's script
+    /// has (`HOOK_*` bits), so a game without them never scans for them.
+    pub(crate) hooks: Vec<u8>,
+}
+
+/// A script with a `negate` hook.
+pub(crate) const HOOK_NEGATE: u8 = 1;
+/// A script with a `forbid` hook.
+pub(crate) const HOOK_FORBID: u8 = 2;
+/// A script with a `race` hook.
+pub(crate) const HOOK_RACE: u8 = 4;
+/// A script with a `spell_immune` or `unattackable` hook.
+pub(crate) const HOOK_SELF: u8 = 8;
+/// A script that reveals hands (The Eye of Truth, Respect Play).
+pub(crate) const HOOK_REVEAL: u8 = 16;
+
+fn hooks_of(script: &CardScript) -> u8 {
+    let reveals = [
+        Tag::RevealHands,
+        Tag::RevealOpponentHand,
+        Tag::RevealTurnPlayerHand,
+    ]
+    .iter()
+    .any(|t| script.has(*t));
+    let start = if reveals { HOOK_REVEAL } else { 0 };
+    script.effects.iter().fold(start, |bits, e| {
+        bits | if e.negate.is_some() { HOOK_NEGATE } else { 0 }
+            | if e.forbid.is_some() { HOOK_FORBID } else { 0 }
+            | if e.race.is_some() { HOOK_RACE } else { 0 }
+            | if e.spell_immune.is_some() || e.unattackable.is_some() {
+                HOOK_SELF
+            } else {
+                0
+            }
+    })
 }
 
 impl PartialEq for Shared {
@@ -162,15 +220,30 @@ impl PartialEq for Shared {
 impl Shared {
     pub fn new(rules: Rules, db: &CardDb, registry: Registry) -> Self {
         let pool = CardPool::from_db(db);
-        let scripts = pool
+        let scripts: Vec<Option<CardScript>> = pool
             .cards
             .iter()
             .map(|c| registry.get(c.id).cloned())
+            .collect();
+        let hooks = scripts
+            .iter()
+            .map(|s| s.as_ref().map_or(0, hooks_of))
             .collect();
         Self {
             rules,
             pool,
             scripts,
+            hooks,
+        }
+    }
+
+    /// The same pool and scripts under other rules.
+    pub fn with_rules(&self, rules: Rules) -> Self {
+        Self {
+            rules,
+            pool: self.pool.clone(),
+            scripts: self.scripts.clone(),
+            hooks: self.hooks.clone(),
         }
     }
 

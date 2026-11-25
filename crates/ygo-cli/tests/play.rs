@@ -24,12 +24,13 @@ fn deck(name: &str) -> PathBuf {
 }
 
 fn bots() -> Bots {
-    Bots::load(
-        &bundle(),
-        &root().join("config/styles.toml"),
-        &root().join("config/card_values.toml"),
-    )
-    .unwrap()
+    let mut bots = Bots::new(&bundle());
+    let net = ygo_ai::neural::Net::load(
+        &root().join("data/networks/best.bpk"),
+        &ygo_ai::neural::cpu(),
+    );
+    bots.network = Some(net.unwrap());
+    bots
 }
 
 fn start_with(bot: &str, seed: u64, first: First) -> PlaySession {
@@ -38,7 +39,7 @@ fn start_with(bot: &str, seed: u64, first: First) -> PlaySession {
     let theirs = decks::load_legal(&deck("save_b_dark_plasma_40.json"), &b).unwrap();
     let mut bots = bots();
     // A light search keeps the test quick.
-    bots.search.iterations = 10;
+    bots.mcts.iterations = 10;
     play::start(
         &bots,
         &PlayOptions {
@@ -86,7 +87,7 @@ fn a_human_plays_whole_games_and_the_record_replays() {
         let bot = match seed {
             0..3 => "random",
             3..6 => DEFAULT_BOT,
-            _ => "search",
+            _ => "network-search",
         };
         let mut s = start_with(
             bot,
@@ -129,12 +130,13 @@ fn who_goes_first_follows_the_choice() {
         .err()
         .expect("unknown bot refused");
     assert!(
-        err.contains("heuristic:beatdown") && err.contains("random"),
+        err.contains("network-search") && err.contains("random"),
         "{err}"
     );
-    assert!(bots().make("heuristic:nonsense", 1).is_err());
-    assert!(bots().make("search:nonsense", 1).is_err());
-    assert!(bots().make("search:control", 1).is_ok());
+    for gone in ["heuristic:beatdown", "lookahead:beatdown", "search"] {
+        assert!(bots().make(gone, 1).is_err(), "{gone}");
+    }
+    assert_eq!(bots().names(), ["network", "network-search", "random"]);
     for name in bots().names() {
         assert!(bots().make(&name, 1).is_ok(), "{name}");
     }
@@ -232,4 +234,70 @@ fn the_record_is_saved_where_asked() {
         play::default_record_path(42, 1000),
         PathBuf::from("records/human/1000-42.jsonl")
     );
+}
+
+#[test]
+fn a_tokens_card_text_names_the_card_that_made_it() {
+    use std::sync::Arc;
+    use ygo_engine::{Action, PlayerId, Position};
+    let b = bundle();
+    let shared = Arc::new(ygo_engine::Shared::new(
+        b.rules.clone(),
+        &b.cards,
+        ygo_cards::registry(),
+    ));
+    let scapegoat = ygo_data::CardId(73915051);
+    let pad = ygo_engine::testing::MAMMOTH_GRAVEYARD;
+    let mut main = vec![scapegoat; 5];
+    main.resize(40, pad);
+    let mut setup = GameSetup::new(
+        [
+            ygo_engine::DeckList {
+                main: main.clone(),
+                extra: vec![],
+            },
+            ygo_engine::DeckList {
+                main: vec![pad; 40],
+                extra: vec![],
+            },
+        ],
+        1,
+    );
+    setup.shuffle = false;
+    setup.first_player = Some(PlayerId(0));
+    let bot = Box::new(ygo_ai::RandomPlayer::new(1));
+    let mut s = PlaySession::new(
+        shared,
+        Arc::new(b.cards),
+        &setup,
+        PlayerId(0),
+        bot,
+        "random",
+    )
+    .unwrap();
+    let goat = s
+        .actions()
+        .iter()
+        .position(|a| matches!(a, Action::Activate { .. }))
+        .expect("Scapegoat is offered");
+    assert!(s.play(goat));
+    while !s.actions().iter().any(|a| matches!(a, Action::EndTurn)) {
+        let pass = s.actions().iter().position(|a| *a == Action::Pass).unwrap();
+        assert!(s.play(pass));
+    }
+    let obs = s.observation();
+    let sheep = obs
+        .me()
+        .monster_zones
+        .iter()
+        .flatten()
+        .find(|m| m.position() == Position::FaceUpDefense)
+        .expect("a Sheep Token")
+        .instance();
+    let text = s.card_text(sheep).unwrap();
+    assert!(
+        text.starts_with("Sheep Token\nToken · Level 1 · EARTH Beast · 0/0"),
+        "{text}"
+    );
+    assert!(text.contains("Created by Scapegoat"), "{text}");
 }

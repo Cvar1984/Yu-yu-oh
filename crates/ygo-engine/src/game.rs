@@ -45,6 +45,11 @@ pub struct Game {
     /// Computed once by `advance` for the state it stopped in.
     pub(crate) decision: Option<Decision>,
     pub(crate) actions: Vec<Action>,
+    /// The `HOOK_*` bits of every card in this game: a hook no card has is
+    /// never looked for.
+    pub(crate) hooks: u8,
+    /// What each player remembers of cards hidden again (`memory.rs`).
+    pub(crate) memory: [crate::memory::Memory; 2],
 }
 
 impl Game {
@@ -172,7 +177,13 @@ impl Game {
             shielded: Vec::new(),
             decision: None,
             actions: Vec::with_capacity(64),
+            hooks: 0,
+            memory: Default::default(),
         };
+        game.hooks = game
+            .instances
+            .iter()
+            .fold(0, |bits, i| bits | game.shared.hooks[i.card.0 as usize]);
         for player in PlayerId::BOTH {
             for _ in 0..game.shared.rules.hand.opening_size {
                 game.draw_card(player);
@@ -256,7 +267,11 @@ fn lookup(
         .pool
         .index_of(id)
         .ok_or(SetupError::UnknownCard { player, id })?;
-    Ok((index, shared.pool.get(index)))
+    let stats = shared.pool.get(index);
+    if stats.token {
+        return Err(SetupError::TokenInDeck { player, id });
+    }
+    Ok((index, stats))
 }
 
 /// Fisher-Yates with the game's own RNG, so no `rand` dependency and the

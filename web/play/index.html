@@ -184,16 +184,41 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 
 // ---- The engine: one JSON command in, one JSON answer out. ----
 const Engine = {
-  x: null, bytes: null,
+  x: null, bytes: null, net: null,
   async load() {
-    const res = await fetch("ygo.wasm");
+    const [res, net] = await Promise.all([fetch("ygo.wasm"), fetch("data/network.bpk")]);
     if (!res.ok) throw new Error("Could not load the engine (ygo.wasm): HTTP " + res.status);
     this.bytes = await res.arrayBuffer();
+    // Without the network file only the random bot is offered.
+    if (net.ok) this.net = new Uint8Array(await net.arrayBuffer());
     await this.instantiate();
   },
   async instantiate() {
-    const { instance } = await WebAssembly.instantiate(this.bytes, {});
+    // The network library links wasm-bindgen imports. Two are used: random
+    // bytes for its hash tables (filled by the browser) and a panic message.
+    // The rest serve JavaScript objects and futures, which the engine never
+    // uses on the CPU: each is a stub that stops with its name if called.
+    const module = await WebAssembly.compile(this.bytes);
+    const memory = () => new Uint8Array(this.x.memory.buffer);
+    const imports = {};
+    for (const i of WebAssembly.Module.imports(module)) {
+      imports[i.module] ??= {};
+      let f = () => { throw new Error("the engine called " + i.module + "." + i.name); };
+      if (i.name.startsWith("__wbg_getRandomValues_")) f = (ptr, len) => crypto.getRandomValues(memory().subarray(ptr, ptr + len));
+      else if (i.name.startsWith("__wbg___wbindgen_throw_")) f = (ptr, len) => { throw new Error(new TextDecoder().decode(memory().subarray(ptr, ptr + len))); };
+      imports[i.module][i.name] = f;
+    }
+    const instance = await WebAssembly.instantiate(module, imports);
     this.x = instance.exports;
+    if (this.net) this.setNetwork();
+  },
+  // The trained network, handed to the engine before "init".
+  setNetwork() {
+    const x = this.x, b = this.net;
+    const ptr = x.ygo_alloc(b.length);
+    new Uint8Array(x.memory.buffer, ptr, b.length).set(b);
+    const n = x.ygo_set_network(ptr, b.length);
+    if (n) throw new Error("Could not load the network: " + new TextDecoder().decode(new Uint8Array(x.memory.buffer, x.ygo_response_ptr(), n)));
   },
   call(cmd) {
     const x = this.x, enc = new TextEncoder(), dec = new TextDecoder();
@@ -250,14 +275,14 @@ async function fetchText(path) {
 
 async function boot(data) {
   try {
-    const [rules, cards, banlist, styles, values, deckIndex] = await Promise.all([
+    const [rules, cards, banlist, tokens, deckIndex] = await Promise.all([
       fetchText("data/rules.toml"), fetchText("data/cards.json"), fetchText("data/banlist.json"),
-      fetchText("data/styles.toml"), fetchText("data/card_values.toml"), fetchText("data/decks.json"),
+      fetchText("data/tokens.json"), fetchText("data/decks.json"),
       Engine.load(),
     ]);
     const files = JSON.parse(deckIndex);
     const decks = await Promise.all(files.map(async (file) => ({ file, text: await fetchText("data/decks/" + file) })));
-    state.initArgs = { cmd: "init", rules, cards, banlist, styles, card_values: values, decks };
+    state.initArgs = { cmd: "init", rules, cards, banlist, tokens, decks };
     state.init = Engine.call(state.initArgs);
     const resume = data?.game ?? loadSaved();
     if (resume && resume.choices) {
@@ -300,7 +325,7 @@ function renderSetup() {
     <div class="field"><span class="label">Who goes first</span>
       <div class="seg" role="group" aria-label="Who goes first">${firstBtn("random", "Coin toss")}${firstBtn("me", "You")}${firstBtn("bot", "Opponent")}</div>
     </div>
-    <p class="note">Decks are checked against the ban list (Pot of Greed, Change of Heart and Raigeki at one copy) and the deck rules. The opponent's style comes from the bot styles file; Beatdown is the default. The search bot plays each choice forward many times before it decides, so it is the strongest and the slowest.</p>
+    <p class="note">Decks are checked against the ban list (Pot of Greed, Change of Heart and Raigeki at one copy) and the deck rules. The opponent is the trained network; with search it thinks each choice through many times before it decides, so it is stronger and slower.</p>
     ${illegal}
     <div class="actions-row"><button class="btn primary" type="submit">Start duel</button></div>
   </form>`;
@@ -320,10 +345,9 @@ function renderSetup() {
 
 function botName(b) {
   if (b === "random") return "Random (plays any legal move)";
-  if (b === "search") return "Search bot (thinks ahead)";
-  if (b.startsWith("search:")) return "Search bot (" + b.slice(7) + " playouts)";
-  const style = b.replace("heuristic:", "");
-  return style.charAt(0).toUpperCase() + style.slice(1) + " bot";
+  if (b === "network") return "Network (the trained bot)";
+  if (b === "network-search") return "Network with search (stronger, slower)";
+  return b;
 }
 
 // ---- Playing ----

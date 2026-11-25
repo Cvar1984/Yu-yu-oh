@@ -43,6 +43,26 @@ pub unsafe extern "C" fn ygo_handle(ptr: *mut u8, len: usize) -> usize {
     })
 }
 
+/// Loads the trained network from the file bytes at `ptr..ptr + len` (and
+/// frees them); returns 0, or the length of an error message read through
+/// `ygo_response_ptr`.
+///
+/// # Safety
+/// As for `ygo_handle`: `ptr` and `len` come from one `ygo_alloc(len)`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ygo_set_network(ptr: *mut u8, len: usize) -> usize {
+    // SAFETY: as in `ygo_handle`.
+    let bytes = unsafe { Vec::from_raw_parts(ptr, len, len) };
+    match HOST.with(|h| h.borrow_mut().set_network(bytes)) {
+        Ok(()) => 0,
+        Err(e) => RESPONSE.with(|r| {
+            let mut r = r.borrow_mut();
+            *r = e.into_bytes();
+            r.len()
+        }),
+    }
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn ygo_response_ptr() -> *const u8 {
     RESPONSE.with(|r| r.borrow().as_ptr())

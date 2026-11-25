@@ -251,14 +251,13 @@ fn the_inexperienced_spy_shows_one_card_of_the_opponents_hand() {
         .expect("a private look");
     assert_eq!(seen.len(), 1);
     assert!(g.player(P1).hand.contains(&seen[0].0));
-    // The opponent's hand stays hidden from the spy's player afterwards.
+    // Afterwards the spy's player remembers that card while it stays in
+    // the hand; the rest of the hand stays hidden.
     let obs = g.observe(P0);
-    assert!(
-        obs.opponent()
-            .hand
-            .iter()
-            .all(|c| matches!(c, VisibleCard::Hidden { .. }))
-    );
+    for c in &obs.opponent().hand {
+        let looked_at = c.instance() == seen[0].0;
+        assert_eq!(matches!(c, VisibleCard::Known { .. }), looked_at, "{c:?}");
+    }
 }
 
 #[test]

@@ -147,7 +147,10 @@ pub enum GameIndex {
     Mrd,
     #[serde(rename = "SRL")]
     Srl,
-    /// Listed in the game's "All" list outside the three set tabs.
+    /// Pharaoh's Servant, the game's fourth set tab (2026-11-21).
+    #[serde(rename = "PSV")]
+    Psv,
+    /// Listed in the game's "All" list outside the four set tabs.
     #[serde(rename = "EXTRA")]
     Extra,
 }
@@ -206,6 +209,8 @@ pub struct CardFile {
 #[derive(Debug, Clone, Default)]
 pub struct CardDb {
     cards: HashMap<CardId, Card>,
+    /// Tokens cards create; never deck cards (`tokens.json`).
+    pub(crate) tokens: Vec<crate::Token>,
 }
 
 impl CardDb {
@@ -253,7 +258,10 @@ impl CardDb {
                 return Err(DataError::DuplicateCardId(id));
             }
         }
-        Ok(Self { cards: by_id })
+        Ok(Self {
+            cards: by_id,
+            tokens: Vec::new(),
+        })
     }
 
     pub fn get(&self, id: CardId) -> Option<&Card> {

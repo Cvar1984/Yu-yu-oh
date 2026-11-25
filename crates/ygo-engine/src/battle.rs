@@ -18,7 +18,7 @@ impl Game {
         for attacker in self.players[player.index()].monsters() {
             let inst = &self.instances[attacker.index()];
             if inst.position != Position::FaceUpAttack
-                || inst.attacked_this_turn
+                || inst.attacks_this_turn >= self.attacks_per_battle_phase(attacker)
                 || self.attack_restricted(attacker)
             {
                 continue;
@@ -56,6 +56,7 @@ impl Game {
                 direct = false;
             }
         }
+        targets.retain(|&t| !self.cannot_be_attacked(t));
         if targets.is_empty() || direct {
             actions.push(Action::Attack {
                 attacker,
@@ -70,14 +71,68 @@ impl Game {
         }
     }
 
+    /// The monsters `attacker` could choose as an attack target now.
+    pub fn attack_targets(&self, attacker: InstanceId) -> Vec<InstanceId> {
+        let mut actions = Vec::new();
+        self.attack_options(attacker, &mut actions);
+        actions
+            .into_iter()
+            .filter_map(|a| match a {
+                Action::Attack { target, .. } => target,
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Moves the attack under way to `target`, without a replay (Shift).
+    /// Returns `false` if no attack is waiting for its Damage Step.
+    pub fn retarget_attack(&mut self, target: InstanceId) -> bool {
+        let Some((attacker, _)) = self.current_attack else {
+            return false;
+        };
+        let step = self.pending.iter_mut().rev().find_map(|p| match p {
+            Pending::DamageStep {
+                attacker: a,
+                target,
+                ..
+            } if *a == attacker => Some(target),
+            _ => None,
+        });
+        let Some(slot) = step else {
+            return false;
+        };
+        *slot = Some(target);
+        self.current_attack = Some((attacker, Some(target)));
+        self.emit(Event::AttackRetargeted { attacker, target });
+        true
+    }
+
+    /// How many attacks `attacker` may declare each Battle Phase.
+    fn attacks_per_battle_phase(&self, attacker: InstanceId) -> u8 {
+        if self
+            .script(attacker)
+            .is_some_and(|s| s.has(crate::Tag::SecondAttack))
+        {
+            2
+        } else {
+            1
+        }
+    }
+
     /// Marks the attack, runs the attack costs of continuous effects and
     /// opens the window Mirror Force lives in.
     pub(crate) fn declare_attack(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
-        self.instances[attacker.index()].attacked_this_turn = true;
+        let inst = &mut self.instances[attacker.index()];
+        inst.attacks_this_turn = inst.attacks_this_turn.saturating_add(1);
         self.current_attack = Some((attacker, target));
         self.emit(Event::AttackDeclared { attacker, target });
         self.run_attack_hooks(attacker);
-        self.pending.push(Pending::DamageStep { attacker, target });
+        let monsters = self.defender_monsters(attacker);
+        self.pending.push(Pending::DamageStep {
+            attacker,
+            target,
+            monsters,
+        });
         self.open_window(WindowKind::AttackDeclared, self.turn_player);
     }
 
@@ -89,18 +144,36 @@ impl Game {
             Some(target) => {
                 self.current_attack = Some((attacker, target));
                 self.emit(Event::AttackDeclared { attacker, target });
-                self.pending.push(Pending::DamageStep { attacker, target });
+                let monsters = self.defender_monsters(attacker);
+                self.pending.push(Pending::DamageStep {
+                    attacker,
+                    target,
+                    monsters,
+                });
                 self.open_window(WindowKind::AttackDeclared, self.turn_player);
             }
             None => self.emit(Event::AttackCancelled { attacker }),
         }
     }
 
+    /// How many monsters the opponent of `attacker`'s controller has.
+    fn defender_monsters(&self, attacker: InstanceId) -> u8 {
+        let defender = self.instances[attacker.index()].controller.opponent();
+        self.players[defender.index()].monsters().count() as u8
+    }
+
     /// After the attack-declaration window. The attack goes ahead only if
-    /// the attacker is still a face-up Attack Position monster and the
-    /// target, if any, is still on the field (no replays yet). A face-down
-    /// target is flipped, then the damage-calculation window opens.
-    pub(crate) fn damage_step(&mut self, attacker: InstanceId, target: Option<InstanceId>) {
+    /// the attacker is still a face-up Attack Position monster. If the
+    /// target left the field, or the defender's number of monsters changed
+    /// since the declaration (Scapegoat against a direct attack), the
+    /// attacker's controller replays: a new target, the same one, or stop.
+    /// A face-down target is flipped, then the damage-calculation window opens.
+    pub(crate) fn damage_step(
+        &mut self,
+        attacker: InstanceId,
+        target: Option<InstanceId>,
+        monsters: u8,
+    ) {
         let attacker_ok = matches!(
             self.instances[attacker.index()].location,
             Location::MonsterZone(_)
@@ -112,7 +185,7 @@ impl Game {
             self.emit(Event::AttackCancelled { attacker });
             return;
         }
-        if !target_ok {
+        if !target_ok || self.defender_monsters(attacker) != monsters {
             // A replay: the attacker's controller picks another target or stops.
             self.emit(Event::AttackReplay { attacker });
             self.pending.push(Pending::Replay { attacker });
@@ -199,8 +272,13 @@ impl Game {
         }
         for card in destroyed {
             let controller = self.instances[card.index()].controller;
+            let by = if card == attacker {
+                target.unwrap_or(attacker)
+            } else {
+                attacker
+            };
             if !self.battle_shielded(controller) {
-                self.destroy_by_battle(card);
+                self.destroy_by_battle(card, by);
             }
         }
         self.damage_prevented = [false, false];
@@ -219,9 +297,10 @@ impl Game {
 
     /// Destroys `card` by battle, or the card a continuous effect names in
     /// its place (Relinquished's absorbed monster).
-    fn destroy_by_battle(&mut self, card: InstanceId) {
+    fn destroy_by_battle(&mut self, card: InstanceId, by: InstanceId) {
         let victim = self.battle_destruction_replacement(card).unwrap_or(card);
         self.send_to_graveyard(victim);
+        self.instances[victim.index()].destroyed_by_battle = Some((by, self.turn));
         self.emit(Event::DestroyedByBattle { card: victim });
     }
 

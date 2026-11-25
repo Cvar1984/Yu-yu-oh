@@ -55,7 +55,10 @@ impl Game {
                 self.ignition_actions(player, &mut actions);
                 let second = self.phase == Phase::Main2
                     && self.extra_battle_phase == Some((player, self.turn));
-                if (self.phase == Phase::Main1 || second) && self.attacks_allowed() {
+                if (self.phase == Phase::Main1 || second)
+                    && self.attacks_allowed()
+                    && !self.battle_phase_forbidden(player)
+                {
                     actions.push(Action::EnterBattlePhase);
                 }
                 actions.push(Action::EndTurn);
@@ -71,8 +74,16 @@ impl Game {
         if toll > 0 && self.players[decision.player.index()].lp <= toll {
             actions.retain(|a| !self.plays_from_hand(a));
         }
+        if self.spells_and_traps_forbidden() {
+            actions.retain(|a| !self.plays_spell_or_trap(a));
+        }
+        actions.retain(|a| !self.action_forbidden(a));
+        actions.retain(|a| {
+            !matches!(a, Action::SetSpellTrap { card } if self.borrowed_by(*card, decision.player))
+        });
         self.decision = Some(decision);
         self.actions = actions;
+        self.update_memory();
     }
 
     /// Applies one legal action, then advances until the next decision or
@@ -89,6 +100,19 @@ impl Game {
         let toll = self.hand_play_toll();
         if toll > 0 && self.plays_from_hand(action) {
             self.pay_lp(player, toll);
+        }
+        // Graverobber: using the borrowed Spell costs 2000.
+        if let Action::Activate { card, .. } = action
+            && self.borrowed_by(*card, player)
+        {
+            self.lingering.retain(|l| {
+                l.kind
+                    != crate::LingeringKind::Borrowed {
+                        card: *card,
+                        player,
+                    }
+            });
+            self.take_damage(player, 2000);
         }
         match action {
             Action::Discard { card } => self.discard(*card),
@@ -226,10 +250,14 @@ impl Game {
                     self.pending.pop();
                     self.complete_summon(ps);
                 }
-                Some(Pending::DamageStep { attacker, target }) => {
-                    let (attacker, target) = (*attacker, *target);
+                Some(Pending::DamageStep {
+                    attacker,
+                    target,
+                    monsters,
+                }) => {
+                    let (attacker, target, monsters) = (*attacker, *target, *monsters);
                     self.pending.pop();
-                    self.damage_step(attacker, target);
+                    self.damage_step(attacker, target, monsters);
                 }
                 Some(Pending::DamageCalc { attacker, target }) => {
                     let (attacker, target) = (*attacker, *target);
@@ -255,7 +283,14 @@ impl Game {
                         return;
                     }
                     match self.phase {
-                        Phase::Draw => self.enter_phase(Phase::Standby),
+                        Phase::Draw => {
+                            let player = self.turn_player;
+                            if std::mem::take(&mut self.players[player.index()].skip_standby) {
+                                self.enter_phase(Phase::Main1);
+                            } else {
+                                self.enter_phase(Phase::Standby);
+                            }
+                        }
                         Phase::Standby => self.enter_phase(Phase::Main1),
                         Phase::Battle(BattleStep::Start) => {
                             self.enter_phase(Phase::Battle(BattleStep::Battle))
@@ -279,6 +314,12 @@ impl Game {
         if phase == Phase::End {
             self.expire_lingering();
         }
+        if phase == Phase::Standby {
+            self.standby_returns(self.turn_player);
+        }
+        if phase == Phase::Battle(BattleStep::End) {
+            self.destroy_hats();
+        }
         if matches!(
             phase,
             Phase::Standby
@@ -299,26 +340,34 @@ impl Game {
             });
             return;
         }
+        if std::mem::take(&mut self.players[player.index()].skip_turn) {
+            self.emit(Event::TurnSkipped { turn, player });
+            self.start_turn(turn + 1, player.opponent());
+            return;
+        }
         self.turn = turn;
         self.turn_player = player;
         for p in self.players.iter_mut() {
             p.summons_used = 0;
             p.monsters_to_graveyard = 0;
             p.monsters_entered = 0;
+            p.summoned = false;
             p.names_used.clear();
             p.names_locked.clear();
         }
         for card in self.instances.iter_mut() {
             card.position_changed_this_turn = false;
-            card.attacked_this_turn = false;
+            card.attacks_this_turn = 0;
             card.effect_uses = 0;
         }
         self.emit(Event::TurnStarted { turn, player });
         self.enter_phase(Phase::Draw);
 
         let rules = &self.shared.rules.turn;
+        let skipped = std::mem::take(&mut self.players[player.index()].skip_draw);
         let skip = (turn == 1 && rules.first_player_skips_draw)
-            || (turn == 2 && rules.second_player_skips_draw);
+            || (turn == 2 && rules.second_player_skips_draw)
+            || skipped;
         if skip {
             return;
         }
@@ -383,7 +432,7 @@ impl Game {
             let player = self.turn_player;
             for card in self.instances.iter_mut() {
                 if card.controller == player {
-                    card.attacked_this_turn = false;
+                    card.attacks_this_turn = 0;
                 }
             }
         }

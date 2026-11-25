@@ -89,7 +89,7 @@ fn random_deck(seed: u64, main: usize) -> DeckList {
         let c = pool.get(CardIndex(i));
         if c.is_extra_deck() {
             extras.push(c.id);
-        } else {
+        } else if c.is_main_deck() {
             mains.push(c.id);
         }
     }
@@ -116,7 +116,7 @@ fn random_deck(seed: u64, main: usize) -> DeckList {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(48))]
 
-    /// Random decks from all 440 cards exercise every script, not only the
+    /// Random decks from the whole card pool exercise every script, not only the
     /// ones in the sample decks.
     #[test]
     fn invariants_hold_with_random_whole_pool_decks(

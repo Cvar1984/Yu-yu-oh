@@ -72,7 +72,8 @@ pub enum DecisionKind {
     Respond,
     /// Order (and for optional ones, choose) the triggers that fired.
     Triggers,
-    /// The attack target left the field: attack another monster, or stop.
+    /// A replay: the attack target left the field, or the defender's
+    /// number of monsters changed; attack again (any target), or stop.
     Replay,
 }
 
@@ -87,6 +88,19 @@ pub struct Decision {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Event {
     TurnStarted {
+        turn: u32,
+        player: PlayerId,
+    },
+    /// A banished monster came back to its zone (Dimensionhole).
+    ReturnedToField {
+        card: InstanceId,
+    },
+    /// A chain link resolved without effect: its card's effects are negated.
+    EffectNegated {
+        card: InstanceId,
+    },
+    /// `player`'s turn number `turn` was skipped (Gamble).
+    TurnSkipped {
         turn: u32,
         player: PlayerId,
     },
@@ -245,6 +259,15 @@ pub enum Event {
     },
     AttackReplay {
         attacker: InstanceId,
+    },
+    /// A Token left the field and stopped existing.
+    TokenRemoved {
+        card: InstanceId,
+    },
+    /// An effect moved the attack under way to a new target (Shift).
+    AttackRetargeted {
+        attacker: InstanceId,
+        target: InstanceId,
     },
     DeckReordered {
         player: PlayerId,

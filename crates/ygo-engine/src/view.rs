@@ -32,6 +32,25 @@ impl<'a> PlayerView<'a> {
         &self.observation
     }
 
+    /// The cards in the decider's Deck, sorted by id, never their order:
+    /// what they know of their own Deck from its list and what left it.
+    pub fn own_deck(&self) -> Vec<ygo_data::CardId> {
+        let mut ids: Vec<ygo_data::CardId> = self
+            .game
+            .deck(self.player())
+            .iter()
+            .map(|&c| self.game.stats(c).id)
+            .collect();
+        ids.sort_unstable();
+        ids
+    }
+
+    /// The rules, card pool and scripts: public data, the same for both
+    /// players.
+    pub fn shared(&self) -> &crate::Shared {
+        self.game.shared()
+    }
+
     /// The legal actions, never empty.
     pub fn actions(&self) -> &'a [Action] {
         self.game.actions()
@@ -94,6 +113,21 @@ impl<'a> PlayerView<'a> {
                 .for_each(&mut mark);
         }
         obs.revealed.iter().for_each(&mut mark);
+        // A card on the chain, or one whose resolution waits for an answer,
+        // was activated in the open: it keeps its identity even if it has
+        // since gone back to the hand or the Deck.
+        for link in &obs.chain {
+            known[link.instance.index()] = true;
+        }
+        if let Some(card) = self.game.resolving_card() {
+            known[card.index()] = true;
+        }
+        // A card face-up in a Deck (Parasite Paracide) is seen by both.
+        for (i, inst) in self.game.instances.iter().enumerate() {
+            if inst.location == Location::Deck && inst.position.is_face_up() {
+                known[i] = true;
+            }
+        }
         (0..known.len())
             .filter(|&i| !known[i])
             .map(|i| InstanceId(i as u8))
@@ -145,8 +179,9 @@ fn redeal(game: &mut Game, hidden: &[InstanceId], rng: &mut ChaCha8Rng) {
                 Location::MonsterZone(_) => Slot::Monster,
                 Location::SpellTrapZone(_) => Slot::SpellTrap,
                 Location::FieldZone => Slot::Field,
-                Location::Hand | Location::Deck => Slot::Loose,
-                Location::Graveyard | Location::Banished => continue,
+                // Hand, Deck, or banished face-down (Lightforce Sword).
+                Location::Hand | Location::Deck | Location::Banished => Slot::Loose,
+                Location::Graveyard | Location::Gone => continue,
             };
             if slot == Slot::Extra {
                 extra.push((id, slot));

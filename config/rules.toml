@@ -46,6 +46,7 @@ ritual_summons = true               # owner: Ritual Spells allowed
 text_version = "modern"   # owner wants both "modern" and "original_2002" supported; original text data pending
 cards = "data/cards.json"
 banlist = "data/banlist.json"
+tokens = "data/tokens.json"  # Tokens cards create (Scapegoat's Sheep Token)
 
 [win]
 deck_out_loses = true     # owner: yes

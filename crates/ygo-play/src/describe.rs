@@ -279,6 +279,14 @@ pub fn event(obs: &Observation, pool: &CardPool, e: &Event) -> Option<String> {
         Event::TurnStarted { turn, player } => {
             format!("Turn {turn}: {} turn", who_possessive(obs, *player))
         }
+        Event::EffectNegated { card } => format!("{}'s effect was negated", c(*card)),
+        Event::ReturnedToField { card } => format!("{} returned to the field", c(*card)),
+        Event::TurnSkipped { turn, player } => {
+            format!(
+                "Turn {turn}: {} turn is skipped",
+                who_possessive(obs, *player)
+            )
+        }
         Event::PhaseEntered {
             phase: phase @ (Phase::Main1 | Phase::Main2 | Phase::End | Phase::Standby),
         } => phase_name(*phase).to_string(),
@@ -344,6 +352,10 @@ pub fn event(obs: &Observation, pool: &CardPool, e: &Event) -> Option<String> {
         } => format!("{} attacks {}", c(*attacker), c(*t)),
         Event::AttackCancelled { attacker } => format!("The attack of {} stopped", c(*attacker)),
         Event::AttackReplay { attacker } => format!("{} lost its target", c(*attacker)),
+        Event::TokenRemoved { card } => format!("{} left the field and is gone", c(*card)),
+        Event::AttackRetargeted { attacker, target } => {
+            format!("{} now attacks {}", c(*attacker), c(*target))
+        }
         Event::DestroyedByBattle { card } => format!("{} was destroyed by battle", c(*card)),
         Event::DestroyedByEffect { card, .. } => format!("{} was destroyed", c(*card)),
         Event::DamageTaken { player, amount, lp } => {

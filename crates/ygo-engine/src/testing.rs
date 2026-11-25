@@ -38,11 +38,7 @@ pub fn with_rules(base: &Shared, change: impl FnOnce(&mut Rules)) -> Arc<Shared>
     let mut rules = base.rules.clone();
     change(&mut rules);
     rules.validate().expect("changed rules stay valid");
-    Arc::new(Shared {
-        rules,
-        pool: base.pool.clone(),
-        scripts: base.scripts.clone(),
-    })
+    Arc::new(base.with_rules(rules))
 }
 
 /// The committed rules with one change applied and no scripts.
@@ -62,7 +58,7 @@ pub fn normal_deck(n: usize) -> DeckList {
     let mut ids: Vec<CardId> = (0..pool.len() as u16)
         .map(crate::CardIndex)
         .map(|i| pool.get(i))
-        .filter(|c| c.kind == CardKind::Normal)
+        .filter(|c| c.kind == CardKind::Normal && !c.token)
         .map(|c| c.id)
         .collect();
     ids.sort();
@@ -204,11 +200,16 @@ pub fn check_invariants(g: &Game) {
                 assert!(seen.insert(id), "{id:?} is in two places");
                 let inst = g.instance(id);
                 assert_eq!(inst.location, zone, "{id:?}");
-                assert_eq!(
-                    inst.controller, p,
+                assert_eq!(inst.controller, p, "{id:?}");
+                // Off-field cards are with their owner, except a card put
+                // face-up into the opponent's Deck (Parasite Paracide) and
+                // then drawn by them.
+                let lent = inst.position == Position::FaceUp
+                    && matches!(zone, Location::Deck | Location::Hand);
+                assert!(
+                    inst.owner == p || lent,
                     "{id:?} off-field cards are with their owner"
                 );
-                assert_eq!(inst.owner, p);
             }
         }
         assert_eq!(s.monster_zones.len(), rules.field.monster_zones);
@@ -219,7 +220,7 @@ pub fn check_invariants(g: &Game) {
                 let inst = g.instance(*id);
                 assert_eq!(inst.location, Location::MonsterZone(i as u8));
                 assert_eq!(inst.controller, p);
-                assert!(g.stats(*id).is_monster());
+                assert!(g.stats(*id).is_monster() || g.is_hat(*id), "{id:?}");
                 assert_ne!(
                     inst.position,
                     Position::FaceDown,
@@ -269,7 +270,24 @@ pub fn check_invariants(g: &Game) {
         }
         assert!(usize::from(s.summons_used) <= rules.summon.normal_or_tribute_per_turn);
     }
-    assert_eq!(seen.len(), g.instances().len(), "every card is somewhere");
+    let gone = g
+        .instances()
+        .iter()
+        .filter(|i| i.location == Location::Gone)
+        .count();
+    assert_eq!(
+        seen.len() + gone,
+        g.instances().len(),
+        "every card is somewhere"
+    );
+    for (i, inst) in g.instances().iter().enumerate() {
+        let token = g.stats(InstanceId(i as u8)).token;
+        assert!(
+            !token || inst.location.on_field() || inst.location == Location::Gone,
+            "a Token exists only on the field"
+        );
+        assert!(token || inst.location != Location::Gone, "only Tokens go");
+    }
     assert!(g.turn() <= g.max_turns());
     let any_dead = PlayerId::BOTH.iter().any(|p| g.player(*p).lp == 0);
     assert_eq!(
@@ -310,13 +328,18 @@ pub fn check_invariants(g: &Game) {
                 opp.hand
                     .iter()
                     .all(|c| matches!(c, VisibleCard::Hidden { .. })
-                        || Some(c.instance()) == declared),
-                "only a declared face-up summon is visible in the opponent's hand"
+                        || Some(c.instance()) == declared
+                        || g.remembers(viewer, c.instance())),
+                "only a declared face-up summon or a remembered card is visible in the opponent's hand"
             );
         }
         for zone in opp.monster_zones.iter().flatten() {
             let face_up = g.instance(zone.instance()).position.is_face_up();
-            assert_eq!(matches!(zone, VisibleCard::Known { .. }), face_up);
+            let remembered = g.remembers(viewer, zone.instance());
+            assert_eq!(
+                matches!(zone, VisibleCard::Known { .. }),
+                face_up || remembered
+            );
         }
         assert!(
             obs.me()

@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use ygo_data::CardId;
 
-use crate::{Event, Game, InstanceId, PlayerId, WindowKind};
+use crate::{Action, Event, Game, InstanceId, PlayerId, WindowKind};
 
 /// Static facts about a card that are not effects.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -48,6 +48,45 @@ pub enum Tag {
     /// While face-up on the field, its controller's opponent keeps their
     /// hand revealed (The Eye of Truth).
     RevealOpponentHand,
+    /// While face-up on the field, each player shows their hand during
+    /// their own turn (Respect Play).
+    RevealTurnPlayerHand,
+    /// May attack twice in each Battle Phase (Hayabusa Knight).
+    SecondAttack,
+    /// Its ATK/DEF changes set, swap or multiply values instead of adding
+    /// or subtracting (Megamorph, Shield & Sword): Reverse Trap leaves them.
+    StatsSetOrScaled,
+    /// Cannot be Tributed for a Tribute Summon (Scapegoat's Sheep Tokens).
+    NoTributeSummon,
+    /// While face-up on the field, no monster can be Set or turned
+    /// face-down; a Set becomes a Normal Summon in face-up Defense
+    /// Position (Light of Intervention).
+    NoFaceDownMonsters,
+}
+
+impl Tag {
+    /// Every tag, in declaration order. New tags go at the end, so a
+    /// tag's place in this list (the neural encoding's slot) never moves.
+    pub const ALL: [Tag; 18] = [
+        Tag::CannotNormalSummon,
+        Tag::ExodiaPiece,
+        Tag::ExodiaHead,
+        Tag::StaysOnField,
+        Tag::DirectAttacker,
+        Tag::Toon,
+        Tag::RevealHands,
+        Tag::BanishInsteadOfGraveyard,
+        Tag::HandPlayToll,
+        Tag::ControlWhileEquipped,
+        Tag::StaysWithoutTarget,
+        Tag::OnlyByProcedure,
+        Tag::RevealOpponentHand,
+        Tag::RevealTurnPlayerHand,
+        Tag::SecondAttack,
+        Tag::StatsSetOrScaled,
+        Tag::NoTributeSummon,
+        Tag::NoFaceDownMonsters,
+    ];
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -72,6 +111,12 @@ pub enum EffectKind {
 
 /// Spell speed 1, 2 or 3.
 pub type Speed = u8;
+
+/// A continuous hook giving a monster another Type (DNA Surgery).
+pub type RaceHook = fn(&Game, Source, InstanceId) -> Option<&'static str>;
+
+/// A continuous hook about the source card itself (Deepsea Warrior).
+pub type SelfHook = fn(&Game, Source) -> bool;
 
 /// A continuous hook naming the only monster an attacker may attack.
 pub type AttackLock = fn(&Game, Source, InstanceId) -> Option<InstanceId>;
@@ -143,6 +188,11 @@ impl Effect {
             lock_position: None,
             misses_timing: false,
             pierce: None,
+            negate: None,
+            forbid: None,
+            race: None,
+            spell_immune: None,
+            unattackable: None,
         }
     }
 
@@ -317,6 +367,21 @@ pub struct Effect {
     /// Continuous: `attacker` inflicts piercing battle damage when it
     /// attacks a Defense Position monster (Fairy Meteor Crush).
     pub pierce: Option<fn(&Game, Source, InstanceId) -> bool>,
+    /// Continuous: while the source is active, `card`'s effects are negated
+    /// and it cannot be activated (Jinzo, Imperial Order).
+    pub negate: Option<fn(&Game, Source, InstanceId) -> bool>,
+    /// Continuous: while the source is active, this action is illegal
+    /// (Prohibition).
+    pub forbid: Option<fn(&Game, Source, &Action) -> bool>,
+    /// Continuous: the Type `card` has instead of its own, if this effect
+    /// changes it (DNA Surgery, Parasite Paracide).
+    pub race: Option<RaceHook>,
+    /// Continuous: the source itself is unaffected by Spell effects while
+    /// this holds (Deepsea Warrior, The Legendary Fisherman).
+    pub spell_immune: Option<SelfHook>,
+    /// Continuous: the source cannot be targeted for attacks while this
+    /// holds (The Legendary Fisherman).
+    pub unattackable: Option<SelfHook>,
 }
 
 impl std::fmt::Debug for Effect {
@@ -338,6 +403,12 @@ pub struct CardScript {
 impl CardScript {
     pub fn has(&self, tag: Tag) -> bool {
         self.tags.contains(&tag)
+    }
+
+    /// The same script with one more tag.
+    pub fn with_tag(mut self, tag: Tag) -> Self {
+        self.tags.push(tag);
+        self
     }
 }
 
@@ -367,5 +438,42 @@ impl Registry {
 
     pub fn ids(&self) -> impl Iterator<Item = CardId> + '_ {
         self.scripts.keys().copied()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Tag;
+
+    /// Exhaustive on purpose: a new tag fails to compile here until it is
+    /// added at the end of `Tag::ALL`.
+    fn place(tag: Tag) -> usize {
+        match tag {
+            Tag::CannotNormalSummon => 0,
+            Tag::ExodiaPiece => 1,
+            Tag::ExodiaHead => 2,
+            Tag::StaysOnField => 3,
+            Tag::DirectAttacker => 4,
+            Tag::Toon => 5,
+            Tag::RevealHands => 6,
+            Tag::BanishInsteadOfGraveyard => 7,
+            Tag::HandPlayToll => 8,
+            Tag::ControlWhileEquipped => 9,
+            Tag::StaysWithoutTarget => 10,
+            Tag::OnlyByProcedure => 11,
+            Tag::RevealOpponentHand => 12,
+            Tag::RevealTurnPlayerHand => 13,
+            Tag::SecondAttack => 14,
+            Tag::StatsSetOrScaled => 15,
+            Tag::NoTributeSummon => 16,
+            Tag::NoFaceDownMonsters => 17,
+        }
+    }
+
+    #[test]
+    fn all_tags_lists_every_tag_in_order() {
+        for (i, tag) in Tag::ALL.iter().enumerate() {
+            assert_eq!(place(*tag), i, "{tag:?}");
+        }
     }
 }

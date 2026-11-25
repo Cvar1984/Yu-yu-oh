@@ -1,13 +1,11 @@
 //! Loading and validation of everything the engine reads from disk: the card
-//! pool, the ban list, the owner's collection, decks, the house rules and
-//! the heuristic bots' card values and styles.
+//! pool, the ban list, the owner's collection, decks and the house rules.
 //!
 //! Every file refers to cards by their id (the official password). Formats
 //! are strict: unknown fields are errors, so a changed data bundle fails
 //! loudly instead of silently dropping information.
 
 mod banlist;
-mod bot;
 mod bundle;
 mod card;
 mod check;
@@ -15,9 +13,9 @@ mod collection;
 mod deck;
 mod error;
 mod rules;
+mod token;
 
 pub use banlist::{Banlist, CardLimit};
-pub use bot::{CardValues, MAX_CARD_VALUE, Style, Styles, ValueDefaults};
 pub use bundle::Bundle;
 pub use card::{Card, CardDb, CardFile, CardId, CardKind, CardType, GameIndex, Images, Printing};
 pub use check::{DeckProblem, check_deck};
@@ -28,6 +26,7 @@ pub use rules::{
     CardRules, DeckRules, FieldRules, HandLimitCheck, HandRules, LifeRules, Rules, SummonRules,
     TextVersion, TurnRules, WinRules,
 };
+pub use token::{Token, TokenFile};
 
 use std::path::Path;
 
@@ -36,7 +35,8 @@ use std::path::Path;
 pub const SCHEMA_VERSION: u32 = 1;
 
 /// The `cards.json` schema version this build understands. Version 2 added
-/// the 66 EXTRA cards' `in_game_index` and the file's `note`.
+/// the EXTRA cards' `in_game_index` and the file's `note`; PSV (2026-11-21)
+/// is a new `in_game_index` value, which an older build refuses.
 pub const CARDS_SCHEMA_VERSION: u32 = 2;
 
 pub(crate) fn check_schema(file: &'static str, found: u32) -> Result<(), DataError> {

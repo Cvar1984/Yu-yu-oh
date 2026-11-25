@@ -2,11 +2,13 @@
 
 use ygo_data::{CardId, CardKind};
 use ygo_engine::{
-    CardScript, Effect, EffectCtx, Event, Flow, Game, InstanceId, Location, Phase, PlayerId,
-    Registry, Source, StatMod, Tag, TargetSets, Window, WindowKind,
+    CardScript, Effect, EffectCtx, EffectKind, Event, Flow, Game, InstanceId, Lingering,
+    LingeringKind, Location, Phase, PlayerId, Registry, Source, StatMod, Tag, TargetSets, Window,
+    WindowKind,
 };
 
 use crate::continuous::face_up_monsters;
+use crate::remaining::{opposing_link, other_single_targets, single_monster_target};
 
 pub const BACKUP_SOLDIER: CardId = CardId(36280194);
 pub const BURST_BREATH: CardId = CardId(80163754);
@@ -23,6 +25,12 @@ pub const REINFORCEMENTS: CardId = CardId(17814387);
 pub const SHADOW_SPELL: CardId = CardId(29267084);
 pub const THE_EYE_OF_TRUTH: CardId = CardId(34694160);
 pub const WABOKU: CardId = CardId(12607053);
+pub const D_TRIBE: CardId = CardId(2833249);
+pub const RIRYOKU_FIELD: CardId = CardId(70344351);
+pub const SHIFT: CardId = CardId(59560625);
+pub const LIGHT_OF_INTERVENTION: CardId = CardId(62867251);
+pub const REVERSE_TRAP: CardId = CardId(77622396);
+pub const ULTIMATE_OFFERING: CardId = CardId(80604092);
 /// Not in the pool: Gryphon Wing can never be activated here.
 pub const HARPIES_FEATHER_DUSTER: CardId = CardId(18144506);
 
@@ -153,7 +161,246 @@ fn settable(g: &Game, player: PlayerId) -> Vec<InstanceId> {
         .collect()
 }
 
+/// Riryoku Field: the activation of a Spell Card that targets exactly 1
+/// monster on the field, still waiting to resolve.
+fn single_target_spell(g: &Game) -> Option<InstanceId> {
+    g.last_link()
+        .filter(|l| {
+            !l.negated
+                && l.card_activation
+                && g.stats(l.card).kind == CardKind::Spell
+                && single_monster_target(g, l).is_some()
+        })
+        .map(|l| l.card)
+}
+
+/// Shift: (the Spell or Trap, a new target) when the opponent's Spell or
+/// Trap targets exactly 1 monster `s`'s controller controls; or the new
+/// target alone when the opponent's attack does, with no chain open.
+fn shift_targets(g: &Game, s: Source) -> TargetSets {
+    let mine = |t: InstanceId| g.instance(t).controller == s.controller;
+    if let Some(link) = opposing_link(g, s) {
+        let spell_or_trap = matches!(g.stats(link.card).kind, CardKind::Spell | CardKind::Trap);
+        if !spell_or_trap || !single_monster_target(g, &link).is_some_and(mine) {
+            return Vec::new();
+        }
+        return other_single_targets(g, &link)
+            .into_iter()
+            .filter(|&t| mine(t) && g.on_field(t))
+            .map(|t| vec![link.card, t])
+            .collect();
+    }
+    if g.last_link().is_some() {
+        return Vec::new();
+    }
+    match g.current_attack() {
+        Some((attacker, Some(old))) if !mine(attacker) && mine(old) => g
+            .attack_targets(attacker)
+            .into_iter()
+            .filter(|&t| t != old && mine(t))
+            .map(|t| vec![t])
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// Ultimate Offering: monsters in the hand `player` could Normal Summon or
+/// Set now with their own monsters as Tributes (Sheep Tokens excluded).
+fn offering_monsters(g: &Game, player: PlayerId) -> Vec<InstanceId> {
+    let tributes = offering_tributes(g, player, &[]).len();
+    let free = g.free_monster_zone(player).is_some();
+    g.hand(player)
+        .iter()
+        .copied()
+        .filter(|&c| {
+            let stats = g.stats(c);
+            let needed = g.tributes_needed(stats.level);
+            stats.can_normal_summon(g.script(c)) && needed <= tributes && (free || needed > 0)
+        })
+        .collect()
+}
+
+fn offering_tributes(g: &Game, player: PlayerId, chosen: &[InstanceId]) -> Vec<InstanceId> {
+    g.monsters_controlled(player)
+        .into_iter()
+        .filter(|m| !chosen.contains(m))
+        .filter(|&m| !g.script(m).is_some_and(|s| s.has(Tag::NoTributeSummon)))
+        .collect()
+}
+
+/// Ultimate Offering's summon: `ctx.cost` holds the monster, then its
+/// Tributes as they are chosen; then Summon or Set.
+fn offering_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
+    let card = ctx.cost[0];
+    let needed = g.tributes_needed(g.stats(card).level);
+    if ctx.cost.len() - 1 < needed {
+        let options = offering_tributes(g, ctx.controller, &ctx.cost[1..]);
+        if options.is_empty() {
+            return Flow::Done;
+        }
+        return Flow::Choose {
+            options,
+            then: |g, ctx, t| {
+                ctx.cost.push(t);
+                offering_next(g, ctx)
+            },
+        };
+    }
+    let mut options = vec!["Set it (face-down Defense Position)"];
+    if !g.summons_locked(ctx.controller) {
+        options.insert(0, "Normal Summon it (face-up Attack Position)");
+    }
+    Flow::Ask {
+        options,
+        then: |g, ctx, option| {
+            let set = option == 1 || g.summons_locked(ctx.controller);
+            let (card, tributes) = (ctx.cost[0], ctx.cost[1..].to_vec());
+            g.normal_summon_by_effect(card, &tributes, set);
+            Flow::Done
+        },
+    }
+}
+
 pub fn register(r: &mut Registry) {
+    // Continuous Trap. During your Main Phase or your opponent's Battle
+    // Phase: pay 500 LP; right after this effect resolves, Normal Summon or
+    // Set 1 monster (an extra one).
+    r.register(
+        ULTIMATE_OFFERING,
+        CardScript {
+            tags: Vec::new(),
+            effects: vec![
+                Effect::activate(2, ygo_engine::nothing),
+                Effect {
+                    kind: EffectKind::Quick,
+                    speed: 2,
+                    timing: |g, s, _| {
+                        let mine = g.turn_player() == s.controller;
+                        let phase_ok = match g.phase() {
+                            Phase::Main1 | Phase::Main2 => mine,
+                            Phase::Battle(_) => !mine,
+                            _ => false,
+                        };
+                        phase_ok
+                            && g.on_field(s.card)
+                            && g.instance(s.card).position.is_face_up()
+                            && g.can_pay_lp(s.controller, 500)
+                            && !offering_monsters(g, s.controller).is_empty()
+                    },
+                    cost: Some(|g, ctx| g.pay_lp(ctx.controller, 500)),
+                    ..Effect::ignition(|g, ctx| {
+                        let options = offering_monsters(g, ctx.controller);
+                        if options.is_empty() {
+                            return Flow::Done;
+                        }
+                        Flow::Choose {
+                            options,
+                            then: |g, ctx, card| {
+                                ctx.cost = vec![card];
+                                offering_next(g, ctx)
+                            },
+                        }
+                    })
+                },
+            ],
+        },
+    );
+    // Until the End Phase, every ATK/DEF addition subtracts and every
+    // subtraction adds (multiplications and set values are untouched:
+    // `Tag::StatsSetOrScaled`).
+    r.register(
+        REVERSE_TRAP,
+        single(Effect {
+            timing: |g, _, _| !all_monsters(g).is_empty(),
+            damage_step: true,
+            ..Effect::activate(2, |g, ctx| {
+                let turn = g.turn();
+                g.add_lingering(Lingering {
+                    source: ctx.source,
+                    kind: LingeringKind::StatChangesReversed,
+                    expires_turn: turn,
+                });
+                Flow::Done
+            })
+        }),
+    );
+    // Continuous Trap: no monster can be Set or turned face-down; a Set is
+    // a Normal Summon in face-up Defense Position.
+    r.register(
+        LIGHT_OF_INTERVENTION,
+        CardScript {
+            tags: vec![Tag::NoFaceDownMonsters],
+            effects: vec![Effect::activate(2, ygo_engine::nothing)],
+        },
+    );
+    // All face-up monsters you control at resolution become Dragon until
+    // the end of this turn.
+    r.register(
+        D_TRIBE,
+        single(Effect {
+            timing: |g, s, _| {
+                g.monsters_controlled(s.controller)
+                    .into_iter()
+                    .any(|m| g.instance(m).position.is_face_up())
+            },
+            race: Some(|_, _, _| Some("Dragon")),
+            ..Effect::activate(2, |g, ctx| {
+                for m in g.monsters_controlled(ctx.controller) {
+                    if g.instance(m).position.is_face_up() {
+                        g.change_race_until_end_phase(ctx.source, m);
+                    }
+                }
+                Flow::Done
+            })
+        }),
+    );
+    // Counter Trap: when a Spell Card that targets exactly 1 monster on the
+    // field is activated, negate it and destroy it.
+    r.register(
+        RIRYOKU_FIELD,
+        single(Effect {
+            timing: |g, _, _| single_target_spell(g).is_some(),
+            targets: Some(|g, _| {
+                single_target_spell(g)
+                    .map(|c| vec![c])
+                    .into_iter()
+                    .collect()
+            }),
+            ..Effect::activate(3, |g, ctx| {
+                g.negate_activation(ctx.targets[0], ctx.source);
+                Flow::Done
+            })
+        }),
+    );
+    // When the opponent targets exactly 1 monster you control for an
+    // attack or with a Spell/Trap: move it to another monster you control
+    // that would be a legal target.
+    r.register(
+        SHIFT,
+        single(Effect {
+            timing: |g, s, w| {
+                (w.kind == WindowKind::AttackDeclared || g.last_link().is_some())
+                    && !shift_targets(g, s).is_empty()
+            },
+            targets: Some(shift_targets),
+            ..Effect::activate(2, |g, ctx| {
+                if let &[card, new] = ctx.targets.as_slice() {
+                    if g.on_field(new) {
+                        g.retarget(card, vec![new]);
+                    }
+                } else {
+                    let new = ctx.targets[0];
+                    let legal = g
+                        .current_attack()
+                        .is_some_and(|(a, _)| g.attack_targets(a).contains(&new));
+                    if legal && g.instance(new).controller == ctx.controller {
+                        g.retarget_attack(new);
+                    }
+                }
+                Flow::Done
+            })
+        }),
+    );
     // While you have 5 or more monsters in your Graveyard: up to 3
     // non-Effect Monsters with 1500 or less ATK from your Graveyard to
     // your hand. Simplified like Soul Release: the cards are picked on
@@ -179,13 +426,13 @@ pub fn register(r: &mut Registry) {
             timing: |g, s, _| {
                 g.monsters_controlled(s.controller)
                     .into_iter()
-                    .any(|m| g.stats(m).race == "Dragon")
+                    .any(|m| g.race(m) == "Dragon")
             },
             cost_choices: Some(|g, s| {
                 singles(
                     g.monsters_controlled(s.controller)
                         .into_iter()
-                        .filter(|&m| g.stats(m).race == "Dragon"),
+                        .filter(|&m| g.race(m) == "Dragon"),
                 )
             }),
             cost: Some(|g, ctx| {

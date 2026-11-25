@@ -2,7 +2,9 @@
 //! declaration (tributes paid, negation window) and the completion.
 
 use crate::chain::{Pending, PendingSummon, SummonKind};
-use crate::{Action, Event, Game, InstanceId, Location, Phase, PlayerId, Position, WindowKind};
+use crate::{
+    Action, Event, Game, InstanceId, Location, Phase, PlayerId, Position, Tag, WindowKind,
+};
 
 impl Game {
     /// Number of tributes a monster of `level` needs, from the rules.
@@ -36,19 +38,40 @@ impl Game {
             return;
         }
         let state = &self.players[player.index()];
-        let free_zones = state.monster_zones.iter().filter(|z| z.is_none()).count();
-        let on_field: Vec<InstanceId> = state.monsters().collect();
+        let free_zones = (0..state.monster_zones.len())
+            .filter(|&i| state.monster_zones[i].is_none() && !self.zone_locked(player, i))
+            .count();
+        let mut on_field: Vec<InstanceId> = state
+            .monsters()
+            .filter(|&m| !self.script(m).is_some_and(|s| s.has(Tag::NoTributeSummon)))
+            .collect();
+        // Soul Exchange: the opponent's monster joins, and must be used.
+        let must = self.must_tribute(player);
+        // Scapegoat leaves Sets open, unless Light of Intervention makes
+        // them summons too.
+        let locked = self.summons_locked(player);
+        let sets_locked = locked && self.face_down_forbidden();
+        on_field.extend(must);
         for &card in &state.hand {
             let stats = self.stats(card);
             if !stats.can_normal_summon(self.script(card)) {
                 continue;
             }
             let needed = self.tributes_needed(stats.level);
-            if needed > on_field.len() || free_zones + needed == 0 {
+            if needed > on_field.len() {
                 continue;
             }
             for tributes in combinations(&on_field, needed) {
+                let freed = tributes.iter().filter(|&&t| Some(t) != must).count();
+                if free_zones + freed == 0
+                    || must.is_some_and(|m| needed > 0 && !tributes.contains(&m))
+                {
+                    continue;
+                }
                 for face_down in [false, true] {
+                    if (!face_down && locked) || (face_down && sets_locked) {
+                        continue;
+                    }
                     actions.push(Action::Summon {
                         card,
                         tributes: tributes.clone(),
@@ -77,10 +100,17 @@ impl Game {
             });
         }
         self.players[player.index()].summons_used += 1;
+        // Under Light of Intervention a Set is a face-up Defense summon.
+        let position = match (face_down, self.face_down_forbidden()) {
+            (false, _) => Position::FaceUpAttack,
+            (true, false) => Position::FaceDownDefense,
+            (true, true) => Position::FaceUpDefense,
+        };
+        let face_down = position == Position::FaceDownDefense;
         let pending = PendingSummon {
             player,
             card,
-            kind: SummonKind::Normal,
+            kind: SummonKind::Normal { position },
             face_down,
             negated: false,
         };
@@ -162,7 +192,7 @@ impl Game {
             player,
             card,
             kind,
-            face_down,
+            face_down: _,
             negated,
         } = ps;
         if negated {
@@ -170,41 +200,12 @@ impl Game {
             return;
         }
         match kind {
-            SummonKind::Normal => {
-                let position = if face_down {
-                    Position::FaceDownDefense
-                } else {
-                    Position::FaceUpAttack
-                };
-                self.remove_from_current_place(card);
-                let state = &mut self.players[player.index()];
-                let zone = state
-                    .monster_zones
-                    .iter()
-                    .position(|z| z.is_none())
-                    .expect("a free zone was checked when the action was offered");
-                state.monster_zones[zone] = Some(card);
-                state.monsters_entered += 1;
-                let turn = self.turn;
-                let inst = &mut self.instances[card.index()];
-                inst.location = Location::MonsterZone(zone as u8);
-                inst.position = position;
-                inst.controller = player;
-                inst.turn_entered_field = Some(turn);
-                inst.turn_set = face_down.then_some(turn);
-                inst.position_changed_this_turn = false;
-                inst.attacked_this_turn = false;
-                inst.counter = 0;
-                self.emit(Event::Summoned {
-                    player,
-                    card,
-                    position,
-                });
-            }
+            SummonKind::Normal { position } => self.place_summoned(player, card, position),
             SummonKind::Procedure { position } => {
                 self.special_summon_properly(card, player, position);
             }
             SummonKind::Flip => {
+                self.players[player.index()].summoned = true;
                 let inst = &mut self.instances[card.index()];
                 inst.position = Position::FaceUpAttack;
                 inst.position_changed_this_turn = true;
@@ -212,6 +213,74 @@ impl Game {
             }
         }
         self.open_window(WindowKind::SummonSuccess, self.turn_player);
+    }
+}
+
+impl Game {
+    /// Puts a Normal Summoned or Set monster from the hand on the field.
+    fn place_summoned(&mut self, player: PlayerId, card: InstanceId, position: Position) {
+        self.remove_from_current_place(card);
+        let zone = self
+            .free_monster_zone(player)
+            .expect("a free zone was checked when the summon was offered");
+        let state = &mut self.players[player.index()];
+        state.monster_zones[zone] = Some(card);
+        state.monsters_entered += 1;
+        let face_down = position == Position::FaceDownDefense;
+        state.summoned |= !face_down;
+        let turn = self.turn;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::MonsterZone(zone as u8);
+        inst.position = position;
+        inst.controller = player;
+        inst.turn_entered_field = Some(turn);
+        inst.turn_set = face_down.then_some(turn);
+        inst.position_changed_this_turn = false;
+        inst.attacks_this_turn = 0;
+        inst.counter = 0;
+        self.emit(Event::Summoned {
+            player,
+            card,
+            position,
+        });
+    }
+
+    /// A Normal Summon or Set an effect grants on its resolution (Ultimate
+    /// Offering): `tributes` go first, and the turn's own Normal Summon is
+    /// not used. It happens inside the chain, so it opens no summon windows
+    /// of its own; the summon is seen once the chain has resolved. Returns
+    /// `false`, doing nothing, if `card` is not in its controller's hand or
+    /// no Monster Zone would be free.
+    pub fn normal_summon_by_effect(
+        &mut self,
+        card: InstanceId,
+        tributes: &[InstanceId],
+        face_down: bool,
+    ) -> bool {
+        let player = self.instances[card.index()].controller;
+        let frees = tributes.iter().any(|&t| {
+            matches!(self.instances[t.index()].location, Location::MonsterZone(_))
+                && self.instances[t.index()].controller == player
+        });
+        if self.instances[card.index()].location != Location::Hand
+            || (self.free_monster_zone(player).is_none() && !frees)
+        {
+            return false;
+        }
+        for &tribute in tributes {
+            self.send_to_graveyard(tribute);
+            self.emit(Event::Tributed {
+                player,
+                card: tribute,
+            });
+        }
+        let position = match (face_down, self.face_down_forbidden()) {
+            (false, _) => Position::FaceUpAttack,
+            (true, false) => Position::FaceDownDefense,
+            (true, true) => Position::FaceUpDefense,
+        };
+        self.place_summoned(player, card, position);
+        true
     }
 }
 

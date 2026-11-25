@@ -14,6 +14,9 @@ use crate::{
 /// A continuous modifier on the field: its source and its function.
 pub(crate) type Modifier = (Source, fn(&Game, Source, InstanceId) -> StatMod);
 
+/// A continuous negation on the field: its source and its function.
+pub(crate) type Negator = (Source, fn(&Game, Source, InstanceId) -> bool);
+
 impl Game {
     pub(crate) fn emit(&mut self, event: Event) {
         self.events.push(event.clone());
@@ -42,6 +45,9 @@ impl Game {
 
     /// Removes a card from play (any location) to its owner's banished pile.
     pub fn banish(&mut self, card: InstanceId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         if from == Location::Banished {
             return;
@@ -92,10 +98,14 @@ impl Game {
     /// Bell), or the opponent has a face-up card that reveals it (The Eye of
     /// Truth).
     pub fn hand_revealed(&self, player: PlayerId) -> bool {
+        if self.hooks & crate::pool::HOOK_REVEAL == 0 {
+            return false;
+        }
         let mut revealed = false;
         self.for_each_face_up_script(|controller, script| {
             if script.has(Tag::RevealHands)
                 || (controller != player && script.has(Tag::RevealOpponentHand))
+                || (player == self.turn_player && script.has(Tag::RevealTurnPlayerHand))
             {
                 revealed = true;
             }
@@ -104,6 +114,7 @@ impl Game {
     }
 
     fn for_each_face_up_script(&self, mut f: impl FnMut(PlayerId, &crate::CardScript)) {
+        let negators = self.negators();
         for p in PlayerId::BOTH {
             let state = &self.players[p.index()];
             let cards = state
@@ -116,6 +127,7 @@ impl Game {
             for card in cards {
                 let inst = &self.instances[card.index()];
                 if inst.position.is_face_up()
+                    && !self.negated_with(&negators, card)
                     && let Some(script) = self.shared.script(inst.card)
                 {
                     f(inst.controller, script);
@@ -170,7 +182,8 @@ impl Game {
                 let rules = &self.shared.rules.summon;
                 let state = &self.players[player.index()];
                 let cap = rules.max_monsters_entering_per_turn;
-                (cap == 0 || usize::from(state.monsters_entered) < cap)
+                !self.summons_locked(player)
+                    && (cap == 0 || usize::from(state.monsters_entered) < cap)
                     && (!rules.special_summon_counts_toward_limit
                         || usize::from(state.summons_used) < rules.normal_or_tribute_per_turn)
             })
@@ -206,6 +219,9 @@ impl Game {
     /// Changes a monster's battle position by an effect; it then counts as
     /// having changed position this turn.
     pub fn set_position(&mut self, card: InstanceId, position: Position) {
+        if position == Position::FaceDownDefense && self.face_down_forbidden() {
+            return;
+        }
         let inst = &mut self.instances[card.index()];
         if !matches!(inst.location, Location::MonsterZone(_)) || inst.position == position {
             return;
@@ -317,6 +333,7 @@ impl Game {
             self.emit(Event::PhaseEntered {
                 phase: crate::Phase::Battle(crate::BattleStep::End),
             });
+            self.destroy_hats();
         }
     }
 
@@ -350,7 +367,10 @@ impl Game {
 
     /// Sends a card on the field to the Graveyard by a card effect.
     pub fn destroy(&mut self, card: InstanceId, source: InstanceId) {
-        if !self.on_field(card) || self.shielded.contains(&card) {
+        if !self.on_field(card)
+            || self.shielded.contains(&card)
+            || (card != source && self.is_spell(source) && self.unaffected_by_spells(card))
+        {
             return;
         }
         self.send_to_graveyard(card);
@@ -386,6 +406,9 @@ impl Game {
 
     /// Moves a card from anywhere (Deck, Graveyard, field) to its owner's hand.
     pub fn add_to_hand(&mut self, card: InstanceId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         if from == Location::Hand || self.send_to_extra_deck_instead(card) {
             return;
@@ -467,6 +490,7 @@ impl Game {
         let state = &self.players[player.index()];
         let cap = rules.max_monsters_entering_per_turn;
         self.free_monster_zone(player).is_some()
+            && !self.summons_locked(player)
             && (cap == 0 || usize::from(state.monsters_entered) < cap)
             && (!rules.special_summon_counts_toward_limit
                 || usize::from(state.summons_used) < rules.normal_or_tribute_per_turn)
@@ -538,6 +562,11 @@ impl Game {
         if !self.can_special_summon(player) {
             return false;
         }
+        let position = if position == Position::FaceDownDefense && self.face_down_forbidden() {
+            Position::FaceUpDefense
+        } else {
+            position
+        };
         self.remove_from_current_place(card);
         let zone = self.free_monster_zone(player).expect("checked above");
         let rules = &self.shared.rules.summon;
@@ -545,6 +574,7 @@ impl Game {
         let state = &mut self.players[player.index()];
         state.monster_zones[zone] = Some(card);
         state.monsters_entered += 1;
+        state.summoned = true;
         if counts {
             state.summons_used += 1;
         }
@@ -556,7 +586,7 @@ impl Game {
         inst.turn_entered_field = Some(turn);
         inst.turn_set = None;
         inst.position_changed_this_turn = false;
-        inst.attacked_this_turn = false;
+        inst.attacks_this_turn = 0;
         inst.counter = 0;
         self.emit(Event::SpecialSummoned {
             player,
@@ -584,7 +614,7 @@ impl Game {
         inst.controller = to;
         inst.turn_entered_field = Some(turn);
         inst.position_changed_this_turn = false;
-        inst.attacked_this_turn = false;
+        inst.attacks_this_turn = 0;
         self.emit(Event::ControlChanged { card, to });
         true
     }
@@ -637,10 +667,36 @@ impl Game {
                 LingeringKind::Destroy { card } => {
                     self.destroy(card, l.source);
                 }
+                // A hat still standing (its destruction was prevented) goes
+                // too: it cannot remain outside that Battle Phase.
+                LingeringKind::HatMonster { card } => {
+                    if matches!(
+                        self.instances[card.index()].location,
+                        Location::MonsterZone(_)
+                    ) {
+                        self.send_to_graveyard(card);
+                    }
+                }
+                LingeringKind::Borrowed { card, player } => {
+                    if self.players[player.index()].hand.contains(&card) {
+                        self.send_to_graveyard(card);
+                    }
+                }
                 LingeringKind::Stats { .. }
+                | LingeringKind::PositionLocked { .. }
+                | LingeringKind::NoSpellsOrTraps
+                | LingeringKind::Negated { .. }
+                | LingeringKind::ZoneLocked { .. }
+                | LingeringKind::ReturnToHand { .. }
+                | LingeringKind::ReturnToField { .. }
                 | LingeringKind::CannotAttack { .. }
                 | LingeringKind::DamageCalcStats { .. }
                 | LingeringKind::Marked { .. }
+                | LingeringKind::Race { .. }
+                | LingeringKind::StatChangesReversed
+                | LingeringKind::MustTribute { .. }
+                | LingeringKind::NoBattlePhase { .. }
+                | LingeringKind::NoSummons { .. }
                 | LingeringKind::BattleShield { .. } => {}
             }
         }
@@ -655,6 +711,7 @@ impl Game {
     /// Calls `f` for every continuous effect of a face-up card on the
     /// field, without allocating.
     fn for_each_continuous(&self, mut f: impl FnMut(Source, &Effect)) {
+        let negators = self.negators();
         for p in PlayerId::BOTH {
             let state = &self.players[p.index()];
             let cards = state
@@ -666,7 +723,7 @@ impl Game {
                 .chain(state.field_zone);
             for card in cards {
                 let inst = &self.instances[card.index()];
-                if !inst.position.is_face_up() {
+                if !inst.position.is_face_up() || self.negated_with(&negators, card) {
                     continue;
                 }
                 let Some(script) = self.shared.script(inst.card) else {
@@ -685,6 +742,205 @@ impl Game {
         }
     }
 
+    /// Every continuous negation of a face-up card on the field, whether or
+    /// not that card is negated itself. Empty, and free, without negators.
+    pub(crate) fn negators(&self) -> Vec<Negator> {
+        let mut out = Vec::new();
+        if self.hooks & crate::pool::HOOK_NEGATE == 0 {
+            return out;
+        }
+        for p in PlayerId::BOTH {
+            let state = &self.players[p.index()];
+            let cards = state
+                .monster_zones
+                .iter()
+                .chain(state.spell_trap_zones.iter())
+                .flatten()
+                .copied()
+                .chain(state.field_zone);
+            for card in cards {
+                let inst = &self.instances[card.index()];
+                if !inst.position.is_face_up() {
+                    continue;
+                }
+                let Some(script) = self.shared.script(inst.card) else {
+                    continue;
+                };
+                for effect in &script.effects {
+                    if let Some(negate) = effect.negate {
+                        let source = Source {
+                            card,
+                            controller: inst.controller,
+                        };
+                        out.push((source, negate));
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    fn negated_this_turn(&self, card: InstanceId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::Negated { card })
+    }
+
+    /// Whether `card`'s effects are negated (and it cannot be activated).
+    /// A negator counts unless it is negated itself, looked at one level
+    /// deep: Jinzo turns off Imperial Order, so Imperial Order no longer
+    /// negates Spells.
+    pub fn negated(&self, card: InstanceId) -> bool {
+        self.negated_with(&self.negators(), card)
+    }
+
+    pub(crate) fn negated_with(&self, negators: &[Negator], card: InstanceId) -> bool {
+        if self.negated_this_turn(card) {
+            return true;
+        }
+        let active = |s: Source| {
+            !self.negated_this_turn(s.card)
+                && !negators.iter().any(|&(t, g)| {
+                    t.card != s.card && !self.negated_this_turn(t.card) && g(self, t, s.card)
+                })
+        };
+        negators
+            .iter()
+            .any(|&(s, f)| s.card != card && f(self, s, card) && active(s))
+    }
+
+    /// Negates `card`'s effects until this turn's End Phase.
+    /// `card` takes the Type `source`'s `race` hook names until the End
+    /// Phase, while it stays on the field (D. Tribe).
+    pub fn change_race_until_end_phase(&mut self, source: InstanceId, card: InstanceId) {
+        let turn = self.turn;
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::Race { card },
+            expires_turn: turn,
+        });
+    }
+
+    pub fn negate_until_end_of_turn(&mut self, source: InstanceId, card: InstanceId) {
+        let turn = self.turn;
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::Negated { card },
+            expires_turn: turn,
+        });
+    }
+
+    /// Whether a continuous effect forbids `action` (Prohibition).
+    pub(crate) fn action_forbidden(&self, action: &crate::Action) -> bool {
+        if self.hooks & crate::pool::HOOK_FORBID == 0 {
+            return false;
+        }
+        let mut forbidden = false;
+        self.for_each_continuous(|source, effect| {
+            if !forbidden && effect.forbid.is_some_and(|f| f(self, source, action)) {
+                forbidden = true;
+            }
+        });
+        forbidden
+    }
+
+    /// `card`'s current Type: a face-up monster's may be changed by a
+    /// continuous effect (the last one found wins); otherwise its own.
+    pub fn race(&self, card: InstanceId) -> &str {
+        let inst = &self.instances[card.index()];
+        let mut changed = None;
+        if self.hooks & crate::pool::HOOK_RACE != 0
+            && matches!(inst.location, Location::MonsterZone(_))
+            && inst.position.is_face_up()
+        {
+            self.for_each_continuous(|source, effect| {
+                if let Some(f) = effect.race
+                    && let Some(r) = f(self, source, card)
+                {
+                    changed = Some(r);
+                }
+            });
+            // A lasting change applies after the continuous ones.
+            for l in &self.lingering {
+                if l.kind == (LingeringKind::Race { card })
+                    && let Some(f) = self
+                        .script(l.source)
+                        .and_then(|s| s.effects.iter().find_map(|e| e.race))
+                    && let Some(r) = f(
+                        self,
+                        Source {
+                            card: l.source,
+                            controller: self.instances[l.source.index()].controller,
+                        },
+                        card,
+                    )
+                {
+                    changed = Some(r);
+                }
+            }
+        }
+        changed.unwrap_or(&self.stats(card).race)
+    }
+
+    /// Whether one of `card`'s own continuous effects holds that it is
+    /// `hook`'s property now (it must be face-up on the field and not negated).
+    fn own_property(&self, card: InstanceId, hook: fn(&Effect) -> Option<crate::SelfHook>) -> bool {
+        let inst = &self.instances[card.index()];
+        if self.hooks & crate::pool::HOOK_SELF == 0
+            || !inst.location.on_field()
+            || !inst.position.is_face_up()
+        {
+            return false;
+        }
+        let Some(script) = self.script(card) else {
+            return false;
+        };
+        let source = Source {
+            card,
+            controller: inst.controller,
+        };
+        script
+            .effects
+            .iter()
+            .any(|e| hook(e).is_some_and(|f| f(self, source)))
+            && !self.negated(card)
+    }
+
+    /// Whether `card` is unaffected by Spell effects right now.
+    pub fn unaffected_by_spells(&self, card: InstanceId) -> bool {
+        self.own_property(card, |e| e.spell_immune)
+    }
+
+    /// Whether `card` cannot be targeted for attacks right now.
+    pub fn cannot_be_attacked(&self, card: InstanceId) -> bool {
+        self.own_property(card, |e| e.unattackable)
+    }
+
+    /// Puts `card` face-up into `player`'s Deck and shuffles it (Parasite
+    /// Paracide); it stays its owner's card.
+    pub fn put_face_up_in_deck(&mut self, card: InstanceId, player: PlayerId) {
+        if self.token_leaves(card) {
+            return;
+        }
+        let from = self.instances[card.index()].location;
+        self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Deck;
+        inst.position = Position::FaceUp;
+        inst.controller = player;
+        inst.turn_set = None;
+        inst.properly_summoned = false;
+        inst.turn_entered_field = None;
+        inst.equipped_to = None;
+        inst.counter = 0;
+        self.players[player.index()].deck.insert(0, card);
+        self.emit(Event::ReturnedToDeck { player, card });
+        self.shuffle_deck(player);
+    }
+
     /// The continuous modifiers currently on the field, collected once so
     /// many cards' stats can be computed without rescanning.
     pub(crate) fn modifiers(&self) -> Vec<Modifier> {
@@ -700,25 +956,60 @@ impl Game {
     /// ATK and DEF of `card` under the given modifiers.
     pub(crate) fn stats_with(&self, modifiers: &[Modifier], card: InstanceId) -> (i32, i32) {
         let base = self.stats(card);
-        let mut total = self.temporary_mod(card);
+        let immune = self.unaffected_by_spells(card);
+        let reversed = self.stat_changes_reversed();
+        let mut total = self.temporary_mod(card, immune, reversed);
         for (source, modify) in modifiers {
+            if immune && self.is_spell(source.card) {
+                continue;
+            }
             let m = modify(self, *source, card);
-            total.atk += m.atk;
-            total.def += m.def;
+            let sign = self.stat_sign(reversed, source.card);
+            total.atk += sign * m.atk;
+            total.def += sign * m.def;
         }
         ((base.atk + total.atk).max(0), (base.def + total.def).max(0))
     }
 
-    fn temporary_mod(&self, card: InstanceId) -> StatMod {
+    fn is_spell(&self, card: InstanceId) -> bool {
+        self.stats(card).kind == CardKind::Spell
+    }
+
+    /// Lingering ATK/DEF changes; a card unaffected by Spells ignores those
+    /// a Spell gave.
+    fn stat_changes_reversed(&self) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::StatChangesReversed)
+    }
+
+    /// +1, or -1 while Reverse Trap reverses `source`'s additions.
+    fn stat_sign(&self, reversed: bool, source: InstanceId) -> i32 {
+        if reversed
+            && !self
+                .script(source)
+                .is_some_and(|s| s.has(Tag::StatsSetOrScaled))
+        {
+            -1
+        } else {
+            1
+        }
+    }
+
+    fn temporary_mod(&self, card: InstanceId, immune: bool, reversed: bool) -> StatMod {
         let mut total = StatMod::default();
         for l in &self.lingering {
+            if immune && self.is_spell(l.source) {
+                continue;
+            }
             match l.kind {
                 LingeringKind::Stats { card: c, atk, def }
                 | LingeringKind::DamageCalcStats { card: c, atk, def }
                     if c == card =>
                 {
-                    total.atk += atk;
-                    total.def += def;
+                    let sign = self.stat_sign(reversed, l.source);
+                    total.atk += sign * atk;
+                    total.def += sign * def;
                 }
                 _ => {}
             }
@@ -727,12 +1018,18 @@ impl Game {
     }
 
     fn stat_mod(&self, card: InstanceId) -> StatMod {
-        let mut total = self.temporary_mod(card);
+        let immune = self.unaffected_by_spells(card);
+        let reversed = self.stat_changes_reversed();
+        let mut total = self.temporary_mod(card, immune, reversed);
         self.for_each_continuous(|source, effect| {
+            if immune && self.is_spell(source.card) {
+                return;
+            }
             if let Some(modify) = effect.modify {
                 let m = modify(self, source, card);
-                total.atk += m.atk;
-                total.def += m.def;
+                let sign = self.stat_sign(reversed, source.card);
+                total.atk += sign * m.atk;
+                total.def += sign * m.def;
             }
         });
         total
@@ -878,15 +1175,115 @@ impl Game {
         self.instances[card.index()].location == Location::Hand
     }
 
-    /// Whether a continuous effect forbids changing `card`'s position.
+    /// Whether a continuous or lingering effect forbids changing `card`'s
+    /// position.
     pub fn position_locked(&self, card: InstanceId) -> bool {
-        let mut locked = false;
+        let mut locked = self
+            .lingering
+            .iter()
+            .any(|l| matches!(l.kind, LingeringKind::PositionLocked { card: c } if c == card));
         self.for_each_continuous(|source, effect| {
             if !locked && effect.lock_position.is_some_and(|f| f(self, source, card)) {
                 locked = true;
             }
         });
         locked
+    }
+
+    /// Skips `player`'s next draw in a Draw Phase (Time Seal).
+    pub fn skip_next_draw(&mut self, player: PlayerId) {
+        self.players[player.index()].skip_draw = true;
+    }
+
+    /// Skips `player`'s next Standby Phase (Solomon's Lawbook).
+    pub fn skip_next_standby(&mut self, player: PlayerId) {
+        self.players[player.index()].skip_standby = true;
+    }
+
+    /// Skips `player`'s next turn (Gamble).
+    pub fn skip_next_turn(&mut self, player: PlayerId) {
+        self.players[player.index()].skip_turn = true;
+    }
+
+    /// `card`'s controller cannot change its battle position until the End
+    /// Phase of turn `turn`.
+    pub fn lock_position_until(&mut self, source: InstanceId, card: InstanceId, turn: u32) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::PositionLocked { card },
+            expires_turn: turn,
+        });
+    }
+
+    /// Neither player may activate or Set a Spell or Trap Card until the End
+    /// Phase of turn `turn` (Cold Wave).
+    pub fn forbid_spells_and_traps_until(&mut self, source: InstanceId, turn: u32) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::NoSpellsOrTraps,
+            expires_turn: turn,
+        });
+    }
+
+    /// Whether no monster may be Set or turned face-down now (Light of
+    /// Intervention).
+    pub fn face_down_forbidden(&self) -> bool {
+        let mut forbidden = false;
+        self.for_each_face_up_script(|_, script| {
+            forbidden |= script.has(Tag::NoFaceDownMonsters);
+        });
+        forbidden
+    }
+
+    /// The opponent's monster `player` must Tribute this turn, while it is
+    /// still on the field (Soul Exchange).
+    pub fn must_tribute(&self, player: PlayerId) -> Option<InstanceId> {
+        self.lingering.iter().find_map(|l| match l.kind {
+            LingeringKind::MustTribute { player: p, card }
+                if p == player
+                    && self.instances[card.index()].controller != player
+                    && matches!(
+                        self.instances[card.index()].location,
+                        Location::MonsterZone(_)
+                    ) =>
+            {
+                Some(card)
+            }
+            _ => None,
+        })
+    }
+
+    /// Whether `player` may not Summon this turn, only Set (Scapegoat).
+    pub fn summons_locked(&self, player: PlayerId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::NoSummons { player })
+    }
+
+    pub(crate) fn battle_phase_forbidden(&self, player: PlayerId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::NoBattlePhase { player })
+    }
+
+    pub(crate) fn spells_and_traps_forbidden(&self) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::NoSpellsOrTraps)
+    }
+
+    /// Whether `action` activates or Sets a Spell or Trap Card (from the hand
+    /// or face-down), as opposed to using a face-up card's effect.
+    pub(crate) fn plays_spell_or_trap(&self, action: &crate::Action) -> bool {
+        match action {
+            crate::Action::SetSpellTrap { .. } => true,
+            crate::Action::Activate { card, .. } => {
+                let inst = &self.instances[card.index()];
+                !self.stats(*card).is_monster()
+                    && (inst.location == Location::Hand || inst.position == Position::FaceDown)
+            }
+            _ => false,
+        }
     }
 
     /// Lets `player` enter a second Battle Phase from Main Phase 2 of turn
@@ -916,7 +1313,7 @@ impl Game {
             inst.controller = to;
             inst.turn_entered_field = Some(turn);
             inst.position_changed_this_turn = false;
-            inst.attacked_this_turn = false;
+            inst.attacks_this_turn = 0;
             self.emit(Event::ControlChanged { card, to });
         }
         true
@@ -981,6 +1378,19 @@ impl Game {
         true
     }
 
+    /// Turns a face-down Defense Position monster face-up in `position`
+    /// without flipping it: its FLIP effect does not activate (Ceasefire,
+    /// Shadow of Eyes).
+    pub fn turn_face_up_quietly(&mut self, card: InstanceId, position: Position) -> bool {
+        let inst = &mut self.instances[card.index()];
+        if inst.position != Position::FaceDownDefense || !position.is_face_up() {
+            return false;
+        }
+        inst.position = position;
+        self.emit(Event::PositionChanged { card, position });
+        true
+    }
+
     pub fn equip_target(&self, equip: InstanceId) -> Option<InstanceId> {
         self.instances[equip.index()].equipped_to
     }
@@ -1011,7 +1421,7 @@ impl Game {
 
     /// Places a card from anywhere on top of its owner's Deck.
     pub fn place_on_top_of_deck(&mut self, card: InstanceId) {
-        if self.send_to_extra_deck_instead(card) {
+        if self.token_leaves(card) || self.send_to_extra_deck_instead(card) {
             return;
         }
         self.remove_from_current_place(card);
@@ -1035,6 +1445,9 @@ impl Game {
     /// Returns a card from anywhere to the bottom of its owner's Deck;
     /// the caller shuffles if the card says so.
     pub fn return_to_deck(&mut self, card: InstanceId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         if from == Location::Deck || self.send_to_extra_deck_instead(card) {
             return;
@@ -1238,6 +1651,12 @@ impl Game {
             }
         }
         self.send_equips_to_graveyard(card);
+        // A zone lock ends when its source leaves the field (Ground Collapse).
+        self.lingering
+            .retain(|l| !(l.source == card && matches!(l.kind, LingeringKind::ZoneLocked { .. })));
+        // A Type given until the End Phase ends when the monster leaves.
+        self.lingering
+            .retain(|l| l.kind != LingeringKind::Race { card });
     }
 
     fn send_equips_to_graveyard(&mut self, card: InstanceId) {
@@ -1263,6 +1682,60 @@ impl Game {
 
     /// An Extra Deck monster that would go to the hand or the Deck goes
     /// back to its owner's Extra Deck instead. Returns whether it did.
+    /// A Token sent anywhere off the field stops existing instead.
+    /// Returns whether `card` was such a Token.
+    fn token_leaves(&mut self, card: InstanceId) -> bool {
+        let from = self.instances[card.index()].location;
+        if !self.stats(card).token || from == Location::Gone {
+            return false;
+        }
+        self.remove_from_current_place(card);
+        if from.on_field() {
+            self.on_leave_field(card);
+        }
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Gone;
+        inst.position = Position::FaceUp;
+        inst.controller = inst.owner;
+        inst.turn_set = None;
+        inst.turn_entered_field = None;
+        inst.equipped_to = None;
+        self.emit(Event::TokenRemoved { card });
+        true
+    }
+
+    /// Special Summons a new Token `id` (from `tokens.json`) to `player`'s
+    /// field: a Token instance that is gone is reused, or a new one made.
+    /// `None` when the pool has no such Token, `player` has no free Monster
+    /// Zone, or the game holds as many cards as instance ids allow.
+    pub fn special_summon_token(
+        &mut self,
+        id: ygo_data::CardId,
+        player: PlayerId,
+        position: Position,
+    ) -> Option<InstanceId> {
+        let index = self.shared.pool.index_of(id)?;
+        if !self.shared.pool.get(index).token || self.free_monster_zone(player).is_none() {
+            return None;
+        }
+        let reused = self
+            .instances
+            .iter()
+            .position(|i| i.card == index && i.owner == player && i.location == Location::Gone);
+        let card = match reused {
+            Some(i) => InstanceId(i as u8),
+            None if self.instances.len() <= usize::from(u8::MAX) => {
+                let mut inst = crate::CardInstance::in_deck(index, player);
+                inst.location = Location::Gone;
+                self.instances.push(inst);
+                InstanceId((self.instances.len() - 1) as u8)
+            }
+            None => return None,
+        };
+        self.special_summon_unchecked(card, player, position)
+            .then_some(card)
+    }
+
     fn send_to_extra_deck_instead(&mut self, card: InstanceId) -> bool {
         let from = self.instances[card.index()].location;
         if !self.stats(card).is_extra_deck() || from == Location::Extra {
@@ -1314,7 +1787,257 @@ impl Game {
         self.players[player.index()]
             .monster_zones
             .iter()
-            .position(|z| z.is_none())
+            .enumerate()
+            .position(|(i, z)| z.is_none() && !self.zone_locked(player, i))
+    }
+
+    /// Whether an effect forbids using `player`'s Monster Zone `zone`.
+    pub fn zone_locked(&self, player: PlayerId, zone: usize) -> bool {
+        self.lingering.iter().any(|l| {
+            l.kind
+                == LingeringKind::ZoneLocked {
+                    player,
+                    zone: zone as u8,
+                }
+        })
+    }
+
+    /// Locks `player`'s Monster Zone `zone` while `source` is on the field
+    /// (or, for a banished source, until the lock is lifted).
+    pub fn lock_zone(&mut self, source: InstanceId, player: PlayerId, zone: usize) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::ZoneLocked {
+                player,
+                zone: zone as u8,
+            },
+            expires_turn: u32::MAX,
+        });
+    }
+
+    /// Banishes `card` face-down: only its owner knows it (Lightforce Sword).
+    pub fn banish_face_down(&mut self, card: InstanceId) {
+        self.banish(card);
+        if self.instances[card.index()].location == Location::Banished {
+            self.instances[card.index()].position = Position::FaceDown;
+        }
+    }
+
+    /// Returns the banished `card` to its owner's hand in `player`'s
+    /// Standby Phase after `standbys` of them (counting that one).
+    pub fn return_to_hand_after_standbys(
+        &mut self,
+        source: InstanceId,
+        card: InstanceId,
+        player: PlayerId,
+        standbys: u8,
+    ) {
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::ReturnToHand {
+                card,
+                player,
+                standbys,
+            },
+            expires_turn: u32::MAX,
+        });
+    }
+
+    /// Banishes `player`'s monster `card` until `player`'s next Standby
+    /// Phase; its zone cannot be used meanwhile (Dimensionhole).
+    pub fn banish_until_next_standby(&mut self, source: InstanceId, card: InstanceId) {
+        let inst = &self.instances[card.index()];
+        let (player, position) = (inst.controller, inst.position);
+        let Location::MonsterZone(zone) = inst.location else {
+            return;
+        };
+        self.banish(card);
+        self.lock_zone(card, player, usize::from(zone));
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::ReturnToField {
+                card,
+                player,
+                zone,
+                position,
+            },
+            expires_turn: u32::MAX,
+        });
+    }
+
+    /// Runs the returns due in `player`'s Standby Phase.
+    pub(crate) fn standby_returns(&mut self, player: PlayerId) {
+        let mut due = Vec::new();
+        for l in self.lingering.iter_mut() {
+            match &mut l.kind {
+                LingeringKind::ReturnToHand {
+                    player: p,
+                    standbys,
+                    ..
+                } if *p == player => {
+                    *standbys = standbys.saturating_sub(1);
+                    if *standbys == 0 {
+                        due.push(*l);
+                    }
+                }
+                LingeringKind::ReturnToField { player: p, .. } if *p == player => due.push(*l),
+                _ => {}
+            }
+        }
+        self.lingering.retain(|l| !due.contains(l));
+        for l in due {
+            match l.kind {
+                LingeringKind::ReturnToHand { card, .. } => {
+                    if self.instances[card.index()].location == Location::Banished {
+                        self.add_to_hand(card);
+                    }
+                }
+                LingeringKind::ReturnToField {
+                    card,
+                    player,
+                    zone,
+                    position,
+                } => {
+                    self.lingering.retain(|x| {
+                        !(x.source == card && matches!(x.kind, LingeringKind::ZoneLocked { .. }))
+                    });
+                    let zone = usize::from(zone);
+                    if self.instances[card.index()].location == Location::Banished
+                        && self.players[player.index()].monster_zones[zone].is_none()
+                    {
+                        self.remove_from_current_place(card);
+                        self.players[player.index()].monster_zones[zone] = Some(card);
+                        let turn = self.turn;
+                        let inst = &mut self.instances[card.index()];
+                        inst.location = Location::MonsterZone(zone as u8);
+                        inst.position = position;
+                        inst.controller = player;
+                        inst.turn_entered_field = Some(turn);
+                        inst.attacks_this_turn = 0;
+                        inst.position_changed_this_turn = false;
+                        inst.counter = 0;
+                        self.emit(Event::ReturnedToField { card });
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Moves a Spell from the opponent's Graveyard into `player`'s hand
+    /// until the End Phase (Graverobber); playing it costs 2000 LP.
+    pub fn borrow_to_hand(&mut self, source: InstanceId, card: InstanceId, player: PlayerId) {
+        let from = self.instances[card.index()].location;
+        self.remove_from_current_place(card);
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::Hand;
+        inst.position = Position::FaceUp;
+        inst.controller = player;
+        self.players[player.index()].hand.push(card);
+        self.emit(Event::AddedToHand { player, card, from });
+        let turn = self.turn;
+        self.lingering.push(Lingering {
+            source,
+            kind: LingeringKind::Borrowed { card, player },
+            expires_turn: turn,
+        });
+    }
+
+    /// Whether `card` is a borrowed card in `player`'s hand.
+    pub(crate) fn borrowed_by(&self, card: InstanceId, player: PlayerId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::Borrowed { card, player })
+    }
+
+    /// Puts a Spell or Trap `card` in `player`'s Monster Zone face-down as a
+    /// Normal Monster with 0 ATK and DEF (Magical Hats). Mark it with
+    /// `mark_hat` once the hats are shuffled.
+    pub fn set_as_monster(&mut self, card: InstanceId, player: PlayerId) -> bool {
+        if self.face_down_forbidden() {
+            return false;
+        }
+        let Some(zone) = self.free_monster_zone(player) else {
+            return false;
+        };
+        self.remove_from_current_place(card);
+        self.players[player.index()].monster_zones[zone] = Some(card);
+        let turn = self.turn;
+        let inst = &mut self.instances[card.index()];
+        inst.location = Location::MonsterZone(zone as u8);
+        inst.position = Position::FaceDownDefense;
+        inst.controller = player;
+        inst.turn_entered_field = Some(turn);
+        inst.attacks_this_turn = 0;
+        inst.counter = 0;
+        self.emit(Event::SpecialSummoned {
+            player,
+            card,
+            position: Position::FaceDownDefense,
+        });
+        true
+    }
+
+    /// Makes `card` a hat: no effects, destroyed when the Battle Phase ends.
+    pub fn mark_hat(&mut self, source: InstanceId, card: InstanceId) {
+        let turn = self.turn;
+        for kind in [
+            LingeringKind::HatMonster { card },
+            LingeringKind::Negated { card },
+        ] {
+            self.lingering.push(Lingering {
+                source,
+                kind,
+                expires_turn: turn,
+            });
+        }
+    }
+
+    /// Whether `card` is a Spell or Trap standing in as a monster.
+    pub fn is_hat(&self, card: InstanceId) -> bool {
+        self.lingering
+            .iter()
+            .any(|l| l.kind == LingeringKind::HatMonster { card })
+    }
+
+    /// Destroys the hats on the field (the end of the Battle Phase).
+    pub(crate) fn destroy_hats(&mut self) {
+        let hats: Vec<(InstanceId, InstanceId)> = self
+            .lingering
+            .iter()
+            .filter_map(|l| match l.kind {
+                LingeringKind::HatMonster { card } => Some((card, l.source)),
+                _ => None,
+            })
+            .collect();
+        for (card, source) in hats {
+            if matches!(
+                self.instances[card.index()].location,
+                Location::MonsterZone(_)
+            ) {
+                self.destroy(card, source);
+            }
+        }
+    }
+
+    /// Shuffles which of these face-down monsters of one player is which:
+    /// each keeps its zone, the cards trade places (Magical Hats).
+    pub fn shuffle_set_monsters(&mut self, cards: &[InstanceId]) {
+        self.forget(cards);
+        let before: Vec<crate::CardInstance> = cards
+            .iter()
+            .map(|c| self.instances[c.index()].clone())
+            .collect();
+        let mut order: Vec<usize> = (0..cards.len()).collect();
+        for i in (1..order.len()).rev() {
+            let j = self.random_index(i + 1);
+            order.swap(i, j);
+        }
+        for (i, &card) in cards.iter().enumerate() {
+            let mut inst = before[order[i]].clone();
+            inst.location = before[i].location;
+            self.instances[card.index()] = inst;
+        }
     }
 
     pub fn free_spell_trap_zone(&self, player: PlayerId) -> Option<usize> {
@@ -1331,8 +2054,9 @@ impl Game {
         if !matches!(inst.location, Location::MonsterZone(_)) {
             return false;
         }
-        self.shared.rules.turn.spell_target_monster_set_this_turn
-            || inst.turn_set != Some(self.turn)
+        (self.shared.rules.turn.spell_target_monster_set_this_turn
+            || inst.turn_set != Some(self.turn))
+            && !self.unaffected_by_spells(card)
     }
 
     // ----- internals shared with the turn machine -----
@@ -1375,11 +2099,15 @@ impl Game {
                 let owner = inst.owner;
                 self.players[owner.index()].graveyard.retain(|&c| c != card);
             }
+            Location::Gone => {}
         }
     }
 
     /// Moves a card from wherever it is to its owner's Graveyard.
     pub(crate) fn send_to_graveyard(&mut self, card: InstanceId) {
+        if self.token_leaves(card) {
+            return;
+        }
         let from = self.instances[card.index()].location;
         if from == Location::Graveyard {
             return;

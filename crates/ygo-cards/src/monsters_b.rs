@@ -323,7 +323,8 @@ pub fn register(r: &mut Registry) {
                     Flow::Done
                 })
             },
-        ]),
+        ])
+        .with_tag(Tag::StatsSetOrScaled),
     );
     r.register(
         THE_LITTLE_SWORDSMAN_OF_AILE,
@@ -566,7 +567,7 @@ pub fn register(r: &mut Registry) {
         }),
     );
     for id in [SANGA_OF_THE_THUNDER, KAZEJIN, SUIJIN] {
-        r.register(id, guardian());
+        r.register(id, guardian().with_tag(Tag::StatsSetOrScaled));
     }
     // Attacked by a non-Machine: that monster is destroyed in the End Phase
     // of its controller's 2nd turn after the attack (4 turns later).
@@ -575,7 +576,7 @@ pub fn register(r: &mut Registry) {
         single(Effect {
             on_attack: Some(|g, s, attacker| {
                 let attacked = g.current_attack().is_some_and(|(_, t)| t == Some(s.card));
-                if attacked && g.stats(attacker).race != "Machine" {
+                if attacked && g.race(attacker) != "Machine" {
                     let turn = g.turn() + 4;
                     g.destroy_at_end_of_turn(s.card, attacker, turn);
                 }
@@ -590,7 +591,7 @@ pub fn register(r: &mut Registry) {
         single(Effect {
             on_attack: Some(|g, s, attacker| {
                 let attacked = g.current_attack().is_some_and(|(_, t)| t == Some(s.card));
-                if attacked && g.stats(attacker).race != "Zombie" {
+                if attacked && g.race(attacker) != "Zombie" {
                     let turn = g.turn() + 2;
                     g.forbid_attacks_until(s.card, attacker, turn);
                 }
@@ -755,7 +756,8 @@ pub fn register(r: &mut Registry) {
                 }),
                 ..Effect::continuous()
             },
-        ]),
+        ])
+        .with_tag(Tag::StatsSetOrScaled),
     );
     r.register(
         HARPIE_LADY_SISTERS,

@@ -31,3 +31,6 @@ rustc-ice-*.txt
 
 # Built browser game (scripts/build-web.sh)
 /web/play/dist/
+
+# Neural network checkpoints (M6)
+/checkpoints/

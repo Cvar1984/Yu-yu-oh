@@ -1,12 +1,14 @@
 //! Players that answer the engine's decisions, and the loop that plays a
-//! recorded game between two of them. The uniform random player is the
-//! floor of the evaluation ladder and the engine's fuzzing driver.
+//! recorded game between two of them. The bots are the trained network
+//! (`neural`, alone or guiding a search, `mcts`; feature `neural`) and the
+//! uniform random player, the floor of the ladder and the engine's fuzzing
+//! driver. What the network reads is `encode`.
 
-mod heuristic;
-mod search;
-
-pub use heuristic::HeuristicPlayer;
-pub use search::{SearchPlayer, SearchSettings};
+pub mod encode;
+#[cfg(feature = "neural")]
+pub mod mcts;
+#[cfg(feature = "neural")]
+pub mod neural;
 
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};

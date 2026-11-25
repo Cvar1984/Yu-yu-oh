@@ -116,9 +116,7 @@ fn any_face_up(g: &Game, _s: Source) -> TargetSets {
 }
 
 fn non_machine(g: &Game, _s: Source) -> TargetSets {
-    face_up_monsters(g, |g, m| {
-        g.spell_targetable(m) && g.stats(m).race != "Machine"
-    })
+    face_up_monsters(g, |g, m| g.spell_targetable(m) && g.race(m) != "Machine")
 }
 
 fn bonus(atk: i32, def: i32) -> Effect {
@@ -143,10 +141,41 @@ fn to_top_of_deck(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
 }
 
 /// The last chain link, if the opponent of `s` activated it.
-fn opposing_link(g: &Game, s: Source) -> Option<ygo_engine::ChainLink> {
+pub(crate) fn opposing_link(g: &Game, s: Source) -> Option<ygo_engine::ChainLink> {
     g.last_link()
         .filter(|l| l.controller != s.controller && !l.negated)
         .cloned()
+}
+
+/// The monster on the field `link` targets, if it targets exactly that one
+/// card (Fairy's Hand Mirror, Riryoku Field, Shift).
+pub(crate) fn single_monster_target(g: &Game, link: &ygo_engine::ChainLink) -> Option<InstanceId> {
+    let &[t] = link.targets.as_slice() else {
+        return None;
+    };
+    (g.stats(t).is_monster() && g.on_field(t)).then_some(t)
+}
+
+/// The other single targets `link`'s effect could legally have chosen.
+pub(crate) fn other_single_targets(g: &Game, link: &ygo_engine::ChainLink) -> Vec<InstanceId> {
+    let Some(f) = g
+        .script(link.card)
+        .and_then(|sc| sc.effects.get(usize::from(link.effect)))
+        .and_then(|e| e.targets)
+    else {
+        return Vec::new();
+    };
+    let source = Source {
+        card: link.card,
+        controller: link.controller,
+    };
+    f(g, source)
+        .into_iter()
+        .filter_map(|set| match set.as_slice() {
+            &[t] if !link.targets.contains(&t) => Some(t),
+            _ => None,
+        })
+        .collect()
 }
 
 /// Fairy's Hand Mirror: (the Spell, a new single target) pairs the Spell
@@ -155,28 +184,12 @@ fn mirror_targets(g: &Game, s: Source) -> TargetSets {
     let Some(link) = opposing_link(g, s) else {
         return Vec::new();
     };
-    let is_spell = g.stats(link.card).kind == CardKind::Spell;
-    let one_monster = link.targets.len() == 1
-        && g.stats(link.targets[0]).is_monster()
-        && g.on_field(link.targets[0]);
-    if !is_spell || !one_monster {
+    if g.stats(link.card).kind != CardKind::Spell || single_monster_target(g, &link).is_none() {
         return Vec::new();
     }
-    let Some(f) = g
-        .script(link.card)
-        .and_then(|sc| sc.effects.get(usize::from(link.effect)))
-        .and_then(|e| e.targets)
-    else {
-        return Vec::new();
-    };
-    let spell = Source {
-        card: link.card,
-        controller: link.controller,
-    };
-    f(g, spell)
+    other_single_targets(g, &link)
         .into_iter()
-        .filter(|set| set.len() == 1 && set[0] != link.targets[0])
-        .map(|set| vec![link.card, set[0]])
+        .map(|t| vec![link.card, t])
         .collect()
 }
 
@@ -456,7 +469,8 @@ pub fn register(r: &mut Registry) {
                 ..Effect::continuous()
             },
             Vec::new(),
-        ),
+        )
+        .with_tag(Tag::StatsSetOrScaled),
     );
     // Control returns however Snatch Steal leaves the field (the engine
     // does it for Tag::ControlWhileEquipped).

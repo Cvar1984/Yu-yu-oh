@@ -54,7 +54,10 @@ pub enum WindowKind {
 /// How a summon was declared, for the cards that care.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SummonKind {
-    Normal,
+    /// A Normal or Tribute Summon or Set, in this position.
+    Normal {
+        position: Position,
+    },
     Flip,
     /// A summon procedure from the hand, in this position.
     Procedure {
@@ -95,9 +98,12 @@ pub(crate) enum Pending {
     ResolveChain,
     CompleteSummon(PendingSummon),
     /// After the attack-declaration window: start the Damage Step.
+    /// `monsters` is how many monsters the defender had when the attack was
+    /// declared: a different number by then means a replay.
     DamageStep {
         attacker: InstanceId,
         target: Option<InstanceId>,
+        monsters: u8,
     },
     /// After the damage-calculation window: calculate and apply damage.
     DamageCalc {
@@ -201,6 +207,12 @@ impl Game {
         })
     }
 
+    /// The card whose resolution waits for a `Choose` or `Ask` answer, if
+    /// any. For analysis tools; players see the question, not its source.
+    pub fn resolving_card(&self) -> Option<InstanceId> {
+        self.pending_choice.as_ref().map(|pc| pc.link.card)
+    }
+
     /// The link responses would chain to.
     pub fn last_link(&self) -> Option<&ChainLink> {
         self.chain.last()
@@ -258,10 +270,11 @@ impl Game {
         let moved: Vec<InstanceId> = events
             .iter()
             .filter_map(|e| match e {
-                Event::SentToGraveyard { card, .. } => Some(*card),
+                Event::SentToGraveyard { card, .. } | Event::Drew { card, .. } => Some(*card),
                 _ => None,
             })
             .collect();
+        let negators = self.negators();
         for player in [self.turn_player, self.turn_player.opponent()] {
             let state = &self.players[player.index()];
             let cards = state
@@ -272,13 +285,19 @@ impl Game {
                 .copied()
                 .chain(state.field_zone)
                 .chain(moved.iter().copied().filter(|c| {
-                    self.instances[c.index()].location == Location::Graveyard
-                        && self.instances[c.index()].owner == player
+                    let inst = &self.instances[c.index()];
+                    (inst.location == Location::Graveyard && inst.owner == player)
+                        || (inst.location == Location::Hand && inst.controller == player)
                 }));
             for card in cards {
                 let Some(script) = self.script(card) else {
                     continue;
                 };
+                if self.instances[card.index()].location.on_field()
+                    && self.negated_with(&negators, card)
+                {
+                    continue;
+                }
                 let controller = self.instances[card.index()].controller;
                 if controller != player {
                     continue;
@@ -395,6 +414,10 @@ impl Game {
         let inst = &self.instances[card.index()];
         let stats = self.stats(card);
         match (inst.location, stats.kind, stats.subtype) {
+            // The fast effect of a face-up Spell or Trap (Ultimate Offering).
+            (Location::SpellTrapZone(_), _, _) if effect.kind == EffectKind::Quick => {
+                inst.position.is_face_up()
+            }
             (Location::SpellTrapZone(_), CardKind::Trap, _) => {
                 inst.position == Position::FaceDown
                     && (self.shared.rules.turn.trap_activation_turn_set
@@ -441,6 +464,9 @@ impl Game {
         let Some(script) = self.script(card) else {
             return;
         };
+        if self.negated(card) {
+            return;
+        }
         let source = Source {
             card,
             controller: player,
@@ -471,6 +497,9 @@ impl Game {
                 .targets
                 .map_or_else(|| vec![Vec::new()], |f| f(self, source));
             if effect.kind == EffectKind::Procedure {
+                if self.summons_locked(source.controller) {
+                    continue;
+                }
                 for cost in &costs {
                     for position in [Position::FaceUpAttack, Position::FaceUpDefense] {
                         actions.push(Action::ProcedureSummon {
@@ -578,7 +607,8 @@ impl Game {
     }
 
     /// Ignition effects of the turn player's face-up monsters, and of cards
-    /// in their hand or Graveyard that say so, as Main Phase actions.
+    /// in their hand or Graveyard that say so, as Main Phase actions; also
+    /// the fast effects of their face-up Spells and Traps.
     pub(crate) fn ignition_actions(&self, player: PlayerId, actions: &mut Vec<Action>) {
         if !matches!(self.phase, Phase::Main1 | Phase::Main2) || !self.pending.is_empty() {
             return;
@@ -599,11 +629,17 @@ impl Game {
             if inst.location.on_field() && !inst.position.is_face_up() {
                 continue;
             }
+            // A face-up Spell or Trap's fast effect may be used as a Main
+            // Phase action too (Ultimate Offering).
+            let spell_trap = matches!(inst.location, Location::SpellTrapZone(_));
             self.push_activations(
                 player,
                 card,
                 &window,
-                |_, e| matches!(e.kind, EffectKind::Ignition | EffectKind::Procedure),
+                |_, e| {
+                    matches!(e.kind, EffectKind::Ignition | EffectKind::Procedure)
+                        || (spell_trap && e.kind == EffectKind::Quick)
+                },
                 actions,
             );
         }
@@ -617,7 +653,13 @@ impl Game {
         };
         let window = Window { kind, events };
         // With no chain, speed 1 is left to `fast_effect_allowed` (Standby Spells).
-        let min_speed = self.chain.last().map_or(1, |l| l.speed);
+        // Between a summon's declaration and its success only Counter Traps
+        // (speed 3) may start a chain.
+        let min_speed = match (self.chain.last(), kind) {
+            (Some(l), _) => l.speed,
+            (None, WindowKind::SummonDeclared) => 3,
+            (None, _) => 1,
+        };
         // Every window of the Damage Step counts, chain windows included:
         // only effects that may start there can respond to a Damage Step chain.
         let in_damage_step = self.phase == crate::Phase::Battle(crate::BattleStep::Damage);
@@ -768,6 +810,12 @@ impl Game {
     pub(crate) fn resolve_top_link(&mut self) {
         let link = self.chain.pop().expect("called with a non-empty chain");
         if link.negated {
+            self.finish_link(&link);
+            return;
+        }
+        // An effect negated since its activation resolves without effect.
+        if self.negated(link.card) {
+            self.emit(Event::EffectNegated { card: link.card });
             self.finish_link(&link);
             return;
         }

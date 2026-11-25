@@ -24,18 +24,18 @@ fn collection(name: &str) -> Collection {
 }
 
 #[test]
-fn all_440_cards_load_with_the_handoff_counts() {
+fn all_535_cards_load_with_the_handoff_counts() {
     let b = bundle();
-    assert_eq!(b.cards.len(), 440);
+    assert_eq!(b.cards.len(), 535);
     assert_eq!(
         b.cards.count_by_kind(),
         vec![
-            (CardKind::Normal, 168),
-            (CardKind::Effect, 99),
-            (CardKind::Fusion, 25),
+            (CardKind::Normal, 193),
+            (CardKind::Effect, 119),
+            (CardKind::Fusion, 26),
             (CardKind::Ritual, 5),
-            (CardKind::Spell, 107),
-            (CardKind::Trap, 36),
+            (CardKind::Spell, 121),
+            (CardKind::Trap, 71),
         ]
     );
     let by_index = |i: GameIndex| b.cards.iter().filter(|c| c.in_game_index == i).count();
@@ -44,11 +44,12 @@ fn all_440_cards_load_with_the_handoff_counts() {
             by_index(GameIndex::Lob),
             by_index(GameIndex::Mrd),
             by_index(GameIndex::Srl),
+            by_index(GameIndex::Psv),
             by_index(GameIndex::Extra),
         ],
-        [126, 144, 104, 66]
+        [126, 144, 104, 105, 56]
     );
-    // The 66 EXTRA cards are the ones data/extra_cards.txt names.
+    // The 56 EXTRA cards are the ones data/extra_cards.txt names.
     let names = std::fs::read_to_string(root().join("data/extra_cards.txt")).unwrap();
     let mut listed: Vec<&str> = names
         .lines()
@@ -76,7 +77,7 @@ fn all_440_cards_load_with_the_handoff_counts() {
 #[test]
 fn both_saves_collections_load() {
     let a = collection("collection.json");
-    assert_eq!((a.unique_cards(), a.total_copies()), (385, 1117));
+    assert_eq!((a.unique_cards(), a.total_copies()), (489, 1879));
     let b = collection("collection_save_b.json");
     assert_eq!((b.unique_cards(), b.total_copies()), (201, 421));
 }
@@ -91,7 +92,7 @@ fn every_deck_is_legal_and_owned_decks_fit_their_collection() {
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         .collect();
     names.sort();
-    assert_eq!(names.len(), 10);
+    assert_eq!(names.len(), 13);
     for name in &names {
         let d = deck(name);
         let owned = match d.played_by.as_deref() {
@@ -111,4 +112,28 @@ fn every_deck_is_legal_and_owned_decks_fit_their_collection() {
         6,
         "the six enemy decks"
     );
+}
+
+#[test]
+fn the_sheep_token_loads_outside_the_535_cards() {
+    let b = bundle();
+    let sheep = b.cards.token(CardId(73915052)).expect("tokens.json loads");
+    assert_eq!(sheep.name, "Sheep Token");
+    assert_eq!(b.cards.get(sheep.made_by).unwrap().name, "Scapegoat");
+    assert_eq!((sheep.level, sheep.atk, sheep.def), (1, 0, 0));
+    assert!(!b.cards.contains(sheep.id), "never a deck card");
+    assert_eq!(b.cards.len(), 535);
+}
+
+#[test]
+fn a_token_must_have_its_own_id_and_a_maker_in_the_pool() {
+    let b = bundle();
+    let mut token = b.cards.token(CardId(73915052)).unwrap().clone();
+    // The 535 cards without their Tokens.
+    let cards = || ygo_data::CardDb::from_cards(b.cards.iter().cloned().collect()).unwrap();
+    token.id = CardId(73915051); // Scapegoat's own id
+    assert!(cards().with_tokens(vec![token.clone()]).is_err());
+    token.id = CardId(1);
+    token.made_by = CardId(2);
+    assert!(cards().with_tokens(vec![token]).is_err());
 }

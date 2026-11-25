@@ -12,8 +12,8 @@ fn every_scripted_id_is_in_the_pool() {
     let b = bundle();
     for id in registry.ids() {
         assert!(
-            b.cards.contains(id),
-            "scripted card {id} is not in cards.json"
+            b.cards.contains(id) || b.cards.token(id).is_some(),
+            "scripted card {id} is in neither cards.json nor tokens.json"
         );
     }
 }
@@ -69,20 +69,11 @@ fn effect_monsters_summon_as_vanilla_but_toons_cannot() {
     );
 }
 
-/// Non-Normal EXTRA cards from the 440-card pool (handoff update,
-/// 2026-11-20) whose scripts are still to be written; see
-/// `docs/pool-440-plan.md`. The list only shrinks: every entry must be
-/// unscripted, and every unscripted card must be listed.
-const PENDING: &[(u32, &str)] = &[
-    (2833249, "D. Tribe"),
-    (62867251, "Light of Intervention"),
-    (77622396, "Reverse Trap"),
-    (70344351, "Riryoku Field"),
-    (73915051, "Scapegoat"),
-    (59560625, "Shift"),
-    (68005187, "Soul Exchange"),
-    (80604092, "Ultimate Offering"),
-];
+/// Non-Normal cards whose scripts are still to be written. Empty since
+/// the last EXTRA cards (`docs/pool-440-plan.md`, 2026-11-24); a card added
+/// to the pool without a script goes here until it has one. Every entry
+/// must be unscripted, and every unscripted card must be listed.
+const PENDING: &[(u32, &str)] = &[];
 
 #[test]
 fn every_non_normal_card_in_the_pool_has_a_script() {
@@ -110,5 +101,5 @@ fn every_non_normal_card_in_the_pool_has_a_script() {
         .iter()
         .filter(|c| c.kind() != CardKind::Normal)
         .count();
-    assert_eq!(non_normal, 272);
+    assert_eq!(non_normal, 342);
 }

@@ -17,27 +17,32 @@ use std::path::Path;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
-use ygo_data::{Banlist, Bundle, CardDb, CardValues, Deck, Rules, Styles};
+use ygo_data::{Banlist, Bundle, CardDb, Deck, Rules, TokenFile};
 use ygo_engine::{DeckList, GameSetup, InstanceId, PlayerId};
-use ygo_play::bots::{Bots, DEFAULT_BOT};
+use ygo_play::bots::Bots;
 use ygo_play::decks;
 use ygo_play::session::PlaySession;
 
 /// The human is always player 0.
 pub const HUMAN: PlayerId = PlayerId(0);
 
+/// The data files the page loads, as text.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct InitData {
+    rules: String,
+    cards: String,
+    banlist: String,
+    /// `tokens.json`, used when the rules name a Tokens file.
+    tokens: String,
+    /// Deck files: name (for errors and choosing) and JSON text.
+    decks: Vec<DeckFile>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(tag = "cmd", rename_all = "snake_case", deny_unknown_fields)]
 enum Command {
-    Init {
-        rules: String,
-        cards: String,
-        banlist: String,
-        styles: String,
-        card_values: String,
-        /// Deck files: name (for errors and choosing) and JSON text.
-        decks: Vec<DeckFile>,
-    },
+    Init(InitData),
     Start {
         deck: String,
         bot_deck: String,
@@ -81,6 +86,9 @@ struct Loaded {
 /// Everything the page talks to: the loaded data and the game in play.
 #[derive(Default)]
 pub struct Host {
+    /// The trained network the bots play with (`set_network`, before
+    /// `init`).
+    network: Option<ygo_ai::neural::Net>,
     loaded: Option<Loaded>,
     session: Option<PlaySession>,
     /// The human's choices so far, so the page can resume the game.
@@ -88,6 +96,14 @@ pub struct Host {
 }
 
 impl Host {
+    /// Loads the trained network from the bytes of its file; the next
+    /// `init` offers the `network` and `network-search` bots.
+    pub fn set_network(&mut self, bytes: Vec<u8>) -> Result<(), String> {
+        let net = ygo_ai::neural::Net::from_bytes(bytes, &ygo_ai::neural::cpu())?;
+        self.network = Some(net);
+        Ok(())
+    }
+
     /// Runs one JSON command; the answer is `{ "ok": ... }` or
     /// `{ "error": "..." }`.
     pub fn handle(&mut self, request: &str) -> String {
@@ -102,14 +118,7 @@ impl Host {
 
     fn run(&mut self, command: Command) -> Result<Value, String> {
         match command {
-            Command::Init {
-                rules,
-                cards,
-                banlist,
-                styles,
-                card_values,
-                decks,
-            } => self.init(&rules, &cards, &banlist, &styles, &card_values, decks),
+            Command::Init(data) => self.init(data),
             Command::Start {
                 deck,
                 bot_deck,
@@ -138,28 +147,22 @@ impl Host {
         }
     }
 
-    fn init(
-        &mut self,
-        rules: &str,
-        cards: &str,
-        banlist: &str,
-        styles: &str,
-        card_values: &str,
-        files: Vec<DeckFile>,
-    ) -> Result<Value, String> {
+    fn init(&mut self, data: InitData) -> Result<Value, String> {
         let err = |e: ygo_data::DataError| e.to_string();
-        let rules = Rules::parse(rules, Path::new("rules.toml")).map_err(err)?;
-        let cards = CardDb::parse(cards, Path::new("cards.json")).map_err(err)?;
-        let banlist = Banlist::parse(banlist, Path::new("banlist.json")).map_err(err)?;
+        let rules = Rules::parse(&data.rules, Path::new("rules.toml")).map_err(err)?;
+        let mut cards = CardDb::parse(&data.cards, Path::new("cards.json")).map_err(err)?;
+        if rules.cards.tokens.is_some() {
+            let file = TokenFile::parse(&data.tokens, Path::new("tokens.json")).map_err(err)?;
+            cards = cards.with_tokens(file.tokens).map_err(err)?;
+        }
+        let banlist = Banlist::parse(&data.banlist, Path::new("banlist.json")).map_err(err)?;
         let bundle = Bundle::from_parts(rules, cards, banlist).map_err(err)?;
-        let values = CardValues::parse(card_values, Path::new("card_values.toml"), &bundle.cards)
-            .map_err(err)?;
-        let styles = Styles::parse(styles, Path::new("styles.toml"), &bundle.cards).map_err(err)?;
-        let bots = Bots::new(&bundle, values, styles);
+        let mut bots = Bots::new(&bundle);
+        bots.network = self.network.clone();
 
         let mut offered = Vec::new();
         let mut legal = Vec::new();
-        for f in files {
+        for f in data.decks {
             let path = Path::new(&f.file);
             let checked = Deck::parse(&f.text, path)
                 .map_err(|e| e.to_string())
@@ -174,7 +177,9 @@ impl Host {
                 }
             }
         }
-        let answer = json!({ "decks": offered, "bots": bots.names(), "default_bot": DEFAULT_BOT });
+        // The first bot offered is the strongest.
+        let names = bots.names();
+        let answer = json!({ "decks": offered, "default_bot": names[0], "bots": names });
         self.loaded = Some(Loaded { bots, decks: legal });
         self.session = None;
         Ok(answer)

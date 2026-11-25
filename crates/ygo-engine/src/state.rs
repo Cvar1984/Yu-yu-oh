@@ -50,6 +50,9 @@ pub enum Location {
     Graveyard,
     Extra,
     Banished,
+    /// A Token that left the field: it no longer exists, and the instance
+    /// waits to be reused for a new Token.
+    Gone,
 }
 
 impl Location {
@@ -109,6 +112,51 @@ pub enum LingeringKind {
     /// `player` takes no battle damage from the opponent's monsters, and
     /// `player`'s monsters cannot be destroyed by battle (Waboku).
     BattleShield { player: PlayerId },
+    /// `card`'s controller cannot change its battle position (Goblin Attack
+    /// Force, until the End Phase of its controller's next turn).
+    PositionLocked { card: InstanceId },
+    /// Neither player may activate or Set a Spell or Trap Card (Cold Wave).
+    NoSpellsOrTraps,
+    /// `card`'s effects are negated (Armored Glass, World Suppression).
+    Negated { card: InstanceId },
+    /// `player`'s Monster Zone `zone` cannot be used (Ground Collapse while
+    /// its source is on the field; Dimensionhole until its monster returns).
+    ZoneLocked { player: PlayerId, zone: u8 },
+    /// The banished `card` returns to its owner's hand in `player`'s
+    /// Standby Phase once `standbys` more have passed (Lightforce Sword).
+    ReturnToHand {
+        card: InstanceId,
+        player: PlayerId,
+        standbys: u8,
+    },
+    /// The banished `card` returns to `player`'s Monster Zone `zone` in
+    /// `player`'s next Standby Phase (Dimensionhole).
+    ReturnToField {
+        card: InstanceId,
+        player: PlayerId,
+        zone: u8,
+        position: Position,
+    },
+    /// `player` holds the opponent's `card` as part of their hand this turn
+    /// (Graverobber): using it costs 2000 LP; it goes back in the End Phase.
+    Borrowed { card: InstanceId, player: PlayerId },
+    /// The Spell or Trap `card` is a Normal Monster with 0 ATK and DEF until
+    /// the end of this Battle Phase, then destroyed (Magical Hats).
+    HatMonster { card: InstanceId },
+    /// `card` has the Type that the first `race` hook of the source's
+    /// script names, while it stays face-up on the field (D. Tribe).
+    Race { card: InstanceId },
+    /// Every ATK/DEF addition subtracts and every subtraction adds, except
+    /// the changes of `Tag::StatsSetOrScaled` cards (Reverse Trap).
+    StatChangesReversed,
+    /// `player`'s Tribute Summons must Tribute the opponent's `card`, as if
+    /// they controlled it (Soul Exchange).
+    MustTribute { player: PlayerId, card: InstanceId },
+    /// `player` cannot enter the Battle Phase (Soul Exchange).
+    NoBattlePhase { player: PlayerId },
+    /// `player` cannot Normal, Flip or Special Summon, but may still Normal
+    /// Set (Scapegoat).
+    NoSummons { player: PlayerId },
 }
 
 /// An effect that outlives its chain link and ends at a named End Phase.
@@ -133,7 +181,11 @@ pub struct CardInstance {
     pub turn_set: Option<u32>,
     pub turn_entered_field: Option<u32>,
     pub position_changed_this_turn: bool,
-    pub attacked_this_turn: bool,
+    /// Attacks declared this turn (Hayabusa Knight may make two).
+    pub attacks_this_turn: u8,
+    /// The monster that destroyed this card by battle, and in which turn
+    /// (Sword Hunter, Vampire Baby).
+    pub destroyed_by_battle: Option<(InstanceId, u32)>,
     /// For an Equip Spell on the field: the monster it is equipped to.
     pub equipped_to: Option<InstanceId>,
     /// A script-owned counter (Swords of Revealing Light counts End Phases).
@@ -157,7 +209,8 @@ impl CardInstance {
             turn_set: None,
             turn_entered_field: None,
             position_changed_this_turn: false,
-            attacked_this_turn: false,
+            attacks_this_turn: 0,
+            destroyed_by_battle: None,
             equipped_to: None,
             counter: 0,
             properly_summoned: false,
@@ -223,12 +276,21 @@ pub struct PlayerState {
     pub monsters_to_graveyard: u8,
     /// Monsters that entered the field this turn, for `max_monsters_entering_per_turn`.
     pub monsters_entered: u8,
+    /// Summoned a monster this turn (Normal, Flip or Special; a Set is no
+    /// summon): Scapegoat cannot be activated after one.
+    pub summoned: bool,
     /// Card names whose "only once per turn" effect this player used this
     /// turn (Sangan, Witch of the Black Forest).
     pub names_used: Vec<CardId>,
     /// Card names this player may not activate, as cards or effects, for the
     /// rest of the turn (the card Sangan or Witch added).
     pub names_locked: Vec<CardId>,
+    /// This player's next draw in a Draw Phase is skipped (Time Seal).
+    pub skip_draw: bool,
+    /// This player's next Standby Phase is skipped (Solomon's Lawbook).
+    pub skip_standby: bool,
+    /// This player's next turn is skipped (Gamble).
+    pub skip_turn: bool,
 }
 
 impl PlayerState {
@@ -246,8 +308,12 @@ impl PlayerState {
             summons_used: 0,
             monsters_to_graveyard: 0,
             monsters_entered: 0,
+            summoned: false,
             names_used: Vec::new(),
             names_locked: Vec::new(),
+            skip_draw: false,
+            skip_standby: false,
+            skip_turn: false,
         }
     }
 
