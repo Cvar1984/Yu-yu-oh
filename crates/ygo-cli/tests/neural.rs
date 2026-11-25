@@ -78,3 +78,27 @@ fn sim_plays_the_network_guided_search_bot_by_name() {
     let games: u32 = tally.by_first.iter().flatten().sum();
     assert_eq!(games, 2);
 }
+
+#[test]
+fn the_shipped_network_plays_by_the_name_network() {
+    let b = bundle();
+    let deck = decks::load_legal(&root().join("data/decks/enemy_e3_removal.json"), &b).unwrap();
+    let opts = SimOptions {
+        deck_a: &deck,
+        deck_b: &deck,
+        bot_a: "network",
+        bot_b: "random",
+        games: 2,
+        seed: 1,
+        max_turns: ygo_engine::GameSetup::DEFAULT_MAX_TURNS,
+        record_dir: None,
+        threads: 2,
+    };
+    // Without a network file the name is a clear error.
+    let err = sim::run(&bots(), &opts).unwrap_err().to_string();
+    assert!(err.contains("no network file"), "{err}");
+    let mut bots = bots();
+    bots.network = Some(root().join("data/networks/best.bpk"));
+    let tally = sim::run(&bots, &opts).unwrap();
+    assert_eq!(tally.by_first.iter().flatten().sum::<u32>(), 2);
+}

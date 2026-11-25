@@ -27,6 +27,10 @@ struct Cli {
     /// Card values for the heuristic bots.
     #[arg(long, global = true, default_value = "config/card_values.toml")]
     card_values: PathBuf,
+    /// The trained network the `network` and `network-search` bots play
+    /// with.
+    #[arg(long, global = true, default_value = "data/networks/best.bpk")]
+    network: PathBuf,
     #[command(subcommand)]
     command: Command,
 }
@@ -173,9 +177,9 @@ enum Command {
         /// The bot's deck; defaults to a copy of yours.
         #[arg(long)]
         bot_deck: Option<PathBuf>,
-        /// The opponent: `random`, `heuristic:<style>` (see config/styles.toml)
-        /// or `search[:<style>]`.
-        #[arg(long, default_value = bots::DEFAULT_BOT)]
+        /// The opponent: `network` (the trained network, the default),
+        /// `network-search`, `random`, or any bot name `ygo sim` takes.
+        #[arg(long, default_value = "network")]
         bot: String,
         /// Shuffle seed; taken from the clock when left out.
         #[arg(long)]
@@ -331,6 +335,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 })?;
             }
             let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            bots.network = Some(cli.network.clone());
             search.apply(&mut bots)?;
             let deck_a = decks::load_legal(&deck_a, &bundle)?;
             let deck_b = decks::load_legal(&deck_b, &bundle)?;
@@ -360,7 +365,8 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             threads,
             top,
         } => {
-            let bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            bots.network = Some(cli.network.clone());
             let decks = decks
                 .iter()
                 .map(|p| decks::load_legal(p, &bundle))
@@ -425,6 +431,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             search,
         } => {
             let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            bots.network = Some(cli.network.clone());
             search.apply(&mut bots)?;
             let deck = decks::load_legal(&deck, &bundle)?;
             let opponents: Vec<String> = if opponents.is_empty() {
@@ -485,6 +492,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 .unwrap_or_default();
             let seed = seed.unwrap_or(now.as_nanos() as u64);
             let mut bots = bots::Bots::load(&bundle, &cli.styles, &cli.card_values)?;
+            bots.network = Some(cli.network.clone());
             search.apply(&mut bots)?;
             let deck = decks::load_legal(&deck, &bundle)?;
             let bot_deck = bot_deck

@@ -26,6 +26,10 @@ pub struct Bots {
     pub search: SearchSettings,
     /// `search` bots play their playouts with the lookahead heuristic bot.
     pub rollout_lookahead: bool,
+    /// The shipped network (`data/networks/best.bpk`): the bot names
+    /// `network` and `network-search` stand for `neural:<it>` and
+    /// `neural-search:<it>`.
+    pub network: Option<std::path::PathBuf>,
 }
 
 impl Bots {
@@ -50,6 +54,7 @@ impl Bots {
             styles,
             search: SearchSettings::default(),
             rollout_lookahead: false,
+            network: None,
         }
     }
 
@@ -81,6 +86,17 @@ impl Bots {
     }
 
     pub fn make(&self, name: &str, seed: u64) -> Result<Box<dyn Player>, String> {
+        if let Some(kind) = match name {
+            "network" => Some("neural"),
+            "network-search" => Some("neural-search"),
+            _ => None,
+        } {
+            let path = self
+                .network
+                .as_ref()
+                .ok_or_else(|| format!("`{name}`: no network file is set"))?;
+            return self.make(&format!("{kind}:{}", path.display()), seed);
+        }
         if name == "random" {
             return Ok(Box::new(RandomPlayer::new(seed)));
         }
