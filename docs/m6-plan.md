@@ -326,8 +326,17 @@ averages, or normalises, every pooled set.
       Found on the way: a Gate Guardian mirror never ended because Suijin's
       "once while face-up" was counted on resolution, so in the Damage Step
       the effect chained to itself forever; Sanga, Kazejin and Suijin now
-      count it at activation (rulings test extended). Next: self-play from
-      `wide-1` (first run's recipe), then against the shipped network.
+      count it at activation (rulings test extended).
+      Self-play from `wide-1` (first run's recipe: visit shares, 100
+      iterations, learning rate 3e-4; the eight decks, 800 games a
+      generation, about 35 minutes each): gates 50.0%, 50.5%, 50.1%,
+      **52.8% (promoted)**, 49.2%, 51.1%. The wide network learns its
+      search better than the base one did (held-out agreement 89%, value
+      error 0.70 to 0.74, against 86% and about 0.8). Its best against the
+      shipped network, both alone, 250 games a deck on fresh seeds: 51.9%
+      ±2.2 (ahead on six of the eight decks), short of the gate, so
+      `data/networks/best.bpk` stays. Self-play of the wide network
+      continues from that best.
    5. *The network in the browser (done):* `scripts/build-web.sh` ships
       `data/networks/best.bpk` as `data/network.bpk`; the page hands its
       bytes to the engine (`ygo_set_network`, `Host::set_network`) before
