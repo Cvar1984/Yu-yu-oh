@@ -1,14 +1,14 @@
 {
  "schema_version": 1,
  "owner": "player",
- "read_from": "save A: set screens 2026-11-19 + 'All' list (386/440 owned; 385 read, one card unidentified); Pharaoh's Servant screen 2026-11-21 (90/105 owned, copy counts not read: 1 each); 'All' card list screenshots 2026-11-22 (407/440 owned; copy counts read for the 367 cards shown, the game's page 16 missing; cards wholly in the Dark Summoner deck are not listed and keep at least their deck count)",
+ "read_from": "save A: set screens 2026-11-19 + 'All' list (386/440 owned; 385 read, one card unidentified); Pharaoh's Servant screen 2026-11-21 (90/105 owned, copy counts not read: 1 each); 'All' card list screenshots 2026-11-22 (407/440 owned; copy counts read for the 367 cards shown, the game's page 16 missing; cards wholly in the Dark Summoner deck are not listed and keep at least their deck count); owner 2026-11-25: Man-Eater Bug 2, Michizure 2 and Imperial Order 1 as in the Main Deck screenshot of 2026-11-24, and Snatch Steal, Call of the Haunted and Mirror Force 1 each (held in the deck, so missing from the 'All' list)",
  "totals": {
   "ALL": "407/440",
   "PSV": "90/105",
   "note": "ALL copies are read from the card list of 2026-11-22 where shown; PSV copies are recorded as 1 each until read"
  },
- "unique": 485,
- "copies": 1873,
+ "unique": 489,
+ "copies": 1879,
  "cards": [
   {
    "id": 76184692,
@@ -2118,7 +2118,7 @@
   {
    "id": 37580756,
    "name": "Michizure",
-   "copies": 1
+   "copies": 2
   },
   {
    "id": 1918087,
@@ -2373,7 +2373,7 @@
   {
    "id": 54652250,
    "name": "Man-Eater Bug",
-   "copies": 1
+   "copies": 2
   },
   {
    "id": 66889139,
@@ -2434,6 +2434,26 @@
    "id": 81777047,
    "name": "Luminous Spark",
    "copies": 7
+  },
+  {
+   "id": 61740673,
+   "name": "Imperial Order",
+   "copies": 1
+  },
+  {
+   "id": 45986603,
+   "name": "Snatch Steal",
+   "copies": 1
+  },
+  {
+   "id": 97077563,
+   "name": "Call of the Haunted",
+   "copies": 1
+  },
+  {
+   "id": 44095762,
+   "name": "Mirror Force",
+   "copies": 1
   }
  ]
 }
