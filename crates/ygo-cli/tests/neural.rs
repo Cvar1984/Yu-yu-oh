@@ -61,7 +61,7 @@ fn sim_plays_the_network_guided_search_bot_by_name() {
     let deck = decks::load_legal(&root().join("data/decks/enemy_e3_removal.json"), &b).unwrap();
     let name = format!("neural-search:{}", path.display());
     let mut bots = bots();
-    bots.search.iterations = 5;
+    bots.mcts.iterations = 5;
     let opts = SimOptions {
         deck_a: &deck,
         deck_b: &deck,
