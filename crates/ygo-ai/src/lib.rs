@@ -6,6 +6,8 @@ pub mod encode;
 mod eval;
 mod heuristic;
 #[cfg(feature = "neural")]
+pub mod mcts;
+#[cfg(feature = "neural")]
 pub mod neural;
 mod search;
 

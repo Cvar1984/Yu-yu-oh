@@ -152,3 +152,48 @@ fn the_lookahead_bot_plays_whole_games() {
     }
     assert!(g.result().is_some());
 }
+
+#[test]
+fn the_network_search_is_repeatable_legal_and_counts_its_visits() {
+    use ygo_ai::mcts::{MctsPlayer, MctsSettings};
+    let net = Net::new(&cpu());
+    let settings = MctsSettings {
+        iterations: 12,
+        ..MctsSettings::default()
+    };
+    let search = |seed| {
+        MctsPlayer::new(
+            NeuralPlayer::new(net.clone(), cpu(), 0.0, seed),
+            settings.clone(),
+            seed,
+        )
+    };
+    // A decision with a choice.
+    let mut g = new_game(6);
+    let mut random = RandomPlayer::new(6);
+    let view = loop {
+        let view = PlayerView::new(&g).unwrap();
+        if view.actions().len() > 2 {
+            break view;
+        }
+        let a = random.choose(&view);
+        g.apply(&a).unwrap();
+    };
+    let a = search(1).analyse(&view);
+    assert_eq!(
+        a,
+        search(1).analyse(&view),
+        "the same seed gives the same analysis"
+    );
+    assert_eq!(a.len(), view.actions().len());
+    // The first iteration judges the root; each later one visits one move.
+    assert_eq!(a.iter().map(|x| x.1).sum::<u32>(), 11);
+    // Whole games with legal actions.
+    let mut g = new_game(7);
+    let mut players: [Box<dyn Player>; 2] = [Box::new(search(7)), Box::new(RandomPlayer::new(7))];
+    while let Some(view) = PlayerView::new(&g) {
+        let a = players[view.player().index()].choose(&view);
+        g.apply(&a).expect("the search picks a legal action");
+    }
+    assert!(g.result().is_some());
+}

@@ -30,6 +30,9 @@ pub struct Bots {
     /// `network` and `network-search` stand for `neural:<it>` and
     /// `neural-search:<it>`.
     pub network: Option<std::path::PathBuf>,
+    /// How hard `neural-search` bots think.
+    #[cfg(feature = "neural")]
+    pub mcts: ygo_ai::mcts::MctsSettings,
 }
 
 impl Bots {
@@ -55,6 +58,8 @@ impl Bots {
             search: SearchSettings::default(),
             rollout_lookahead: false,
             network: None,
+            #[cfg(feature = "neural")]
+            mcts: ygo_ai::mcts::MctsSettings::default(),
         }
     }
 
@@ -119,18 +124,15 @@ impl Bots {
                 NeuralPlayer::new(net, cpu(), 0.0, seed).with_lookahead(Lookahead::default());
             return Ok(Box::new(player));
         }
-        // The search bot with the network's policy as its prior.
+        // The network-guided search (AlphaZero): the network's priors and
+        // values, no playouts.
         #[cfg(feature = "neural")]
         if let Some(path) = name.strip_prefix("neural-search:") {
+            use ygo_ai::mcts::MctsPlayer;
             use ygo_ai::neural::{Net, NeuralPlayer, cpu};
             let net = Net::load(Path::new(path), &cpu())?;
-            let prior = NeuralPlayer::new(net, cpu(), 0.0, seed);
-            let rollout = self
-                .heuristic(DEFAULT_ROLLOUT_STYLE, false, seed)?
-                .with_lookahead(self.rollout_lookahead);
-            let player =
-                SearchPlayer::new(rollout, self.search.clone(), seed).with_prior(Box::new(prior));
-            return Ok(Box::new(player));
+            let judge = NeuralPlayer::new(net, cpu(), 0.0, seed);
+            return Ok(Box::new(MctsPlayer::new(judge, self.mcts.clone(), seed)));
         }
         // `search` plays out its samples with the default heuristic style.
         let (search, style_name) = match name {

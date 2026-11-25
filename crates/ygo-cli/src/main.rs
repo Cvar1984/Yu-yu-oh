@@ -226,8 +226,8 @@ struct SearchArgs {
     #[arg(long)]
     rollout_lookahead: bool,
     /// Weight of the network's prior in `neural-search` bots (PUCT).
-    #[arg(long, default_value_t = ygo_ai::SearchSettings::default().prior_weight)]
-    prior_weight: f64,
+    #[arg(long, default_value_t = ygo_ai::mcts::MctsSettings::default().exploration)]
+    exploration: f64,
 }
 
 impl SearchArgs {
@@ -239,11 +239,18 @@ impl SearchArgs {
         };
         bots.search.horizon_turns = self.horizon;
         bots.rollout_lookahead = self.rollout_lookahead;
-        bots.search.prior_weight = self.prior_weight;
+        bots.mcts.exploration = self.exploration;
+        if let Some(n) = self.iterations {
+            bots.mcts.iterations = n;
+        }
         if let Some(secs) = self.think {
             let limit = std::time::Duration::try_from_secs_f64(secs)
                 .map_err(|_| format!("--think {secs}: not a number of seconds"))?;
             bots.search.time_limit = Some(limit);
+            bots.mcts.time_limit = Some(limit);
+            if self.iterations.is_none() {
+                bots.mcts.iterations = u32::MAX;
+            }
         }
         Ok(())
     }
