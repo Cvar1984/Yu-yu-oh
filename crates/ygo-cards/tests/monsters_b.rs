@@ -480,6 +480,15 @@ fn sanga_kazejin_and_suijin_zero_the_attackers_atk_once() {
         );
         let a = activations(&g, guardian)[0].clone();
         play(&mut g, a);
+        // The limit counts at activation: it cannot chain to itself (a bot
+        // once activated Suijin forever in one Damage Step).
+        if decision_is(&g, P0, DecisionKind::Respond) {
+            play(&mut g, Action::Pass);
+        }
+        assert!(
+            activations(&g, guardian).is_empty(),
+            "{guardian}: once while face-up, even within one chain"
+        );
         pass_all(&mut g);
         assert_eq!(g.instance(fish).location, Location::Graveyard, "{guardian}");
         assert_eq!(
