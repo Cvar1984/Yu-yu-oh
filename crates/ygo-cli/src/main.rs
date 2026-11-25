@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::{bots, decks, play, replay, sim, tui};
+use ygo_cli::{bots, decks, play, replay, sim, train, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -98,6 +98,48 @@ enum Command {
         holdout: usize,
         #[arg(long, default_value_t = 1)]
         seed: u64,
+    },
+    /// Self-play training (AlphaZero): the best network's search plays
+    /// itself, a candidate learns from the games, and it replaces the best
+    /// only if it beats it (the M6 gate).
+    Train {
+        /// Decks for the mirror games, each played equally often.
+        #[arg(required = true)]
+        decks: Vec<PathBuf>,
+        /// The network to start from [default: the --network file].
+        #[arg(long)]
+        from: Option<PathBuf>,
+        /// Directory for `best.bpk` and each generation's `gen-<g>.bpk`.
+        #[arg(long, default_value = "checkpoints/train")]
+        out: PathBuf,
+        #[arg(long, default_value_t = 5)]
+        generations: usize,
+        /// Self-play games per generation.
+        #[arg(long, default_value_t = 800)]
+        games: u32,
+        /// Generations of games the candidate trains on.
+        #[arg(long, default_value_t = 3)]
+        buffer: usize,
+        /// Turns in which moves are drawn by the search's visits.
+        #[arg(long, default_value_t = 4)]
+        explore_turns: u32,
+        /// Games of candidate against best (the gate).
+        #[arg(long, default_value_t = 2000)]
+        gate_games: u32,
+        #[arg(long, default_value_t = 2)]
+        epochs: usize,
+        #[arg(long, default_value_t = 128)]
+        batch: usize,
+        #[arg(long, default_value_t = 3e-4)]
+        learning_rate: f64,
+        #[arg(long, default_value_t = 10)]
+        holdout: usize,
+        #[arg(long, default_value_t = 1)]
+        seed: u64,
+        #[arg(long, default_value_t = 4)]
+        threads: usize,
+        #[command(flatten)]
+        search: SearchArgs,
     },
     /// Play against a bot in a full-screen terminal UI.
     Play {
@@ -302,6 +344,57 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     holdout,
                     seed,
                     ..Default::default()
+                },
+            )?;
+            Ok(true)
+        }
+        Command::Train {
+            decks: deck_files,
+            from,
+            out,
+            generations,
+            games,
+            buffer,
+            explore_turns,
+            gate_games,
+            epochs,
+            batch,
+            learning_rate,
+            holdout,
+            seed,
+            threads,
+            search,
+        } => {
+            let mut bots = bots::Bots::new(&bundle);
+            search.apply(&mut bots)?;
+            let decks = deck_files
+                .iter()
+                .map(|d| decks::load_legal(d, &bundle))
+                .collect::<Result<Vec<_>, _>>()?;
+            let from = from.unwrap_or_else(|| cli.network.clone());
+            let start = ygo_ai::neural::Net::load(&from, &ygo_ai::neural::cpu())?;
+            train::run(
+                &bots,
+                start,
+                &train::TrainOptions {
+                    decks: &decks,
+                    out: &out,
+                    generations,
+                    games,
+                    buffer,
+                    explore_turns,
+                    gate_games,
+                    search: bots.mcts.clone(),
+                    train: ygo_train::imitation::Options {
+                        epochs,
+                        batch,
+                        learning_rate,
+                        holdout,
+                        seed,
+                        ..Default::default()
+                    },
+                    seed,
+                    threads,
                 },
             )?;
             Ok(true)
