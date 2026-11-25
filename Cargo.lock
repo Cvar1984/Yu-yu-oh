@@ -8141,7 +8141,6 @@ dependencies = [
  "rand_core 0.10.1",
  "ygo-ai",
  "ygo-cards",
- "ygo-data",
  "ygo-engine",
 ]
 

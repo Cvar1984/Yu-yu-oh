@@ -17,9 +17,9 @@ use std::path::Path;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
-use ygo_data::{Banlist, Bundle, CardDb, CardValues, Deck, Rules, Styles, TokenFile};
+use ygo_data::{Banlist, Bundle, CardDb, Deck, Rules, TokenFile};
 use ygo_engine::{DeckList, GameSetup, InstanceId, PlayerId};
-use ygo_play::bots::{Bots, DEFAULT_BOT};
+use ygo_play::bots::Bots;
 use ygo_play::decks;
 use ygo_play::session::PlaySession;
 
@@ -35,8 +35,6 @@ struct InitData {
     banlist: String,
     /// `tokens.json`, used when the rules name a Tokens file.
     tokens: String,
-    styles: String,
-    card_values: String,
     /// Deck files: name (for errors and choosing) and JSON text.
     decks: Vec<DeckFile>,
 }
@@ -148,15 +146,7 @@ impl Host {
         }
         let banlist = Banlist::parse(&data.banlist, Path::new("banlist.json")).map_err(err)?;
         let bundle = Bundle::from_parts(rules, cards, banlist).map_err(err)?;
-        let values = CardValues::parse(
-            &data.card_values,
-            Path::new("card_values.toml"),
-            &bundle.cards,
-        )
-        .map_err(err)?;
-        let styles =
-            Styles::parse(&data.styles, Path::new("styles.toml"), &bundle.cards).map_err(err)?;
-        let bots = Bots::new(&bundle, values, styles);
+        let bots = Bots::new(&bundle);
 
         let mut offered = Vec::new();
         let mut legal = Vec::new();
@@ -175,7 +165,9 @@ impl Host {
                 }
             }
         }
-        let answer = json!({ "decks": offered, "bots": bots.names(), "default_bot": DEFAULT_BOT });
+        // The first bot offered is the strongest.
+        let names = bots.names();
+        let answer = json!({ "decks": offered, "default_bot": names[0], "bots": names });
         self.loaded = Some(Loaded { bots, decks: legal });
         self.session = None;
         Ok(answer)

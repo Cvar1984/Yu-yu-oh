@@ -67,8 +67,8 @@ pub struct MctsPlayer {
 }
 
 impl MctsPlayer {
-    /// `net` gives the priors and values (its own temperature and
-    /// lookahead are unused).
+    /// `net` gives the priors and values; its own choice (at its
+    /// temperature) answers only when no iteration ran.
     pub fn new(net: NeuralPlayer, settings: MctsSettings, seed: u64) -> Self {
         Self {
             net,

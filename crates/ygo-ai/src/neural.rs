@@ -21,10 +21,10 @@ use burn::prelude::*;
 use burn::tensor::activation::relu;
 use rand_chacha::ChaCha8Rng;
 use rand_core::{Rng, SeedableRng};
-use ygo_engine::{Action, DecisionKind, Game, GameResult, PlayerId, PlayerView};
+use ygo_engine::{Action, PlayerView};
 
+use crate::Player;
 use crate::encode::{ACTION_F, CARD_F, DECK_FLAG, Encoded, GLOBAL_F, LINGER_F, encode};
-use crate::{Player, Prior};
 
 const CARD_H: usize = 128;
 const LINGER_H: usize = 64;
@@ -226,29 +226,6 @@ pub struct NeuralPlayer {
     device: Device,
     temperature: f32,
     rng: ChaCha8Rng,
-    lookahead: Option<Lookahead>,
-}
-
-/// Thinking ahead with the network (`NeuralPlayer::with_lookahead`): the
-/// policy's `top` actions are each tried on `samples` samples of the
-/// hidden cards, played on with the network's own most likely actions to
-/// the next open decision (at most `cap` actions), and scored by the
-/// value head; the best average wins.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Lookahead {
-    pub top: usize,
-    pub samples: usize,
-    pub cap: usize,
-}
-
-impl Default for Lookahead {
-    fn default() -> Self {
-        Self {
-            top: 4,
-            samples: 2,
-            cap: 40,
-        }
-    }
 }
 
 impl NeuralPlayer {
@@ -258,86 +235,7 @@ impl NeuralPlayer {
             device,
             temperature,
             rng: ChaCha8Rng::seed_from_u64(seed),
-            lookahead: None,
         }
-    }
-
-    pub fn with_lookahead(self, lookahead: Lookahead) -> Self {
-        Self {
-            lookahead: Some(lookahead),
-            ..self
-        }
-    }
-
-    /// The most likely legal action of `view` by the policy alone.
-    fn greedy(&self, view: &PlayerView) -> Action {
-        let (logits, _) = self.evaluate(view);
-        let best = (0..logits.len())
-            .max_by(|&a, &b| logits[a].total_cmp(&logits[b]))
-            .expect("a decision has legal actions");
-        view.actions()[best].clone()
-    }
-
-    /// Plays `game` on with the policy to the next open decision (a Main or
-    /// Battle Phase action, a hand-limit discard) or the end, then values
-    /// it for `me`: 1 a win, -1 a loss, else the value head.
-    fn value_after(&self, game: &mut Game, me: PlayerId, cap: usize) -> f32 {
-        for _ in 0..cap {
-            let Some(d) = game.pending_decision() else {
-                break;
-            };
-            if matches!(
-                d.kind,
-                DecisionKind::MainPhase | DecisionKind::BattlePhase | DecisionKind::HandLimit
-            ) {
-                break;
-            }
-            let action = match game.actions() {
-                [only] => only.clone(),
-                _ => self.greedy(&PlayerView::new(game).expect("a pending decision")),
-            };
-            game.apply(&action).expect("the policy picks legal actions");
-        }
-        match game.result() {
-            Some(GameResult::Win { winner, .. }) => {
-                if winner == me {
-                    1.0
-                } else {
-                    -1.0
-                }
-            }
-            Some(GameResult::Draw { .. }) => 0.0,
-            None => {
-                let view = PlayerView::new(game).expect("an unfinished game decides");
-                let (_, v) = self.evaluate(&view);
-                if view.player() == me { v } else { -v }
-            }
-        }
-    }
-
-    /// The index of the action `lookahead` prefers among `logits`.
-    fn look(&mut self, view: &PlayerView, logits: &[f32], l: Lookahead) -> usize {
-        let mut order: Vec<usize> = (0..logits.len()).collect();
-        order.sort_by(|&a, &b| logits[b].total_cmp(&logits[a]));
-        order.truncate(l.top.max(1));
-        let me = view.player();
-        let mut best = (order[0], f32::MIN);
-        for &i in &order {
-            let (mut total, mut n) = (0.0, 0);
-            for _ in 0..l.samples.max(1) {
-                let mut g = view.sample(self.rng.next_u64());
-                if g.apply(&view.actions()[i]).is_err() {
-                    continue;
-                }
-                total += self.value_after(&mut g, me, l.cap);
-                n += 1;
-            }
-            let score = if n == 0 { f32::MIN } else { total / n as f32 };
-            if score > best.1 {
-                best = (i, score);
-            }
-        }
-        best.0
     }
 
     /// The logits of `view`'s legal actions and the value of the position
@@ -352,26 +250,9 @@ impl NeuralPlayer {
     }
 }
 
-/// The policy as the search bot's prior: the softmax of the logits.
-impl Prior for NeuralPlayer {
-    fn prior(&mut self, view: &PlayerView) -> Vec<f64> {
-        let (logits, _) = self.evaluate(view);
-        let top = logits.iter().copied().fold(f32::MIN, f32::max);
-        let weights: Vec<f64> = logits.iter().map(|x| f64::from(x - top).exp()).collect();
-        let total: f64 = weights.iter().sum();
-        weights.into_iter().map(|w| w / total).collect()
-    }
-}
-
 impl Player for NeuralPlayer {
     fn choose(&mut self, view: &PlayerView) -> Action {
         let (logits, _) = self.evaluate(view);
-        if let Some(l) = self.lookahead
-            && logits.len() > 1
-        {
-            let best = self.look(view, &logits, l);
-            return view.actions()[best].clone();
-        }
         let best = if self.temperature <= 0.0 {
             (0..logits.len())
                 .max_by(|&a, &b| logits[a].total_cmp(&logits[b]))

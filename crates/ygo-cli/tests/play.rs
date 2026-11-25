@@ -24,12 +24,9 @@ fn deck(name: &str) -> PathBuf {
 }
 
 fn bots() -> Bots {
-    Bots::load(
-        &bundle(),
-        &root().join("config/styles.toml"),
-        &root().join("config/card_values.toml"),
-    )
-    .unwrap()
+    let mut bots = Bots::new(&bundle());
+    bots.network = Some(root().join("data/networks/best.bpk"));
+    bots
 }
 
 fn start_with(bot: &str, seed: u64, first: First) -> PlaySession {
@@ -38,7 +35,7 @@ fn start_with(bot: &str, seed: u64, first: First) -> PlaySession {
     let theirs = decks::load_legal(&deck("save_b_dark_plasma_40.json"), &b).unwrap();
     let mut bots = bots();
     // A light search keeps the test quick.
-    bots.search.iterations = 10;
+    bots.mcts.iterations = 10;
     play::start(
         &bots,
         &PlayOptions {
@@ -86,7 +83,7 @@ fn a_human_plays_whole_games_and_the_record_replays() {
         let bot = match seed {
             0..3 => "random",
             3..6 => DEFAULT_BOT,
-            _ => "search",
+            _ => "network-search",
         };
         let mut s = start_with(
             bot,
@@ -129,14 +126,13 @@ fn who_goes_first_follows_the_choice() {
         .err()
         .expect("unknown bot refused");
     assert!(
-        err.contains("lookahead:beatdown")
-            && err.contains("heuristic:<style>")
-            && err.contains("random"),
+        err.contains("network-search") && err.contains("random"),
         "{err}"
     );
-    assert!(bots().make("heuristic:nonsense", 1).is_err());
-    assert!(bots().make("search:nonsense", 1).is_err());
-    assert!(bots().make("search:control", 1).is_ok());
+    for gone in ["heuristic:beatdown", "lookahead:beatdown", "search"] {
+        assert!(bots().make(gone, 1).is_err(), "{gone}");
+    }
+    assert_eq!(bots().names(), ["network", "network-search", "random"]);
     for name in bots().names() {
         assert!(bots().make(&name, 1).is_ok(), "{name}");
     }

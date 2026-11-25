@@ -77,10 +77,8 @@ fn ygo_real(args: &[&str]) -> Output {
         .arg(root.join("config/rules.toml"))
         .arg("--data-root")
         .arg(&root)
-        .arg("--styles")
-        .arg(root.join("config/styles.toml"))
-        .arg("--card-values")
-        .arg(root.join("config/card_values.toml"))
+        .arg("--network")
+        .arg(root.join("data/networks/best.bpk"))
         .args(args)
         .output()
         .expect("ygo runs")
@@ -92,15 +90,7 @@ fn sim_plays_named_bots_and_refuses_unknown_ones() {
     let deck = root.join("data/decks/save_a_owner_current_40.json");
     let deck = deck.to_str().unwrap();
     let out = ygo_real(&[
-        "sim",
-        deck,
-        deck,
-        "-n",
-        "6",
-        "--bot-a",
-        "heuristic:beatdown",
-        "--bot-b",
-        "random",
+        "sim", deck, deck, "-n", "6", "--bot-a", "network", "--bot-b", "random",
     ]);
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(
@@ -108,15 +98,23 @@ fn sim_plays_named_bots_and_refuses_unknown_ones() {
         "{stdout}{}",
         String::from_utf8_lossy(&out.stderr)
     );
-    assert!(
-        stdout.contains("games: 6  heuristic:beatdown vs random"),
-        "{stdout}"
-    );
+    assert!(stdout.contains("games: 6  network vs random"), "{stdout}");
 
-    let out = ygo_real(&["sim", deck, deck, "-n", "1", "--bot-a", "heuristic:nope"]);
+    let out = ygo_real(&[
+        "sim",
+        deck,
+        deck,
+        "-n",
+        "1",
+        "--bot-a",
+        "lookahead:beatdown",
+    ]);
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert_eq!(out.status.code(), Some(2), "{stderr}");
-    assert!(stderr.contains("unknown bot `heuristic:nope`"), "{stderr}");
+    assert!(
+        stderr.contains("unknown bot `lookahead:beatdown`"),
+        "{stderr}"
+    );
 }
 
 #[test]

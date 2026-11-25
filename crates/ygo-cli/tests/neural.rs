@@ -12,12 +12,7 @@ use ygo_cli::sim::{self, SimOptions};
 use ygo_engine::testing::{bundle, root};
 
 fn bots() -> Bots {
-    Bots::load(
-        &bundle(),
-        &root().join("config/styles.toml"),
-        &root().join("config/card_values.toml"),
-    )
-    .unwrap()
+    Bots::new(&bundle())
 }
 
 #[test]
