@@ -1,0 +1,159 @@
+{
+ "schema_version": 1,
+ "name": "Owner's deck tuned: Snatch Steal, Call of the Haunted, Mirror Force",
+ "for": "save A",
+ "notes": "Owner 2026-11-25: the owner's current deck plus one each of Snatch Steal, Call of the Haunted and Mirror Force, trimmed to its best 40 by tools/deck_trim.py (the network on both sides, the six enemy decks): out went Magic Jammer and both Mystic Plasma Zones. Fresh seeds, network alone, 2,000 games against each enemy deck: 61.2% (E1 74.3, E2 68.9, E3 56.8, E4 75.3, E5 44.0, E6 48.1), against 49.5% for save_a_owner_current_40 and 55.0% for the 43-card pool; head to head against save_a_owner_current_40 68.1% +-2.0 (network alone, 2,000 games) and 68.0% +-6.5 (network search on both sides, 200 games).",
+ "main": [
+  {
+   "id": 54652250,
+   "name": "Man-Eater Bug",
+   "count": 2
+  },
+  {
+   "id": 34124316,
+   "name": "Cyber Jar",
+   "count": 1
+  },
+  {
+   "id": 20277860,
+   "name": "Armored Zombie",
+   "count": 1
+  },
+  {
+   "id": 78010363,
+   "name": "Witch of the Black Forest",
+   "count": 1
+  },
+  {
+   "id": 83011277,
+   "name": "Mystic Tomato",
+   "count": 3
+  },
+  {
+   "id": 24611934,
+   "name": "Ryu-Kishin Powered",
+   "count": 3
+  },
+  {
+   "id": 91996584,
+   "name": "Whiptail Crow",
+   "count": 3
+  },
+  {
+   "id": 97590748,
+   "name": "La Jinn the Mystical Genie of the Lamp",
+   "count": 1
+  },
+  {
+   "id": 21417692,
+   "name": "Dark Elf",
+   "count": 2
+  },
+  {
+   "id": 28279543,
+   "name": "Curse of Dragon",
+   "count": 1
+  },
+  {
+   "id": 70781052,
+   "name": "Summoned Skull",
+   "count": 1
+  },
+  {
+   "id": 39111158,
+   "name": "Tri-Horned Dragon",
+   "count": 1
+  },
+  {
+   "id": 12580477,
+   "name": "Raigeki",
+   "count": 1
+  },
+  {
+   "id": 66788016,
+   "name": "Fissure",
+   "count": 1
+  },
+  {
+   "id": 83764718,
+   "name": "Monster Reborn",
+   "count": 1
+  },
+  {
+   "id": 55144522,
+   "name": "Pot of Greed",
+   "count": 1
+  },
+  {
+   "id": 79759861,
+   "name": "Tribute to the Doomed",
+   "count": 2
+  },
+  {
+   "id": 4031928,
+   "name": "Change of Heart",
+   "count": 1
+  },
+  {
+   "id": 40619825,
+   "name": "Axe of Despair",
+   "count": 1
+  },
+  {
+   "id": 44763025,
+   "name": "Delinquent Duo",
+   "count": 1
+  },
+  {
+   "id": 85602018,
+   "name": "Last Will",
+   "count": 1
+  },
+  {
+   "id": 79571449,
+   "name": "Graceful Charity",
+   "count": 1
+  },
+  {
+   "id": 70828912,
+   "name": "Premature Burial",
+   "count": 1
+  },
+  {
+   "id": 12607053,
+   "name": "Waboku",
+   "count": 1
+  },
+  {
+   "id": 37580756,
+   "name": "Michizure",
+   "count": 2
+  },
+  {
+   "id": 59344077,
+   "name": "Magic Drain",
+   "count": 1
+  },
+  {
+   "id": 61740673,
+   "name": "Imperial Order",
+   "count": 1
+  },
+  {
+   "id": 45986603,
+   "name": "Snatch Steal",
+   "count": 1
+  },
+  {
+   "id": 97077563,
+   "name": "Call of the Haunted",
+   "count": 1
+  },
+  {
+   "id": 44095762,
+   "name": "Mirror Force",
+   "count": 1
+  }
+ ],
+ "extra": []
+}
