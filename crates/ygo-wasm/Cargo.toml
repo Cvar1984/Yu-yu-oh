@@ -12,8 +12,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 ygo-data.workspace = true
 ygo-engine.workspace = true
-ygo-ai.workspace = true
-ygo-play.workspace = true
+ygo-ai = { workspace = true, features = ["neural"] }
+ygo-play = { workspace = true, features = ["neural"] }
 serde.workspace = true
 serde_json.workspace = true
 

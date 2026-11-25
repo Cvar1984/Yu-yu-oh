@@ -91,9 +91,9 @@ fn the_shipped_network_plays_by_the_name_network() {
     };
     // Without a network file the name is a clear error.
     let err = sim::run(&bots(), &opts).unwrap_err().to_string();
-    assert!(err.contains("no network file"), "{err}");
+    assert!(err.contains("no network is loaded"), "{err}");
     let mut bots = bots();
-    bots.network = Some(root().join("data/networks/best.bpk"));
+    bots.network = Some(Net::load(&root().join("data/networks/best.bpk"), &cpu()).unwrap());
     let tally = sim::run(&bots, &opts).unwrap();
     assert_eq!(tally.by_first.iter().flatten().sum::<u32>(), 2);
 }

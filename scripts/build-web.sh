@@ -14,6 +14,8 @@ cp web/play/index.html "$out/index.html"
 cp target/wasm32-unknown-unknown/web/ygo_wasm.wasm "$out/ygo.wasm"
 cp config/rules.toml "$out/data/"
 cp data/banlist.json data/tokens.json "$out/data/"
+# The trained network the bots play with.
+cp data/networks/best.bpk "$out/data/network.bpk"
 # The engine needs no images or print records; the page ships neither, so it
 # carries no links to card art. One card per line.
 python3 -I - data/cards.json "$out/data/cards.json" <<'PY'

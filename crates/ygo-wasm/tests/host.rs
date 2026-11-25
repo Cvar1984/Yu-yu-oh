@@ -49,8 +49,11 @@ fn ok(host: &mut Host, command: Value) -> Value {
         .unwrap_or_else(|| panic!("error: {answer}"))
 }
 
+/// A host with the shipped network, initialised.
 fn ready_host() -> Host {
     let mut host = Host::default();
+    let net = std::fs::read(root().join("data/networks/best.bpk")).unwrap();
+    host.set_network(net).unwrap();
     ok(&mut host, init_command(&[]));
     host
 }
@@ -75,6 +78,8 @@ fn lcg(state: &mut u64) -> usize {
 #[test]
 fn init_offers_the_legal_decks_and_every_bot() {
     let mut host = Host::default();
+    let net = std::fs::read(root().join("data/networks/best.bpk")).unwrap();
+    host.set_network(net).unwrap();
     let mut two_raigeki = read("data/decks/save_a_owner_current_40.json");
     two_raigeki = two_raigeki.replace(
         "\"name\": \"Raigeki\",\n   \"count\": 1",
@@ -92,8 +97,17 @@ fn init_offers_the_legal_decks_and_every_bot() {
     assert_eq!(decks[3]["legal"], false);
     let problem = decks[3]["problem"].as_str().unwrap();
     assert!(problem.contains("2 copies of Raigeki"), "{problem}");
+    assert_eq!(answer["default_bot"], "network");
+    assert_eq!(
+        answer["bots"],
+        json!(["network", "network-search", "random"])
+    );
+    // Without the network only the random bot is offered.
+    let mut bare = Host::default();
+    let answer = ok(&mut bare, init_command(&[]));
     assert_eq!(answer["default_bot"], "random");
     assert_eq!(answer["bots"], json!(["random"]));
+    assert!(bare.set_network(b"not a network".to_vec()).is_err());
 
     let refused = call(
         &mut host,
@@ -109,7 +123,7 @@ fn init_offers_the_legal_decks_and_every_bot() {
 #[test]
 fn whole_games_through_json_commands_replay_from_their_record() {
     let shared = shared_from(ygo_cards::registry());
-    for (seed, bot) in [(1u64, "random"), (2, "random"), (3, "random")] {
+    for (seed, bot) in [(1u64, "network"), (2, "random"), (3, "network")] {
         let mut host = ready_host();
         let mut view = start(&mut host, seed, bot, &[])["view"].clone();
         let mut rng = seed;
@@ -155,7 +169,7 @@ fn the_json_never_names_a_hidden_card() {
     let shared = shared_from(ygo_cards::registry());
     for seed in 10..14u64 {
         let mut host = ready_host();
-        let mut answer = start(&mut host, seed, "random", &[]);
+        let mut answer = start(&mut host, seed, "network", &[]);
         let mut rng = seed;
         while answer["view"]["result"].is_null() && answer["view"]["turn"].as_u64().unwrap() < 30 {
             let mut text = answer["view"].to_string();
@@ -197,7 +211,8 @@ fn the_json_never_names_a_hidden_card() {
 
 #[test]
 fn a_game_resumes_from_its_choices() {
-    for (bot, moves) in [("random", 40)] {
+    // The search bot thinks again on a resume and must choose the same.
+    for (bot, moves) in [("network", 40), ("network-search", 12)] {
         let mut host = ready_host();
         let mut answer = start(&mut host, 21, bot, &[]);
         let mut rng = 5u64;
