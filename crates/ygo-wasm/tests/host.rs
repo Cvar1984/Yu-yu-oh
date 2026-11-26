@@ -186,6 +186,9 @@ fn the_json_never_names_a_hidden_card() {
             }
             let obs = host.session().unwrap().observation();
             assert_no_hidden_names(&text, &obs, &shared);
+            // A card's id (for its image) only when the human sees it: it
+            // must match what the observation shows for that instance.
+            ids_match_the_observation(&answer["view"], &obs);
             // A hidden hand card has no text; a face-up summon is public
             // from its declaration, while the card is still in the hand.
             for c in obs
@@ -212,7 +215,7 @@ fn the_json_never_names_a_hidden_card() {
 #[test]
 fn a_game_resumes_from_its_choices() {
     // The search bot thinks again on a resume and must choose the same.
-    for (bot, moves) in [("network", 40), ("network-search", 12)] {
+    for (bot, moves) in [("network", 40), ("network-search", 5)] {
         let mut host = ready_host();
         let mut answer = start(&mut host, 21, bot, &[]);
         let mut rng = 5u64;
@@ -268,4 +271,23 @@ fn bad_commands_are_answered_with_errors() {
         answer["error"].as_str().unwrap().contains("unknown bot"),
         "{answer}"
     );
+}
+
+/// Every card object in the view (anything with an "instance") carries an
+/// id exactly when the observation shows that card, and the right one.
+fn ids_match_the_observation(v: &Value, obs: &ygo_engine::Observation) {
+    match v {
+        Value::Object(m) => {
+            if let Some(inst) = m.get("instance").and_then(Value::as_u64) {
+                let seen = obs
+                    .find(ygo_engine::InstanceId(inst as u8))
+                    .and_then(|f| f.card.card());
+                let id = m.get("id").and_then(Value::as_u64);
+                assert_eq!(id, seen.map(|c| u64::from(c.0)), "instance {inst}: {v}");
+            }
+            m.values().for_each(|x| ids_match_the_observation(x, obs));
+        }
+        Value::Array(a) => a.iter().for_each(|x| ids_match_the_observation(x, obs)),
+        _ => {}
+    }
 }

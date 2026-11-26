@@ -2,8 +2,22 @@
 # Builds the browser game into web/play/dist: the page, the engine compiled
 # to WebAssembly, and the data files it loads. Serve that folder over HTTP
 # (python3 -m http.server -d web/play/dist) or publish it as one artifact.
+#
+# Card images are Konami-owned and never committed. When the git-ignored
+# images/ folder exists (tools/refresh_cards.py fetches it), its small and
+# full images are copied into the page for local play; --no-images leaves
+# them out (use it for anything you publish), --images <dir> takes them
+# from another folder.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+images=images
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-images) images=""; shift ;;
+    --images) images="$2"; shift 2 ;;
+    *) echo "usage: $0 [--no-images | --images <dir>]" >&2; exit 2 ;;
+  esac
+done
 
 out=web/play/dist
 cargo build -p ygo-wasm --target wasm32-unknown-unknown --profile web
@@ -37,5 +51,29 @@ for f in data/decks/*.json; do
   decks+=("\"$(basename "$f")\"")
 done
 (IFS=,; echo "[${decks[*]}]") > "$out/data/decks.json"
+
+# Card images, when there are local copies: images/<size>/<id>.jpg and an
+# index of the ids, so the page asks only for images that exist (an empty
+# index without them).
+mkdir -p "$out/images"
+echo '{"small":[],"full":[]}' > "$out/images/index.json"
+if [ -n "$images" ] && [ -d "$images" ]; then
+  python3 -I - "$images" "$out/images" <<'PY'
+import json, shutil, sys
+from pathlib import Path
+src, dst = Path(sys.argv[1]), Path(sys.argv[2])
+index = {}
+for size in ("small", "full"):
+    ids = sorted(int(p.stem) for p in (src / size).glob("*.jpg") if p.stem.isdigit()) if (src / size).is_dir() else []
+    if ids:
+        (dst / size).mkdir(parents=True, exist_ok=True)
+        for i in ids:
+            shutil.copyfile(src / size / f"{i}.jpg", dst / size / f"{i}.jpg")
+    index[size] = ids
+dst.mkdir(parents=True, exist_ok=True)
+(dst / "index.json").write_text(json.dumps(index))
+print(f"card images: {len(index['small'])} small, {len(index['full'])} full")
+PY
+fi
 
 du -sh "$out"

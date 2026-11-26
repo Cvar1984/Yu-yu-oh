@@ -47,6 +47,8 @@ struct SideView {
 #[derive(Serialize)]
 struct CardView {
     instance: u8,
+    /// The card's id (its password), for its image; `None` when hidden.
+    id: Option<u32>,
     /// `None` when the human cannot see the card.
     name: Option<String>,
     /// monster, effect, fusion, ritual, spell, trap, or hidden.
@@ -79,6 +81,11 @@ struct ActionView {
     /// Empty for a direct attack.
     targets: Vec<u8>,
     kind: &'static str,
+    /// `card` as the human sees it, wherever it is (a Deck search's
+    /// options too); hidden cards stay hidden.
+    subject: Option<CardView>,
+    /// Which of the card's effects an activation uses.
+    effect: Option<u8>,
 }
 
 fn card_view(pool: &CardPool, c: &VisibleCard) -> CardView {
@@ -92,6 +99,7 @@ fn card_view(pool: &CardPool, c: &VisibleCard) -> CardView {
     let VisibleCard::Known { card, stats, .. } = c else {
         return CardView {
             instance,
+            id: None,
             name: None,
             kind: "hidden",
             position,
@@ -104,6 +112,7 @@ fn card_view(pool: &CardPool, c: &VisibleCard) -> CardView {
     let Some(s) = pool.index_of(*card).map(|i| pool.get(i)) else {
         return CardView {
             instance,
+            id: None,
             name: None,
             kind: "hidden",
             position,
@@ -149,6 +158,7 @@ fn card_view(pool: &CardPool, c: &VisibleCard) -> CardView {
     };
     CardView {
         instance,
+        id: Some(card.0),
         name: Some(s.name.clone()),
         kind,
         position,
@@ -231,6 +241,13 @@ pub fn build(session: &PlaySession) -> View {
                 _ => Vec::new(),
             },
             kind: action_kind(a),
+            subject: PlaySession::subject(a)
+                .and_then(|i| obs.find(i))
+                .map(|f| card_view(pool, f.card)),
+            effect: match a {
+                Action::Activate { effect, .. } => Some(*effect),
+                _ => None,
+            },
         })
         .collect();
     let log = session.log();
