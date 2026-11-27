@@ -240,6 +240,16 @@ fn the_json_never_names_a_hidden_card() {
             for n in names {
                 text = text.replace(n, "#");
             }
+            // Each animation step shows only what its moment's observation
+            // shows (its log lines are left out).
+            let steps = answer["steps"].as_array().unwrap();
+            assert_eq!(steps.len(), host.step_observations().len());
+            for (step, obs) in steps.iter().zip(host.step_observations()) {
+                assert_eq!(step["view"]["log"], json!([]));
+                assert_no_hidden_names(&step.to_string(), obs, &shared);
+                ids_match_the_observation(&step["view"], obs);
+                assert!(!step["cues"].as_array().unwrap().is_empty());
+            }
             let obs = host.session().unwrap().observation();
             assert_no_hidden_names(&text, &obs, &shared);
             // A card's id (for its image) only when the human sees it: it
@@ -268,6 +278,66 @@ fn the_json_never_names_a_hidden_card() {
     }
 }
 
+/// Every move the human can see comes back as a step with cues naming
+/// what to animate; over whole games every common kind turns up, and each
+/// cue's card is one the step's view shows (or one that just left it).
+#[test]
+fn steps_carry_cues_for_each_visible_move() {
+    let mut host = ready_host();
+    let mut seen = std::collections::BTreeSet::new();
+    for seed in 20..24u64 {
+        let mut answer = start(&mut host, seed, "network", &[]);
+        let mut rng = seed;
+        loop {
+            for step in answer["steps"].as_array().unwrap() {
+                for cue in step["cues"].as_array().unwrap() {
+                    let kind = cue["kind"].as_str().unwrap().to_string();
+                    assert!(
+                        cue.get("name").is_none() && cue.get("id").is_none(),
+                        "{cue}"
+                    );
+                    if kind == "summon" || kind == "set" || kind == "attack" {
+                        let inst = cue["card"].as_u64().unwrap();
+                        let shown = step["view"].to_string();
+                        assert!(
+                            shown.contains(&format!("\"instance\":{inst},")),
+                            "{kind}: instance {inst} is in the step's view"
+                        );
+                    }
+                    seen.insert(kind);
+                }
+            }
+            if !answer["view"]["result"].is_null() {
+                assert!(seen.contains("game_over"));
+                break;
+            }
+            let n = answer["view"]["actions"].as_array().unwrap().len();
+            answer = ok(
+                &mut host,
+                json!({ "cmd": "play", "index": lcg(&mut rng) % n }),
+            );
+        }
+    }
+    for kind in [
+        "turn",
+        "battle",
+        "draw",
+        "summon",
+        "set",
+        "activate",
+        "attack",
+        "damage",
+        "destroy",
+        "graveyard",
+        "game_over",
+    ] {
+        assert!(seen.contains(kind), "no {kind} cue in four games: {seen:?}");
+    }
+    // A resumed game is shown as it stands: no steps.
+    let resumed = start(&mut host, 20, "network", &[0]);
+    assert_eq!(resumed["steps"], json!([]));
+}
+
 #[test]
 fn a_game_resumes_from_its_choices() {
     // The search bot thinks again on a resume and must choose the same.
@@ -289,8 +359,10 @@ fn a_game_resumes_from_its_choices() {
         assert!(!choices.is_empty());
         let mut fresh = ready_host();
         let resumed = start(&mut fresh, 21, bot, &choices);
+        // A resume has no animation steps; the rest is the same.
         assert_eq!(
-            resumed, answer,
+            (&resumed["view"], &resumed["choices"]),
+            (&answer["view"], &answer["choices"]),
             "{bot}: same view and choices after a resume"
         );
         assert_eq!(

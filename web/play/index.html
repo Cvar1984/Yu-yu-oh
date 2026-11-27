@@ -208,6 +208,37 @@ footer { color: var(--muted); font-size: 12px; }
   .pile .lfull { display: none; } .pile .lshort { display: inline; }
 }
 
+
+/* Sound settings */
+header.top { align-items: center; }
+#av { margin-left: auto; position: relative; }
+.av summary { list-style: none; cursor: pointer; border: 1px solid var(--line); background: var(--table); border-radius: var(--radius); padding: 6px 12px; font-weight: 600; font-size: 13px; }
+.av summary::-webkit-details-marker { display: none; }
+.av[open] summary { border-color: var(--accent); }
+.avbox { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; background: var(--table); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; width: min(300px, calc(100vw - 32px)); box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); }
+.avrow { display: flex; align-items: center; gap: 10px; }
+.avrow .btn { min-width: 128px; }
+.avrow .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.avrow input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
+
+/* Animations: everything drawn above the page lives in #fx. */
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+#fx .ghost { position: fixed; }
+#fx .ghost > * { width: 100%; height: 100%; }
+#fx .float { position: fixed; font-family: var(--font-display); font-weight: 700; font-size: 22px; text-shadow: 0 2px 6px rgb(0 0 0 / 0.45); white-space: nowrap; }
+#fx .float.damage { color: #ff4d4d; } #fx .float.pay { color: #ffae3b; } #fx .float.gain { color: #3ddc84; }
+#fx .burst { position: fixed; width: 90px; height: 90px; border-radius: 50%; border: 4px solid #ffd45a; box-shadow: 0 0 24px 6px rgb(255 212 90 / 0.7), inset 0 0 18px rgb(255 212 90 / 0.6); }
+#fx .burst.special, #fx .burst.fusion { border-color: #c48cff; box-shadow: 0 0 24px 6px rgb(196 140 255 / 0.7), inset 0 0 18px rgb(196 140 255 / 0.6); }
+#fx .burst.ritual { border-color: #6fb4ff; box-shadow: 0 0 24px 6px rgb(111 180 255 / 0.7), inset 0 0 18px rgb(111 180 255 / 0.6); }
+#fx .burst.hit { border-color: #ff6a3d; width: 110px; height: 110px; background: radial-gradient(circle, rgb(255 240 200 / 0.95), rgb(255 106 61 / 0.5) 45%, transparent 70%); }
+#fx .shard { position: fixed; width: 12px; height: 16px; background: linear-gradient(135deg, #fff, #9fb3c8); clip-path: polygon(50% 0, 100% 70%, 30% 100%, 0 40%); }
+#fx .stamp { position: fixed; font-family: var(--font-display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.08em; color: #ff3b3b; border: 3px solid #ff3b3b; border-radius: 6px; padding: 2px 8px; background: rgb(255 255 255 / 0.85); }
+#fx .banner { position: fixed; left: 0; right: 0; top: 42%; display: grid; place-items: center; padding: 14px 16px; background: linear-gradient(90deg, transparent, rgb(12 18 30 / 0.88) 15%, rgb(12 18 30 / 0.88) 85%, transparent); }
+#fx .banner span { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 6vw, 44px); letter-spacing: 0.04em; color: #fff; text-shadow: 0 0 18px currentColor; }
+#fx .banner.you span { color: #8fb4ff; } #fx .banner.them span { color: #ff8fa0; }
+#fx .banner.battle span { color: #ffb347; } #fx .banner.coin span { color: #ffe07a; }
+#fx .banner.win span { color: #ffd45a; font-size: clamp(32px, 9vw, 64px); } #fx .banner.lose span { color: #c9d2de; font-size: clamp(32px, 9vw, 64px); }
+
 /* Deck builder */
 .builder { display: grid; gap: 16px; }
 .bhead { gap: 12px; }
@@ -253,6 +284,7 @@ input[type="number"] { font: inherit; padding: 8px 10px; border-radius: var(--ra
   <header class="top">
     <h1>Yu-yu-oh Duel Table</h1>
     <span class="sub" id="sub">LOB, MRD, SRL, PSV and EXTRA card pool, house rules from the project's rules file</span>
+    <div id="av"></div>
   </header>
   <main id="main"><p class="note">Loading the rules engine…</p></main>
   <footer>A fan-made rules engine for personal play. Not affiliated with or endorsed by Konami. Card images are not part of this project: they load from YGOPRODeck while you play, or from copies on your own computer.</footer>
@@ -329,6 +361,8 @@ const state = {
   init: null,         // decks and bots on offer
   initArgs: null,     // the init command, kept to rebuild the engine
   game: null,         // { deck, bot_deck, bot, seed, first, choices }
+  busy: false,        // animating a move's steps; taps skip them
+  skip: false,
   view: null,
   selected: null,     // instance id of the card open (its moves and text)
   aim: null,          // { moves, picked }: a move waiting for its targets
@@ -364,7 +398,7 @@ async function boot(data) {
     const [rules, cards, banlist, tokens, deckIndex] = await Promise.all([
       fetchText("data/rules.toml"), fetchText("data/cards.json"), fetchText("data/banlist.json"),
       fetchText("data/tokens.json"), fetchText("data/decks.json"),
-      Engine.load(),
+      Engine.load(), Sound.loadIndex(),
     ]);
     const files = JSON.parse(deckIndex);
     const decks = await Promise.all(files.map(async (file) => ({ file, text: await fetchText("data/decks/" + file) })));
@@ -454,19 +488,21 @@ function botName(b) {
 function startGame(game) {
   const answer = Engine.call({ cmd: "start", ...game });
   state.game = { ...game, choices: answer.choices };
-  state.view = answer.view;
   state.selected = null; state.cardText = null; state.copyText = null; state.pile = null;
   state.aim = null; state.variants = null;
   state.seenLog = 0;
   save();
-  renderGame();
+  // The first view: an empty table to animate the opening on.
+  state.view = answer.steps?.length ? { ...answer.steps[0].view, log: [] } : answer.view;
+  playback(answer, renderGame);
 }
 
 function play(index) {
+  if (state.busy) return;
   state.seenLog = state.view.log_total;
+  let answer;
   try {
-    const answer = Engine.call({ cmd: "play", index });
-    state.view = answer.view;
+    answer = Engine.call({ cmd: "play", index });
     state.game.choices = answer.choices;
   } catch (e) {
     state.error = e.message;
@@ -475,8 +511,10 @@ function play(index) {
   }
   save();
   state.aim = null; state.variants = null;
-  if (state.selected !== null && !cardOnTable(state.selected)) { state.selected = null; state.cardText = null; }
-  renderGame();
+  playback(answer, () => {
+    if (state.selected !== null && !cardOnTable(state.selected)) { state.selected = null; state.cardText = null; }
+    renderGame();
+  });
 }
 
 // After a failure the module is rebuilt and the game can be replayed from
@@ -672,7 +710,7 @@ function lbl(full, short) { return `<span class="lfull">${full}</span><span clas
 // Deck. The opponent's side is the same mat turned around, as across a table.
 function sideHtml(side, who, mine) {
   const key = mine ? "you" : "opponent";
-  const head = `<div class="sidehead"><span class="who">${who}</span><span class="lp">${side.lp.toLocaleString()} LP</span>
+  const head = `<div class="sidehead"><span class="who">${who}</span><span class="lp" data-lp="${key}">${side.lp.toLocaleString()} LP</span>
     <span>Hand ${side.hand}</span>${!mine ? `<span class="opp-hand" aria-hidden="true">${"<span></span>".repeat(Math.min(side.hand, 12))}</span>` : ""}</div>`;
   const front = [
     side.field ? cardHtml(side.field) : slotHtml("Field", "field"),
@@ -891,6 +929,527 @@ function copy(text) {
 }
 
 // Escape steps back: out of aiming, then closes the open card.
+// ---- Sound: effects and music ----
+// Every sound is made here with Web Audio (original, nothing copyrighted).
+// A file the build copied from the git-ignored audio/ folder replaces the
+// sound of the same name (audio/index.json lists them): draw, summon,
+// special, set, flip, activate, attack, hit, damage, gain, destroy, banish,
+// negate, turn, battle, coin, shuffle, win, lose, and bgm (the music, looped).
+// Browsers allow sound only after the first tap; it starts then.
+const AV_KEY = "duel-table-av";
+const av = (() => {
+  const d = { music: true, sfx: true, musicVol: 0.45, sfxVol: 0.8, motion: true };
+  try { return { ...d, ...JSON.parse(localStorage.getItem(AV_KEY) || "{}") }; } catch (_) { return d; }
+})();
+function saveAv() { try { localStorage.setItem(AV_KEY, JSON.stringify(av)); } catch (_) { /* storage may be blocked */ } }
+
+const midi = (n) => {
+  const m = /^([A-G])(#?)(\d)$/.exec(n);
+  return 12 * (Number(m[3]) + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] ? 1 : 0);
+};
+const hz = (n) => 440 * 2 ** (((typeof n === "number" ? n : midi(n)) - 69) / 12);
+
+const Sound = {
+  ctx: null, sfxOut: null, musicOut: null,
+  files: {},          // name -> file, from audio/index.json
+  buffers: {},        // name -> decoded AudioBuffer
+  played: [],         // names played, newest last (for checks)
+  noiseBuf: null,
+
+  async loadIndex() {
+    try { const r = await fetch("audio/index.json"); if (r.ok) this.files = await r.json(); } catch (_) { this.files = {}; }
+  },
+  // Called on the first tap or key: makes the audio graph, loads the
+  // owner's files, starts the music.
+  unlock() {
+    if (this.ctx) { if (this.ctx.state === "suspended" && !document.hidden) this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ctx = this.ctx = new AC();
+    const comp = ctx.createDynamicsCompressor();
+    comp.connect(ctx.destination);
+    this.sfxOut = ctx.createGain(); this.sfxOut.connect(comp);
+    this.musicOut = ctx.createGain(); this.musicOut.connect(comp);
+    this.volumes();
+    this.noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const data = this.noiseBuf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    for (const [name, file] of Object.entries(this.files)) {
+      fetch("audio/" + file).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
+        .then((b) => ctx.decodeAudioData(b))
+        .then((buf) => { this.buffers[name] = buf; if (name === "bgm") Music.restart(); })
+        .catch(() => { /* a file that does not load keeps the built-in sound */ });
+    }
+    Music.restart();
+  },
+  volumes() {
+    if (!this.ctx) return;
+    this.sfxOut.gain.value = av.sfx ? av.sfxVol : 0;
+    this.musicOut.gain.value = av.music ? av.musicVol * 0.6 : 0;
+  },
+  play(name) {
+    this.played.push(name);
+    if (this.played.length > 200) this.played.shift();
+    if (!this.ctx || !av.sfx) return;
+    const t = this.ctx.currentTime + 0.01;
+    if (this.buffers[name]) {
+      const s = this.ctx.createBufferSource();
+      s.buffer = this.buffers[name]; s.connect(this.sfxOut); s.start(t);
+    } else SFX[name]?.(t);
+  },
+
+  // Building blocks: a tone with an envelope (and optional glide), and
+  // filtered noise.
+  tone(freq, t, dur, { type = "sine", gain = 0.3, to = null, attack = 0.005, out = this.sfxOut, filter = null } = {}) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    let node = o;
+    if (filter) { const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = filter; o.connect(f); node = f; }
+    node.connect(g); g.connect(out);
+    o.start(t); o.stop(t + dur + 0.05);
+  },
+  noise(t, dur, { type = "bandpass", freq = 1000, to = null, q = 1, gain = 0.3, attack = 0.005, out = this.sfxOut } = {}) {
+    const c = this.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.noiseBuf; s.loop = true;
+    f.type = type; f.Q.value = q; f.frequency.setValueAtTime(freq, t);
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(out);
+    s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.05);
+  },
+};
+
+const S = Sound;
+const SFX = {
+  draw: (t) => { S.noise(t, 0.16, { freq: 1800, to: 5000, q: 2, gain: 0.5 }); S.tone(1400, t + 0.1, 0.05, { gain: 0.08 }); },
+  set: (t) => { S.tone(150, t, 0.14, { to: 60, gain: 0.6 }); S.noise(t, 0.07, { type: "lowpass", freq: 900, gain: 0.25 }); },
+  summon: (t) => {
+    S.tone(110, t, 0.3, { to: 45, gain: 0.8 });
+    S.noise(t, 0.22, { type: "lowpass", freq: 700, gain: 0.35 });
+    ["A4", "C#5", "E5", "A5"].forEach((n, i) => S.tone(hz(n), t + 0.05 + i * 0.06, 0.4, { type: "triangle", gain: 0.12 }));
+  },
+  special: (t) => {
+    SFX.summon(t);
+    S.tone(200, t, 0.45, { type: "sawtooth", to: 1400, gain: 0.12, filter: 2200 });
+    S.tone(1320, t + 0.25, 0.6, { gain: 0.06 }); S.tone(1760, t + 0.3, 0.6, { gain: 0.05 });
+  },
+  flip: (t) => { S.noise(t, 0.08, { type: "highpass", freq: 3000, gain: 0.2 }); S.tone(600, t, 0.1, { to: 950, type: "triangle", gain: 0.15 }); },
+  activate: (t) => {
+    S.tone(300, t, 0.3, { to: 620, gain: 0.15 });
+    ["E5", "B5", "E6"].forEach((n, i) => S.tone(hz(n), t + i * 0.06, 0.55, { type: "triangle", gain: 0.14 }));
+  },
+  attack: (t) => { S.noise(t, 0.32, { freq: 400, to: 3200, q: 1.5, gain: 0.9, attack: 0.08 }); },
+  hit: (t) => {
+    S.tone(95, t, 0.32, { to: 38, gain: 1 });
+    S.noise(t, 0.16, { type: "lowpass", freq: 1600, gain: 0.7 });
+    S.noise(t, 0.04, { type: "highpass", freq: 4000, gain: 0.4 });
+  },
+  damage: (t) => { S.tone(420, t, 0.38, { type: "sawtooth", to: 110, gain: 0.22, filter: 1500 }); S.tone(80, t, 0.2, { to: 40, gain: 0.5 }); },
+  pay: (t) => { S.tone(520, t, 0.25, { type: "triangle", to: 260, gain: 0.15 }); },
+  gain: (t) => { ["C5", "E5", "G5", "C6"].forEach((n, i) => S.tone(hz(n), t + i * 0.05, 0.25, { gain: 0.15 })); },
+  destroy: (t) => {
+    for (let i = 0; i < 7; i++) S.noise(t + Math.random() * 0.22, 0.06, { type: "highpass", freq: 2500 + Math.random() * 3000, gain: 0.3 });
+    for (let i = 0; i < 5; i++) S.tone(2000 + Math.random() * 2500, t + Math.random() * 0.2, 0.22, { gain: 0.05 });
+    S.tone(140, t, 0.25, { to: 50, gain: 0.5 });
+  },
+  banish: (t) => { S.noise(t, 0.45, { freq: 1500, to: 6000, gain: 0.3, attack: 0.35 }); S.tone(880, t, 0.45, { to: 1760, gain: 0.12, attack: 0.3 }); },
+  negate: (t) => { S.tone(110, t, 0.32, { type: "square", gain: 0.12, filter: 1200 }); S.tone(117, t, 0.32, { type: "square", gain: 0.12, filter: 1200 }); },
+  turn: (t) => {
+    S.tone(hz("G4"), t, 0.18, { type: "sawtooth", gain: 0.18, filter: 1600, attack: 0.02 });
+    S.tone(hz("C5"), t + 0.17, 0.45, { type: "sawtooth", gain: 0.2, filter: 1600, attack: 0.02 });
+  },
+  battle: (t) => {
+    S.tone(150, t, 0.32, { to: 40, gain: 0.9 }); S.noise(t, 0.2, { freq: 1800, q: 0.7, gain: 0.4 });
+    ["D4", "F4", "A4", "D5"].forEach((n) => S.tone(hz(n), t + 0.02, 0.5, { type: "sawtooth", gain: 0.09, filter: 1800, attack: 0.02 }));
+  },
+  coin: (t) => { S.tone(2000, t, 0.06, { gain: 0.15 }); S.tone(2600, t + 0.08, 0.35, { gain: 0.12 }); S.tone(3900, t + 0.08, 0.25, { gain: 0.05 }); },
+  shuffle: (t) => { for (let i = 0; i < 8; i++) S.noise(t + i * 0.035, 0.03, { type: "highpass", freq: 2500, gain: 0.3 }); },
+  win: (t) => {
+    ["C5", "E5", "G5", "C6"].forEach((n, i) => S.tone(hz(n), t + i * 0.12, 0.3, { type: "square", gain: 0.1, filter: 2500 }));
+    ["C5", "E5", "G5", "C6"].forEach((n) => S.tone(hz(n), t + 0.5, 1.2, { type: "sawtooth", gain: 0.07, filter: 2200, attack: 0.03 }));
+    S.noise(t + 0.5, 1.2, { type: "highpass", freq: 6000, gain: 0.12 });
+  },
+  lose: (t) => {
+    ["A4", "F4", "D4"].forEach((n, i) => S.tone(hz(n), t + i * 0.25, 0.4, { type: "triangle", gain: 0.18 }));
+    ["D3", "F3", "A3"].forEach((n) => S.tone(hz(n), t + 0.75, 1.6, { type: "sawtooth", gain: 0.06, filter: 700, attack: 0.05 }));
+  },
+};
+
+// The music: an original duel loop in A minor, 8 bars at 128 bpm (bass,
+// pad, lead and drums), scheduled a little ahead of time. In the Battle
+// Phase the drums drive harder. A bgm file from audio/ plays instead.
+const Music = {
+  bpm: 128, step: 0, next: 0, timer: null, source: null, intense: false,
+  chords: [["A2", "A3", "C4", "E4"], ["A2", "A3", "C4", "E4"], ["F2", "F3", "A3", "C4"], ["G2", "G3", "B3", "D4"],
+           ["A2", "A3", "C4", "E4"], ["A2", "A3", "C4", "E4"], ["F2", "F3", "A3", "C4"], ["E2", "E3", "G#3", "B3"]],
+  // [note, start beat, length in beats] per bar.
+  lead: [
+    [["A4", 0, 1], ["C5", 1, 0.5], ["E5", 1.5, 0.5], ["A5", 2, 1.5], ["G5", 3.5, 0.5]],
+    [["E5", 0, 1], ["D5", 1, 0.5], ["C5", 1.5, 0.5], ["D5", 2, 1], ["E5", 3, 1]],
+    [["F5", 0, 1], ["E5", 1, 0.5], ["D5", 1.5, 0.5], ["C5", 2, 1], ["A4", 3, 1]],
+    [["B4", 0, 1], ["D5", 1, 1], ["G5", 2, 1.5], ["F5", 3.5, 0.5]],
+    [["E5", 0, 1.5], ["A5", 1.5, 0.5], ["G5", 2, 0.5], ["E5", 2.5, 0.5], ["C5", 3, 1]],
+    [["D5", 0, 0.5], ["E5", 0.5, 0.5], ["C5", 1, 1], ["B4", 2, 1], ["A4", 3, 1]],
+    [["C5", 0, 1], ["F5", 1, 1], ["A5", 2, 1], ["G5", 3, 1]],
+    [["G#5", 0, 2], ["B5", 2, 1], ["E5", 3, 1]],
+  ],
+  restart() {
+    this.stop();
+    if (!Sound.ctx || !av.music) return;
+    const c = Sound.ctx;
+    if (Sound.buffers.bgm) {
+      this.source = c.createBufferSource();
+      this.source.buffer = Sound.buffers.bgm; this.source.loop = true;
+      this.source.connect(Sound.musicOut); this.source.start();
+      return;
+    }
+    this.step = 0; this.next = c.currentTime + 0.1;
+    this.timer = setInterval(() => this.schedule(), 25);
+  },
+  stop() {
+    clearInterval(this.timer); this.timer = null;
+    try { this.source?.stop(); } catch (_) { /* already stopped */ }
+    this.source = null;
+  },
+  schedule() {
+    const c = Sound.ctx, sixteenth = 60 / this.bpm / 4;
+    while (this.next < c.currentTime + 0.12) {
+      this.play16(this.step, this.next, sixteenth);
+      this.step = (this.step + 1) % 128;
+      this.next += sixteenth;
+    }
+  },
+  play16(step, t, s) {
+    const out = Sound.musicOut, bar = Math.floor(step / 16), pos = step % 16, chord = this.chords[bar];
+    // Bass: eighth notes on the root, an octave jump on the off-beats.
+    if (pos % 2 === 0) {
+      const n = [0, 0, 1, 0, 0, 0, 1, 0][pos / 2] ? chord[1] : chord[0];
+      Sound.tone(hz(n), t, s * 1.8, { type: "square", gain: 0.12, filter: 520, out });
+    }
+    // Pad: the chord, held through the bar.
+    if (pos === 0) chord.slice(1).forEach((n) => Sound.tone(hz(n), t, s * 16, { type: "sawtooth", gain: 0.025, filter: 900, attack: 0.25, out }));
+    // Lead.
+    for (const [n, beat, len] of this.lead[bar]) if (beat * 4 === pos) Sound.tone(hz(n), t, len * 4 * s * 0.95, { type: "square", gain: 0.05, filter: 2400, attack: 0.01, out });
+    // Drums: kick on 1 and 3, snare on 2 and 4, hats on eighths (sixteenths
+    // in the Battle Phase).
+    if (pos === 0 || pos === 8 || (this.intense && pos === 10)) Sound.tone(140, t, 0.22, { to: 42, gain: 0.55, out });
+    if (pos === 4 || pos === 12) { Sound.noise(t, 0.14, { freq: 1900, q: 0.8, gain: 0.22, out }); Sound.tone(220, t, 0.08, { to: 150, gain: 0.15, out }); }
+    if (this.intense ? true : pos % 2 === 0) Sound.noise(t, 0.035, { type: "highpass", freq: 7000, gain: this.intense ? 0.08 : 0.05, out });
+  },
+};
+
+// The first tap or key starts sound; a hidden tab is silent.
+for (const ev of ["pointerdown", "keydown"]) addEventListener(ev, () => Sound.unlock(), { capture: true });
+document.addEventListener("visibilitychange", () => {
+  if (!Sound.ctx) return;
+  if (document.hidden) Sound.ctx.suspend(); else Sound.ctx.resume();
+});
+
+function avHtml() {
+  const pressed = (k) => `aria-pressed="${av[k]}"`;
+  return `<details class="av"><summary aria-label="Sound and motion settings"><span aria-hidden="true">${av.sfx || av.music ? "🔊" : "🔇"}</span> Sound</summary>
+    <div class="avbox">
+      <div class="avrow"><button type="button" class="btn" data-av="music" ${pressed("music")}>Music ${av.music ? "on" : "off"}</button>
+        <input type="range" min="0" max="1" step="0.05" value="${av.musicVol}" data-vol="musicVol" aria-label="Music volume"></div>
+      <div class="avrow"><button type="button" class="btn" data-av="sfx" ${pressed("sfx")}>Effects ${av.sfx ? "on" : "off"}</button>
+        <input type="range" min="0" max="1" step="0.05" value="${av.sfxVol}" data-vol="sfxVol" aria-label="Effects volume"></div>
+      <div class="avrow"><button type="button" class="btn" data-av="motion" ${pressed("motion")}>Animations ${av.motion ? "on" : "off"}</button></div>
+      <p class="note">Original sounds and music made in your browser. Files in this project's audio/ folder replace them by name.</p>
+    </div></details>`;
+}
+function drawAv() {
+  const slot = document.getElementById("av");
+  const open = slot.querySelector("details")?.open;
+  slot.innerHTML = avHtml();
+  if (open) slot.querySelector("details").open = true;
+}
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-av]");
+  if (!b) return;
+  av[b.dataset.av] = !av[b.dataset.av];
+  saveAv(); Sound.volumes();
+  if (b.dataset.av === "music") Music.restart();
+  drawAv();
+});
+document.addEventListener("input", (ev) => {
+  const r = ev.target.closest("[data-vol]");
+  if (!r) return;
+  av[r.dataset.vol] = Number(r.value);
+  saveAv(); Sound.volumes();
+});
+
+// ---- Animations ----
+// After a move the engine returns a step for each move that did something
+// visible (yours, then the bot's), each with cues. The page shows the steps
+// one by one and animates each cue with a sound; a tap or Escape skips to
+// the end. With animations off (or a reduced-motion setting, which keeps
+// only fades) the result shows at once.
+const FX_TIME = {
+  turn: 950, battle: 800, draw: 300, summon: 520, special: 650, fusion: 700, ritual: 700, flip: 420, set: 360,
+  activate: 600, attack: 700, damage: 520, pay: 380, gain: 420, destroy: 560, graveyard: 320, banish: 460,
+  to_hand: 320, to_deck: 320, negate: 620, control: 480, equip: 400, coin: 800, shuffle: 320, game_over: 1800,
+};
+const SOUND_OF = {
+  draw: "draw", summon: "summon", special: "special", fusion: "special", ritual: "special", flip: "flip", set: "set",
+  activate: "activate", attack: "attack", damage: "damage", pay: "pay", gain: "gain", destroy: "destroy",
+  banish: "banish", to_hand: "draw", to_deck: "shuffle", negate: "negate", control: "special", equip: "activate",
+  turn: "turn", battle: "battle", coin: "coin", shuffle: "shuffle",
+};
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const FX = {
+  layer: null,
+  log: [],            // cue kinds animated, newest last (for checks)
+  el(inst) { return inst === undefined || inst === null ? null : main.querySelector(`[data-inst="${inst}"]`); },
+  center(r) { return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; },
+  overlay() {
+    if (!this.layer) { this.layer = document.createElement("div"); this.layer.id = "fx"; this.layer.setAttribute("aria-hidden", "true"); document.body.append(this.layer); }
+    return this.layer;
+  },
+  // Where every card and pile is now, to animate a card that leaves.
+  snapshot() {
+    const m = new Map();
+    for (const e of main.querySelectorAll("[data-inst]")) m.set(Number(e.dataset.inst), { rect: e.getBoundingClientRect(), html: e.outerHTML });
+    return m;
+  },
+  // A copy of a card where it was, for a card that has gone.
+  ghost(old) {
+    const g = document.createElement("div");
+    g.className = "ghost";
+    g.innerHTML = old.html;
+    Object.assign(g.style, { left: old.rect.left + "px", top: old.rect.top + "px", width: old.rect.width + "px", height: old.rect.height + "px" });
+    this.overlay().append(g);
+    return g;
+  },
+  float(text, at, cls) {
+    const f = document.createElement("div");
+    f.className = "float " + cls; f.textContent = text;
+    Object.assign(f.style, { left: at.x + "px", top: at.y + "px" });
+    this.overlay().append(f);
+    f.animate([{ transform: "translate(-50%, 0)", opacity: 0 }, { transform: "translate(-50%, -14px)", opacity: 1, offset: 0.2 }, { transform: "translate(-50%, -48px)", opacity: 0 }],
+      { duration: 1100, easing: "ease-out" }).onfinish = () => f.remove();
+  },
+  burst(at, cls) {
+    const b = document.createElement("div");
+    b.className = "burst " + cls;
+    Object.assign(b.style, { left: at.x + "px", top: at.y + "px" });
+    this.overlay().append(b);
+    b.animate([{ transform: "translate(-50%, -50%) scale(0.2)", opacity: 1 }, { transform: "translate(-50%, -50%) scale(1.8)", opacity: 0 }],
+      { duration: 480, easing: "ease-out" }).onfinish = () => b.remove();
+  },
+  banner(text, cls, ms) {
+    const b = document.createElement("div");
+    b.className = "banner " + cls; b.innerHTML = `<span>${esc(text)}</span>`;
+    this.overlay().append(b);
+    b.animate([{ opacity: 0, transform: "translateY(-50%) scaleY(0.2)" }, { opacity: 1, transform: "translateY(-50%) scaleY(1)", offset: 0.15 },
+      { opacity: 1, transform: "translateY(-50%) scaleY(1)", offset: 0.8 }, { opacity: 0, transform: "translateY(-50%) scaleY(0.6)" }],
+      { duration: ms, easing: "ease-out" }).onfinish = () => b.remove();
+  },
+  shake(e, strength = 6) {
+    e?.animate([0, -1, 1, -1, 1, 0].map((k) => ({ transform: `translateX(${k * strength}px)` })), { duration: 320 });
+  },
+  lp(yours) { return main.querySelector(`[data-lp="${yours ? "you" : "opponent"}"]`); },
+  // The pile a card went to, for flying it there.
+  pileOf(inst) {
+    for (const key of ["you", "opponent"]) {
+      const side = state.view[key];
+      if (side.graveyard.some((c) => c.instance === inst) || side.banished.some((c) => c.instance === inst)) return main.querySelector(`[data-pile="${key}"]`);
+    }
+    return null;
+  },
+
+  // One cue: its animation and sound. `old` holds where cards were before
+  // this step was drawn.
+  cue(c, old, gone) {
+    this.log.push(c.kind);
+    if (this.log.length > 500) this.log.shift();
+    if (c.kind === "game_over") Sound.play(state.view.result?.startsWith("You win") ? "win" : "lose");
+    else if (SOUND_OF[c.kind]) Sound.play(SOUND_OF[c.kind]);
+    const still = reducedMotion();
+    const e = this.el(c.card);
+    switch (c.kind) {
+      case "turn": return this.banner(c.yours ? `Your turn · ${state.view.turn}` : `Opponent's turn · ${state.view.turn}`, c.yours ? "you" : "them", FX_TIME.turn);
+      case "battle": return this.banner("Battle Phase", "battle", FX_TIME.battle);
+      case "coin": return this.banner(`Coin toss: ${c.amount ? "Heads" : "Tails"}`, "coin", FX_TIME.coin);
+      case "game_over": {
+        const won = state.view.result?.startsWith("You win"), draw = state.view.result?.includes("draw");
+        return this.banner(draw ? "Draw" : won ? "You win!" : "You lose", won ? "win" : "lose", FX_TIME.game_over);
+      }
+      case "summon": case "special": case "fusion": case "ritual": case "set": {
+        if (!e) return;
+        const big = c.kind !== "set";
+        e.animate(still ? [{ opacity: 0 }, { opacity: 1 }] : [
+          { transform: `translateY(-26px) scale(${big ? 1.4 : 1.15})`, opacity: 0, filter: big ? "brightness(2.2)" : "none" },
+          { transform: "none", opacity: 1, filter: "none" }], { duration: big ? 460 : 300, easing: "cubic-bezier(.2,.9,.3,1.15)" });
+        if (big) setTimeout(() => this.burst(this.center(e.getBoundingClientRect()), c.kind), still ? 0 : 380);
+        return;
+      }
+      case "flip": return e?.animate([{ transform: "rotateY(90deg)" }, { transform: "none" }], { duration: 380, easing: "ease-out" });
+      case "draw": case "to_hand": {
+        if (c.yours && e && !still) {
+          const deck = main.querySelector(".side.you .p-deck")?.getBoundingClientRect(), r = e.getBoundingClientRect();
+          if (deck) e.animate([{ transform: `translate(${deck.left - r.left}px, ${deck.top - r.top}px) scale(0.7)`, opacity: 0.4 }, { transform: "none", opacity: 1 }], { duration: 360, easing: "ease-out" });
+        } else if (!c.yours) main.querySelector(".opp-hand")?.animate([{ transform: "scale(1.25)" }, { transform: "none" }], { duration: 300 });
+        return;
+      }
+      case "activate": {
+        const target = e ?? main.querySelector(".chain .link:last-of-type");
+        target?.animate([{ boxShadow: "0 0 0 0 rgb(255 210 80 / 0)", transform: "none" },
+          { boxShadow: "0 0 26px 10px rgb(255 210 80 / 0.95)", transform: still ? "none" : "scale(1.08)", offset: 0.35 },
+          { boxShadow: "0 0 0 0 rgb(255 210 80 / 0)", transform: "none" }], { duration: 650, easing: "ease-out" });
+        return;
+      }
+      case "attack": {
+        if (!e) return;
+        const a = e.getBoundingClientRect();
+        const t = c.target !== undefined ? this.el(c.target)?.getBoundingClientRect() : this.lp(!e.closest(".side.you"))?.getBoundingClientRect();
+        if (!t) return;
+        const from = this.center(a), to = this.center(t);
+        const dx = (to.x - from.x) * 0.8, dy = (to.y - from.y) * 0.8;
+        if (!still) e.animate([{ transform: "none", zIndex: 5 }, { transform: `translate(${dx * -0.08}px, ${dy * -0.08}px) scale(1.05)`, offset: 0.25 },
+          { transform: `translate(${dx}px, ${dy}px) scale(1.12)`, offset: 0.55 }, { transform: "none" }], { duration: 640, easing: "ease-in-out" });
+        setTimeout(() => {
+          Sound.play("hit");
+          this.burst(to, "hit");
+          if (c.target !== undefined) this.shake(this.el(c.target), still ? 0 : 7);
+        }, still ? 0 : 350);
+        return;
+      }
+      case "damage": case "pay": case "gain": {
+        const lp = this.lp(c.yours);
+        if (!lp) return;
+        const r = lp.getBoundingClientRect(), now = state.view[c.yours ? "you" : "opponent"].lp;
+        const sign = c.kind === "gain" ? "+" : "−";
+        this.float(`${sign}${c.amount.toLocaleString()}`, { x: r.left + r.width / 2, y: r.top }, c.kind);
+        if (c.kind === "damage") { this.shake(lp, still ? 0 : 5); lp.animate([{ color: "#ff3b3b" }, { color: "" }], { duration: 700 }); }
+        // Count the Life Points to their new value.
+        const from = c.kind === "gain" ? now - c.amount : now + c.amount, t0 = performance.now(), ms = 450;
+        const tick = (n) => {
+          const k = Math.min(1, (n - t0) / ms);
+          lp.textContent = `${Math.round(from + (now - from) * k).toLocaleString()} LP`;
+          if (k < 1 && lp.isConnected) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        return;
+      }
+      case "destroy": case "graveyard": case "banish": case "to_deck": {
+        const was = old.get(c.card);
+        if (!was || !gone(c.card)) return e && this.shake(e, 4);
+        const g = this.ghost(was);
+        const pile = this.pileOf(c.card)?.getBoundingClientRect();
+        const dx = pile ? pile.left - was.rect.left : 0, dy = pile ? pile.top - was.rect.top : 0;
+        if (c.kind === "destroy") {
+          for (let i = 0; i < 10; i++) {
+            const s = document.createElement("div");
+            s.className = "shard";
+            const at = this.center(was.rect);
+            Object.assign(s.style, { left: at.x + "px", top: at.y + "px" });
+            this.overlay().append(s);
+            const ang = Math.random() * Math.PI * 2, dist = 40 + Math.random() * 60;
+            s.animate([{ transform: "translate(-50%, -50%) rotate(0)", opacity: 1 },
+              { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist}px)) rotate(${Math.random() * 360}deg)`, opacity: 0 }],
+              { duration: 520, easing: "ease-out" }).onfinish = () => s.remove();
+          }
+          g.animate(still ? [{ opacity: 1 }, { opacity: 0 }] : [{ transform: "none", opacity: 1, filter: "none" },
+            { transform: "scale(1.08) rotate(-3deg)", filter: "brightness(2) saturate(0)", opacity: 1, offset: 0.3 },
+            { transform: `translate(${dx}px, ${dy}px) scale(0.5) rotate(12deg)`, opacity: 0, filter: "brightness(0.5)" }], { duration: 560, easing: "ease-in" }).onfinish = () => g.remove();
+        } else if (c.kind === "banish") {
+          g.animate([{ opacity: 1, filter: "none", transform: "none" }, { opacity: 0, filter: "hue-rotate(200deg) brightness(2.5) blur(3px)", transform: still ? "none" : "translateY(-30px) scale(1.15)" }],
+            { duration: 460, easing: "ease-in" }).onfinish = () => g.remove();
+        } else {
+          g.animate([{ transform: "none", opacity: 1 }, { transform: still ? "none" : `translate(${dx}px, ${dy}px) scale(0.6)`, opacity: 0.2 }],
+            { duration: 320, easing: "ease-in" }).onfinish = () => g.remove();
+        }
+        return;
+      }
+      case "negate": {
+        const at = e ? e.getBoundingClientRect() : old.get(c.card)?.rect;
+        if (!at) return;
+        const s = document.createElement("div");
+        s.className = "stamp"; s.textContent = "Negated";
+        const p = this.center(at);
+        Object.assign(s.style, { left: p.x + "px", top: p.y + "px" });
+        this.overlay().append(s);
+        s.animate([{ transform: "translate(-50%, -50%) rotate(-14deg) scale(2.2)", opacity: 0 },
+          { transform: "translate(-50%, -50%) rotate(-14deg) scale(1)", opacity: 1, offset: 0.25 },
+          { transform: "translate(-50%, -50%) rotate(-14deg) scale(1)", opacity: 1, offset: 0.8 }, { opacity: 0 }],
+          { duration: 900 }).onfinish = () => s.remove();
+        return;
+      }
+      case "control": return e?.animate([{ transform: "rotate(180deg) scale(0.8)", opacity: 0.4 }, { transform: "none", opacity: 1 }], { duration: 460 });
+      case "equip": {
+        for (const x of [e, this.el(c.target)]) x?.animate([{ boxShadow: "0 0 0 0 rgb(120 200 255 / 0)" }, { boxShadow: "0 0 18px 6px rgb(120 200 255 / 0.9)" }, { boxShadow: "0 0 0 0 rgb(120 200 255 / 0)" }], { duration: 500 });
+        return;
+      }
+      case "shuffle": {
+        main.querySelectorAll(`.side.${c.yours ? "you" : "them"} .p-deck`).forEach((d) => this.shake(d, 3));
+        return;
+      }
+    }
+  },
+};
+
+// Shows a command's steps one by one, animated, then its final view.
+function playback(answer, done) {
+  const final = answer.view, steps = answer.steps ?? [];
+  if (!av.motion || !steps.length) {
+    state.view = final;
+    // Without animations only the end of the duel has a sound.
+    if (steps.some((s) => s.cues.some((c) => c.kind === "game_over"))) Sound.play(final.result?.startsWith("You win") ? "win" : "lose");
+    done();
+    return;
+  }
+  state.busy = true; state.skip = false;
+  (async () => {
+    const speed = reducedMotion() ? 0.5 : 1;
+    for (const step of steps) {
+      if (state.skip) break;
+      const old = FX.snapshot();
+      // A step has no log lines: take them from the final view up to it.
+      const cut = final.log.length - (final.log_total - step.view.log_total);
+      state.view = { ...step.view, log: final.log.slice(0, Math.max(0, cut)) };
+      Music.intense = state.view.phase.startsWith("Battle") || state.view.phase === "Damage Step";
+      renderGame();
+      const now = new Set([...main.querySelectorAll("[data-inst]")].map((e) => Number(e.dataset.inst)));
+      const gone = (inst) => !now.has(inst);
+      // Moving to the Graveyard right after being destroyed is one animation.
+      const destroyed = new Set(step.cues.filter((c) => c.kind === "destroy").map((c) => c.card));
+      let total = 0;
+      for (const c of step.cues) {
+        if (state.skip) break;
+        if (c.kind === "graveyard" && destroyed.has(c.card)) continue;
+        try { FX.cue(c, old, gone); } catch (e) { console.warn("animation", c.kind, e); }
+        const ms = (FX_TIME[c.kind] ?? 250) * speed;
+        total += ms;
+        await wait(Math.min(ms * 0.6, 500));
+      }
+      await wait(Math.min(Math.max(0, total * 0.4), 700));
+    }
+    state.busy = false; state.skip = false;
+    if (FX.layer) FX.layer.textContent = "";
+    state.view = final;
+    Music.intense = final.phase.startsWith("Battle") || final.phase === "Damage Step";
+    done();
+  })();
+}
+// A tap or Escape during the animations skips to the end of them.
+for (const ev of ["click", "keydown"]) {
+  document.addEventListener(ev, (e) => {
+    if (!state.busy) return;
+    if (ev === "keydown" && e.key !== "Escape" && e.key !== " ") return;
+    if (e.target.closest?.(".av")) return;
+    state.skip = true;
+    e.stopPropagation(); e.preventDefault();
+  }, { capture: true });
+}
+
 // ---- Deck builder ----
 // Any of the pool's cards, found with filters, fill numbered slots; a slot
 // can be swapped for another card. The engine checks the deck as it changes
@@ -1294,5 +1853,6 @@ document.addEventListener("keydown", (ev) => {
 });
 addEventListener("resize", () => { if (state.view) placeMenu(); });
 
+drawAv();
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 </script>

@@ -37,7 +37,8 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
   let total = 0;
   for (let g = 0; g < games; g++) {
     await page.goto(url);
-    await page.evaluate(() => window.localStorage.clear());
+    // Moves show at once (tools/web_fx_check.js covers the animations).
+    await page.evaluate(() => { window.localStorage.clear(); localStorage.setItem("duel-table-av", JSON.stringify({ motion: false, music: false, sfx: false })); });
     await page.reload();
     await page.waitForSelector('#bot', { timeout: 30000 });
     await page.selectOption('#bot', 'network');

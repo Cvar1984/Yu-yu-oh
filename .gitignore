@@ -26,6 +26,9 @@ rustc-ice-*.txt
 # Card art is Konami-owned and fetched locally with tools/refresh_cards.py
 /images/
 
+# Your own sound files for the browser game (never committed)
+/audio/
+
 # Game records written by ygo play and ygo sim
 /records/
 
