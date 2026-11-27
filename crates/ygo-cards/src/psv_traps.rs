@@ -438,32 +438,34 @@ pub fn register(r: &mut Registry) {
             ],
         },
     );
-    // Negate all Spell effects on the field (Spells cannot be activated
-    // either, see docs/psv-plan.md). In each Standby Phase pay 700 LP, or
-    // this card is destroyed.
+    // Negate all Spell effects on the field. Spells may still be activated
+    // and resolve without effect (TCG rulings: `Tag::NegatesEffectsOnly`).
+    // Once per turn, during the Standby Phase (each player's), pay 700 LP,
+    // or this card is destroyed.
     r.register(
         IMPERIAL_ORDER,
-        continuous_trap(vec![
-            Effect {
-                negate: Some(|g, _, card| g.stats(card).kind == CardKind::Spell),
-                ..Effect::continuous()
-            },
-            Effect {
-                timing: |g, s, w| {
-                    standby_began(g, w.events, w.kind)
-                        && g.turn_player() == s.controller
-                        && face_up_on_field(g, s.card)
+        CardScript {
+            tags: vec![Tag::NegatesEffectsOnly],
+            ..continuous_trap(vec![
+                Effect {
+                    negate: Some(|g, _, card| g.stats(card).kind == CardKind::Spell),
+                    ..Effect::continuous()
                 },
-                ..Effect::trigger(true, |g, ctx| {
-                    if g.can_pay_lp(ctx.controller, 700) {
-                        g.pay_lp(ctx.controller, 700);
-                    } else {
-                        g.destroy(ctx.source, ctx.source);
-                    }
-                    Flow::Done
-                })
-            },
-        ]),
+                Effect {
+                    timing: |g, s, w| {
+                        standby_began(g, w.events, w.kind) && face_up_on_field(g, s.card)
+                    },
+                    ..Effect::trigger(true, |g, ctx| {
+                        if g.can_pay_lp(ctx.controller, 700) {
+                            g.pay_lp(ctx.controller, 700);
+                        } else {
+                            g.destroy(ctx.source, ctx.source);
+                        }
+                        Flow::Done
+                    })
+                },
+            ])
+        },
     );
     // When a Continuous Trap Card is activated: negate all Continuous Trap
     // Cards this turn.

@@ -4,7 +4,8 @@
 use serde::Serialize;
 use ygo_data::CardKind;
 use ygo_engine::{
-    Action, CardPool, DecisionKind, Observation, Position, Side, SpellTrapType, VisibleCard,
+    Action, BattleStep, CardPool, DecisionKind, Event, InstanceId, Observation, Phase, PlayerId,
+    Position, Side, SpellTrapType, VisibleCard,
 };
 use ygo_play::describe;
 use ygo_play::session::PlaySession;
@@ -23,6 +24,8 @@ pub struct View {
     opponent: SideView,
     hand: Vec<CardView>,
     chain: Vec<ChainView>,
+    /// The attack being made, if any: who attacks whom (no target: direct).
+    attack: Option<AttackView>,
     actions: Vec<ActionView>,
     /// The latest lines, oldest first, and how many there are in all.
     log: Vec<String>,
@@ -68,6 +71,16 @@ struct CardView {
 struct ChainView {
     name: String,
     yours: bool,
+    /// The card that started the link (activations are public).
+    instance: u8,
+    id: u32,
+}
+
+#[derive(Serialize)]
+struct AttackView {
+    attacker: u8,
+    target: Option<u8>,
+    yours: bool,
 }
 
 #[derive(Serialize)]
@@ -86,6 +99,132 @@ struct ActionView {
     subject: Option<CardView>,
     /// Which of the card's effects an activation uses.
     effect: Option<u8>,
+}
+
+/// Something the page animates and sounds: what happened, to which card
+/// (instance ids reveal nothing about a hidden card) and to whom. Card ids
+/// and names never appear here; the page reads them from the step's view.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct Cue {
+    /// turn, battle, draw, summon, special, fusion, ritual, flip, set,
+    /// activate, attack, damage, pay, gain, destroy, graveyard, banish,
+    /// to_hand, to_deck, negate, control, equip, coin, shuffle, game_over.
+    pub kind: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub card: Option<u8>,
+    /// An attack's target.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<u8>,
+    /// Whether it happens to the human (or is done by them), when the
+    /// event names a player.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub yours: Option<bool>,
+    /// Life Points for damage, payments and gains; 1 for heads.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub amount: Option<u32>,
+}
+
+/// The cues for the events of one move, in order, as `viewer` may see them.
+pub fn cues(events: &[Event], viewer: PlayerId) -> Vec<Cue> {
+    let cue = |kind, card: Option<InstanceId>, yours: Option<PlayerId>| Cue {
+        kind,
+        card: card.map(|c| c.0),
+        target: None,
+        yours: yours.map(|p| p == viewer),
+        amount: None,
+    };
+    events
+        .iter()
+        .filter_map(|e| {
+            Some(match *e {
+                Event::TurnStarted { player, .. } => cue("turn", None, Some(player)),
+                Event::PhaseEntered {
+                    phase: Phase::Battle(BattleStep::Start),
+                } => cue("battle", None, None),
+                Event::Drew { player, card } => cue("draw", Some(card), Some(player)),
+                Event::Summoned {
+                    player,
+                    card,
+                    position,
+                } => cue(
+                    if position.is_face_up() {
+                        "summon"
+                    } else {
+                        "set"
+                    },
+                    Some(card),
+                    Some(player),
+                ),
+                Event::SpecialSummoned { player, card, .. } => {
+                    cue("special", Some(card), Some(player))
+                }
+                Event::ReturnedToField { card } => cue("special", Some(card), None),
+                Event::FusionSummoned { player, card, .. } => {
+                    cue("fusion", Some(card), Some(player))
+                }
+                Event::RitualSummoned { player, card, .. } => {
+                    cue("ritual", Some(card), Some(player))
+                }
+                Event::FlipSummoned { player, card } => cue("flip", Some(card), Some(player)),
+                Event::Flipped { card } => cue("flip", Some(card), None),
+                Event::SetCard { player, card } => cue("set", Some(card), Some(player)),
+                Event::Activated {
+                    card, controller, ..
+                } => cue("activate", Some(card), Some(controller)),
+                Event::AttackDeclared { attacker, target } => Cue {
+                    target: target.map(|t| t.0),
+                    ..cue("attack", Some(attacker), None)
+                },
+                Event::AttackRetargeted { attacker, target } => Cue {
+                    target: Some(target.0),
+                    ..cue("attack", Some(attacker), None)
+                },
+                Event::DamageTaken { player, amount, .. } => Cue {
+                    amount: Some(amount),
+                    ..cue("damage", None, Some(player))
+                },
+                Event::LifePointsPaid { player, amount, .. } => Cue {
+                    amount: Some(amount),
+                    ..cue("pay", None, Some(player))
+                },
+                Event::LifePointsGained { player, amount, .. } => Cue {
+                    amount: Some(amount),
+                    ..cue("gain", None, Some(player))
+                },
+                Event::DestroyedByBattle { card } | Event::DestroyedByEffect { card, .. } => {
+                    cue("destroy", Some(card), None)
+                }
+                Event::SentToGraveyard { card, .. } => cue("graveyard", Some(card), None),
+                Event::Discarded { player, card } | Event::Tributed { player, card } => {
+                    cue("graveyard", Some(card), Some(player))
+                }
+                Event::Banished { card, .. } | Event::TokenRemoved { card } => {
+                    cue("banish", Some(card), None)
+                }
+                Event::AddedToHand { player, card, .. } => cue("to_hand", Some(card), Some(player)),
+                Event::ReturnedToDeck { player, card }
+                | Event::PlacedOnTopOfDeck { player, card }
+                | Event::ReturnedToExtraDeck { player, card } => {
+                    cue("to_deck", Some(card), Some(player))
+                }
+                Event::SummonNegated { card, .. }
+                | Event::ActivationNegated { card, .. }
+                | Event::EffectNegated { card } => cue("negate", Some(card), None),
+                Event::ControlChanged { card, to } => cue("control", Some(card), Some(to)),
+                Event::Equipped { card, to } => Cue {
+                    target: Some(to.0),
+                    ..cue("equip", Some(card), None)
+                },
+                Event::CoinTossed { player, heads } => Cue {
+                    amount: Some(u32::from(heads)),
+                    ..cue("coin", None, Some(player))
+                },
+                Event::DeckShuffled { player } => cue("shuffle", None, Some(player)),
+                Event::GameOver { .. } => cue("game_over", None, None),
+                _ => return None,
+            })
+        })
+        .collect()
 }
 
 fn card_view(pool: &CardPool, c: &VisibleCard) -> CardView {
@@ -220,7 +359,9 @@ fn prompt(obs: &Observation) -> Option<&'static str> {
     })
 }
 
-pub fn build(session: &PlaySession) -> View {
+/// The screen now; `with_log: false` leaves the log lines out (an
+/// animation step: the page takes them from the final view).
+pub fn build(session: &PlaySession, with_log: bool) -> View {
     let obs = session.observation();
     let pool = &session.game().shared().pool;
     let texts = session.action_texts();
@@ -265,10 +406,27 @@ pub fn build(session: &PlaySession) -> View {
             .map(|l| ChainView {
                 name: describe::card_name(pool, l.card).to_string(),
                 yours: l.controller == obs.viewer,
+                instance: l.instance.0,
+                id: l.card.0,
             })
             .collect(),
+        attack: obs.attack.map(|(a, t)| AttackView {
+            attacker: a.0,
+            target: t.map(|t| t.0),
+            // Your attack: the attacker is in your Monster Zones.
+            yours: obs
+                .me()
+                .monster_zones
+                .iter()
+                .flatten()
+                .any(|c| c.instance() == a),
+        }),
         actions,
-        log: log[log.len().saturating_sub(LOG_LINES)..].to_vec(),
+        log: if with_log {
+            log[log.len().saturating_sub(LOG_LINES)..].to_vec()
+        } else {
+            Vec::new()
+        },
         log_total: log.len(),
         result: session.result().map(|r| describe::result_sentence(&obs, r)),
     }

@@ -62,12 +62,16 @@ pub enum Tag {
     /// face-down; a Set becomes a Normal Summon in face-up Defense
     /// Position (Light of Intervention).
     NoFaceDownMonsters,
+    /// Its `negate` hook negates effects only: the cards it negates may
+    /// still be activated, and resolve without effect (Imperial Order, by
+    /// the TCG rulings; Jinzo's Traps "cannot be activated").
+    NegatesEffectsOnly,
 }
 
 impl Tag {
     /// Every tag, in declaration order. New tags go at the end, so a
     /// tag's place in this list (the neural encoding's slot) never moves.
-    pub const ALL: [Tag; 18] = [
+    pub const ALL: [Tag; 19] = [
         Tag::CannotNormalSummon,
         Tag::ExodiaPiece,
         Tag::ExodiaHead,
@@ -86,6 +90,7 @@ impl Tag {
         Tag::StatsSetOrScaled,
         Tag::NoTributeSummon,
         Tag::NoFaceDownMonsters,
+        Tag::NegatesEffectsOnly,
     ];
 }
 
@@ -467,6 +472,7 @@ mod tests {
             Tag::StatsSetOrScaled => 15,
             Tag::NoTributeSummon => 16,
             Tag::NoFaceDownMonsters => 17,
+            Tag::NegatesEffectsOnly => 18,
         }
     }
 

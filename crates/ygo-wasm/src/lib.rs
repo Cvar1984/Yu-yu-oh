@@ -3,10 +3,18 @@
 //! the human's observation, so no hidden card ever reaches the browser.
 //!
 //! Commands (`cmd` names the variant):
-//! - `init`: the data files as text; returns the decks and bots on offer.
+//! - `init`: the data files as text; returns the decks and bots on offer,
+//!   the deck rules and, for the deck builder, each card's copy limit and
+//!   whether it goes in the Extra Deck.
+//! - `check_deck`: a deck's JSON text; returns its name and every problem
+//!   (cards, ban list, deck rules; not a collection). Decks built in the
+//!   page join the duel by being passed to `init` with the shipped ones.
 //! - `start`: deck and bot choices, a seed, who goes first, and optionally
 //!   the human's earlier choices to replay (resuming a game); returns a view.
 //! - `play`: the index of one of the offered actions; returns a view.
+//!   `start` and `play` also return `steps`: after each move that did
+//!   something the human can see (theirs, then the bot's), a view without
+//!   log lines and its cues, for the page to animate one move at a time.
 //! - `view`, `card` (a card's text by instance), `record` (JSON Lines).
 
 mod view;
@@ -17,8 +25,8 @@ use std::path::Path;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
-use ygo_data::{Banlist, Bundle, CardDb, Deck, Rules, TokenFile};
-use ygo_engine::{DeckList, GameSetup, InstanceId, PlayerId};
+use ygo_data::{Banlist, Bundle, CardDb, Deck, Rules, TokenFile, check_deck};
+use ygo_engine::{DeckList, Event, GameSetup, InstanceId, Observation, PlayerId};
 use ygo_play::bots::Bots;
 use ygo_play::decks;
 use ygo_play::session::PlaySession;
@@ -60,6 +68,9 @@ enum Command {
         instance: u8,
     },
     Record,
+    CheckDeck {
+        text: String,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -78,6 +89,7 @@ enum First {
 }
 
 struct Loaded {
+    bundle: Bundle,
     bots: Bots,
     /// Legal decks by file name.
     decks: Vec<(String, Deck)>,
@@ -93,6 +105,30 @@ pub struct Host {
     session: Option<PlaySession>,
     /// The human's choices so far, so the page can resume the game.
     choices: Vec<usize>,
+    /// The observation behind each step of the last answer (for tests).
+    step_observations: Vec<Observation>,
+}
+
+/// Plays the bot's moves one at a time after `first` (the events of the
+/// human's move, if any); after each move with cues, a step: its view and
+/// cues.
+fn run_steps(
+    session: &mut PlaySession,
+    first: Option<Vec<Event>>,
+    observations: &mut Vec<Observation>,
+) -> Vec<Value> {
+    observations.clear();
+    let mut steps = Vec::new();
+    let mut events = first.or_else(|| session.bot_step());
+    while let Some(e) = events {
+        let cues = view::cues(&e, HUMAN);
+        if !cues.is_empty() {
+            steps.push(json!({ "view": view::build(session, false), "cues": cues }));
+            observations.push(session.observation());
+        }
+        events = session.bot_step();
+    }
+    steps
 }
 
 impl Host {
@@ -129,16 +165,25 @@ impl Host {
             } => self.start(&deck, &bot_deck, &bot, seed, first, &choices),
             Command::Play { index } => {
                 let session = self.session.as_mut().ok_or("no game in progress")?;
-                if !session.play(index) {
-                    return Err(format!("action {index} is not offered"));
-                }
+                let events = session
+                    .play_human(index)
+                    .ok_or_else(|| format!("action {index} is not offered"))?;
                 self.choices.push(index);
-                self.view()
+                let steps = run_steps(session, Some(events), &mut self.step_observations);
+                self.view(steps)
             }
-            Command::View => self.view(),
+            Command::View => self.view(Vec::new()),
             Command::Card { instance } => {
                 let session = self.session.as_ref().ok_or("no game in progress")?;
                 Ok(json!(session.card_text(InstanceId(instance))))
+            }
+            Command::CheckDeck { text } => {
+                let loaded = self.loaded.as_ref().ok_or("data not loaded")?;
+                let deck = Deck::parse(&text, Path::new("deck")).map_err(|e| e.to_string())?;
+                let b = &loaded.bundle;
+                let problems = check_deck(&deck, &b.cards, &b.banlist, &b.rules, None);
+                let problems: Vec<String> = problems.iter().map(ToString::to_string).collect();
+                Ok(json!({ "name": deck.name, "problems": problems }))
             }
             Command::Record => {
                 let session = self.session.as_ref().ok_or("no game in progress")?;
@@ -179,8 +224,36 @@ impl Host {
         }
         // The first bot offered is the strongest.
         let names = bots.names();
-        let answer = json!({ "decks": offered, "default_bot": names[0], "bots": names });
-        self.loaded = Some(Loaded { bots, decks: legal });
+        let rules = &bundle.rules.deck;
+        let mut pool: Vec<Value> = bundle
+            .cards
+            .iter()
+            .map(|c| {
+                json!({
+                    "id": c.id.0,
+                    "limit": bundle.banlist.limit_for(c.id, rules.default_copy_limit),
+                    "extra": c.card_type.is_extra_deck(),
+                })
+            })
+            .collect();
+        pool.sort_by_key(|c| c["id"].as_u64());
+        let answer = json!({
+            "decks": offered,
+            "default_bot": names[0],
+            "bots": names,
+            "deck_rules": {
+                "main_min": rules.main_min,
+                "main_max": rules.main_max,
+                "extra_max": rules.extra_max,
+                "default_copy_limit": rules.default_copy_limit,
+            },
+            "pool": pool,
+        });
+        self.loaded = Some(Loaded {
+            bundle,
+            bots,
+            decks: legal,
+        });
         self.session = None;
         Ok(answer)
     }
@@ -211,7 +284,7 @@ impl Host {
             First::Bot => Some(HUMAN.opponent()),
             First::Random => None,
         };
-        let mut session = PlaySession::new(
+        let mut session = PlaySession::new_waiting(
             loaded.bots.shared.clone(),
             loaded.bots.cards.clone(),
             &setup,
@@ -220,6 +293,15 @@ impl Host {
             bot,
         )
         .map_err(|e| e.to_string())?;
+        // A new game animates the bot's opening moves; a resumed one is
+        // shown as it stands.
+        let steps = if choices.is_empty() {
+            run_steps(&mut session, None, &mut self.step_observations)
+        } else {
+            self.step_observations.clear();
+            session.run_bot();
+            Vec::new()
+        };
         for (n, &index) in choices.iter().enumerate() {
             if !session.play(index) {
                 return Err(format!("saved choice {n} ({index}) no longer applies"));
@@ -227,7 +309,7 @@ impl Host {
         }
         self.session = Some(session);
         self.choices = choices.to_vec();
-        self.view()
+        self.view(steps)
     }
 
     /// The game in progress, if any.
@@ -235,11 +317,18 @@ impl Host {
         self.session.as_ref()
     }
 
-    fn view(&self) -> Result<Value, String> {
+    /// The observation behind each step of the last `start` or `play`
+    /// answer, in order (tests check each step shows only what it may).
+    pub fn step_observations(&self) -> &[Observation] {
+        &self.step_observations
+    }
+
+    fn view(&self, steps: Vec<Value>) -> Result<Value, String> {
         let session = self.session.as_ref().ok_or("no game in progress")?;
         Ok(json!({
-            "view": view::build(session),
+            "view": view::build(session, true),
             "choices": self.choices,
+            "steps": steps,
         }))
     }
 }

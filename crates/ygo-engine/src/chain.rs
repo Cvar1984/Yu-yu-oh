@@ -464,7 +464,7 @@ impl Game {
         let Some(script) = self.script(card) else {
             return;
         };
-        if self.negated(card) {
+        if self.negated(card) && !self.activation_allowed_while_negated(card) {
             return;
         }
         let source = Source {

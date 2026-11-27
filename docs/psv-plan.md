@@ -120,7 +120,10 @@ Batch 3:
 
 - Imperial Order and Jinzo also stop the activation of the cards they
   negate (a Spell under Imperial Order is not offered), instead of
-  letting it start and resolve without effect.
+  letting it start and resolve without effect. Changed by the Trap audit
+  (2026-11-27, `docs/trap-audit.md`): under Imperial Order Spells may be
+  activated and resolve without effect, as the TCG rulings say; Jinzo
+  still stops Trap activations, as its text says.
 - Armored Glass, World Suppression, Mystic Probe and Metal Detector
   negate the cards on the field when they resolve, until the End Phase.
 - Prohibition declares the name on resolution, among the names its

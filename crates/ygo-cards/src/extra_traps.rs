@@ -70,32 +70,27 @@ fn non_effect_monster(g: &Game, c: InstanceId) -> bool {
     }
 }
 
-fn backup_options(g: &Game, player: PlayerId, taken: &[InstanceId]) -> Vec<InstanceId> {
+fn backup_options(g: &Game, player: PlayerId) -> Vec<InstanceId> {
     g.graveyard(player)
         .iter()
         .copied()
-        .filter(|&c| non_effect_monster(g, c) && g.stats(c).atk <= 1500 && !taken.contains(&c))
+        .filter(|&c| non_effect_monster(g, c) && g.stats(c).atk <= 1500)
         .collect()
 }
 
-/// Backup Soldier: picks up to three, one at a time, then adds them.
-fn backup_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
-    let options = backup_options(g, ctx.controller, &ctx.targets);
-    if ctx.targets.len() >= 3 || options.is_empty() {
-        for &c in &ctx.targets.clone() {
-            if g.instance(c).location == Location::Graveyard {
-                g.add_to_hand(c);
-            }
+/// Every `k`-card subset of `cards`, in order.
+fn subsets(cards: &[InstanceId], k: usize) -> Vec<Vec<InstanceId>> {
+    if k == 0 {
+        return vec![Vec::new()];
+    }
+    let mut out = Vec::new();
+    for (i, &c) in cards.iter().enumerate() {
+        for mut rest in subsets(&cards[i + 1..], k - 1) {
+            rest.insert(0, c);
+            out.push(rest);
         }
-        return Flow::Done;
     }
-    Flow::Choose {
-        options,
-        then: |g, ctx, picked| {
-            ctx.targets.push(picked);
-            backup_next(g, ctx)
-        },
-    }
+    out
 }
 
 fn monsters_in_graveyard(g: &Game, player: PlayerId) -> usize {
@@ -106,13 +101,14 @@ fn monsters_in_graveyard(g: &Game, player: PlayerId) -> usize {
 }
 
 /// The opponent's attack under way, while its declaration window is open.
-fn opposing_attacker(g: &Game, s: Source, w: &Window) -> Option<InstanceId> {
+/// Enchanted Javelin: the attacking monster, either player's.
+fn attacking_monster(g: &Game, w: &Window) -> Option<InstanceId> {
     if w.kind != WindowKind::AttackDeclared {
         return None;
     }
     g.current_attack()
         .map(|(a, _)| a)
-        .filter(|&a| g.on_field(a) && g.instance(a).controller != s.controller)
+        .filter(|&a| g.on_field(a))
 }
 
 fn raigeki_break_targets(g: &Game, s: Source) -> TargetSets {
@@ -401,20 +397,27 @@ pub fn register(r: &mut Registry) {
             })
         }),
     );
-    // While you have 5 or more monsters in your Graveyard: up to 3
-    // non-Effect Monsters with 1500 or less ATK from your Graveyard to
-    // your hand. Simplified like Soul Release: the cards are picked on
-    // resolution (as many as possible, up to 3), not targeted.
+    // While you have 5 or more monsters in your Graveyard: target up to 3
+    // non-Effect Monsters with 1500 or less ATK in your Graveyard; add them
+    // to your hand (the targets still there at resolution).
     r.register(
         BACKUP_SOLDIER,
         single(Effect {
             timing: |g, s, _| {
                 monsters_in_graveyard(g, s.controller) >= 5
-                    && !backup_options(g, s.controller, &[]).is_empty()
+                    && !backup_options(g, s.controller).is_empty()
             },
+            targets: Some(|g, s| {
+                let options = backup_options(g, s.controller);
+                (1..=3).flat_map(|k| subsets(&options, k)).collect()
+            }),
             ..Effect::activate(2, |g, ctx| {
-                ctx.targets.clear();
-                backup_next(g, ctx)
+                for &c in &ctx.targets.clone() {
+                    if g.instance(c).location == Location::Graveyard {
+                        g.add_to_hand(c);
+                    }
+                }
+                Flow::Done
             })
         }),
     );
@@ -512,14 +515,14 @@ pub fn register(r: &mut Registry) {
             })
         }),
     );
-    // Select 1 attacking monster; gain LP equal to its ATK.
+    // Target 1 attacking monster (either player's); gain LP equal to its ATK.
     r.register(
         ENCHANTED_JAVELIN,
         single(Effect {
-            timing: |g, s, w| opposing_attacker(g, s, w).is_some(),
-            targets: Some(|g, s| {
+            timing: |g, _, w| attacking_monster(g, w).is_some(),
+            targets: Some(|g, _| {
                 let w = g.window().map(|(kind, events)| Window { kind, events });
-                w.and_then(|w| opposing_attacker(g, s, &w))
+                w.and_then(|w| attacking_monster(g, &w))
                     .map(|a| vec![a])
                     .into_iter()
                     .collect()

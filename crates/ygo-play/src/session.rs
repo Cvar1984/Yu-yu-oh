@@ -6,8 +6,8 @@ use std::sync::Arc;
 use ygo_ai::Player;
 use ygo_data::CardDb;
 use ygo_engine::{
-    Action, Game, GameRecord, GameResult, GameSetup, InstanceId, Observation, PlayerId, PlayerView,
-    SetupError, Shared, VisibleCard,
+    Action, Event, Game, GameRecord, GameResult, GameSetup, InstanceId, Observation, PlayerId,
+    PlayerView, SetupError, Shared, VisibleCard,
 };
 
 use crate::describe;
@@ -25,6 +25,21 @@ impl PlaySession {
     /// Starts a game in which `human` is one player and `bot` the other,
     /// then lets the bot play until the human has a decision.
     pub fn new(
+        shared: Arc<Shared>,
+        cards: Arc<CardDb>,
+        setup: &GameSetup,
+        human: PlayerId,
+        bot: Box<dyn Player>,
+        bot_label: &str,
+    ) -> Result<Self, SetupError> {
+        let mut session = Self::new_waiting(shared, cards, setup, human, bot, bot_label)?;
+        session.run_bot();
+        Ok(session)
+    }
+
+    /// Like `new`, but the bot has not moved yet: `bot_step` plays its
+    /// moves one at a time (the browser animates each).
+    pub fn new_waiting(
         shared: Arc<Shared>,
         cards: Arc<CardDb>,
         setup: &GameSetup,
@@ -55,7 +70,6 @@ impl PlaySession {
             },
             setup.seed
         ));
-        session.run_bot();
         Ok(session)
     }
 
@@ -109,25 +123,38 @@ impl PlaySession {
     /// Plays the human's action number `index`, then the bot's turn until
     /// the human decides again. Returns `false` if `index` is out of range.
     pub fn play(&mut self, index: usize) -> bool {
-        let Some(action) = self.actions().get(index).cloned() else {
+        if self.play_human(index).is_none() {
             return false;
-        };
-        self.apply(action, true);
+        }
         self.run_bot();
         true
     }
 
-    fn run_bot(&mut self) {
-        while let Some(view) = PlayerView::new(&self.game) {
-            if view.player() == self.human {
-                break;
-            }
-            let action = self.bot.choose(&view);
-            self.apply(action, false);
-        }
+    /// Plays only the human's action number `index`; the bot has not
+    /// answered yet. Returns what happened, or `None` if `index` is out of
+    /// range.
+    pub fn play_human(&mut self, index: usize) -> Option<Vec<Event>> {
+        let action = self.actions().get(index).cloned()?;
+        Some(self.apply(action, true))
     }
 
-    fn apply(&mut self, action: Action, by_human: bool) {
+    /// Plays one move of the bot, if it is the bot's decision; returns what
+    /// happened.
+    pub fn bot_step(&mut self) -> Option<Vec<Event>> {
+        let view = PlayerView::new(&self.game)?;
+        if view.player() == self.human {
+            return None;
+        }
+        let action = self.bot.choose(&view);
+        Some(self.apply(action, false))
+    }
+
+    /// Lets the bot play until the human has a decision or the game ends.
+    pub fn run_bot(&mut self) {
+        while self.bot_step().is_some() {}
+    }
+
+    fn apply(&mut self, action: Action, by_human: bool) -> Vec<Event> {
         let before = self.observation();
         let pool = &self.game.shared().pool;
         let sentence = describe::action(&before, pool, &action);
@@ -149,6 +176,7 @@ impl PlaySession {
             self.log.push(format!("  {line}"));
         }
         self.record.finish(&self.game);
+        events
     }
 
     /// The card an action is about, for showing its text.

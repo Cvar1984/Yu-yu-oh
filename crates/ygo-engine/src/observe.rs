@@ -181,6 +181,9 @@ pub struct Observation {
     /// Face-up monsters whose current Type is not their printed one (DNA
     /// Surgery, D. Tribe), with that Type.
     pub types: Vec<(InstanceId, String)>,
+    /// The attack being made: the attacker and its target (`None`: a
+    /// direct attack). Public, like the declaration.
+    pub attack: Option<(InstanceId, Option<InstanceId>)>,
 }
 
 impl Observation {
@@ -321,6 +324,7 @@ impl Game {
             question,
             lingering: self.lingering.clone(),
             types: self.changed_types(),
+            attack: self.current_attack(),
         }
     }
 }

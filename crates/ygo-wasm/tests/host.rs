@@ -120,6 +120,62 @@ fn init_offers_the_legal_decks_and_every_bot() {
     );
 }
 
+/// The deck builder's data: every deck card with its copy limit (from the
+/// ban list and the rules) and whether it is an Extra Deck card; the deck
+/// rules; and a live check of a deck that is not offered for play.
+#[test]
+fn the_deck_builder_gets_the_pool_and_checks_decks() {
+    let mut host = Host::default();
+    let answer = ok(&mut host, init_command(&[]));
+    let pool = answer["pool"].as_array().unwrap();
+    assert_eq!(pool.len(), 535, "every deck card, no Tokens");
+    let card = |id: u64| pool.iter().find(|c| c["id"] == id).unwrap();
+    assert_eq!(card(55144522)["limit"], 1, "Pot of Greed is limited");
+    assert_eq!(card(89631139)["limit"], 3, "Blue-Eyes White Dragon");
+    assert_eq!(card(89631139)["extra"], false);
+    assert_eq!(
+        card(66889139)["extra"],
+        true,
+        "Gaia the Dragon Champion is a Fusion"
+    );
+    assert_eq!(
+        answer["deck_rules"],
+        json!({ "main_min": 40, "main_max": 60, "extra_max": 15, "default_copy_limit": 3 })
+    );
+
+    let legal = read("data/decks/save_a_owner_current_40.json");
+    let checked = ok(&mut host, json!({ "cmd": "check_deck", "text": legal }));
+    assert_eq!(checked["problems"], json!([]));
+    let small = json!({
+        "schema_version": 1, "name": "Two Pots", "main": [
+            { "id": 55144522, "name": "Pot of Greed", "count": 2 }
+        ]
+    });
+    let checked = ok(
+        &mut host,
+        json!({ "cmd": "check_deck", "text": small.to_string() }),
+    );
+    assert_eq!(checked["name"], "Two Pots");
+    let problems: Vec<&str> = checked["problems"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| p.as_str().unwrap())
+        .collect();
+    assert!(
+        problems.iter().any(|p| p.contains("Main Deck has 2 cards")),
+        "{problems:?}"
+    );
+    assert!(
+        problems
+            .iter()
+            .any(|p| p.contains("2 copies of Pot of Greed")),
+        "{problems:?}"
+    );
+    let bad = call(&mut host, json!({ "cmd": "check_deck", "text": "{}" }));
+    assert!(bad["error"].is_string(), "{bad}");
+}
+
 #[test]
 fn whole_games_through_json_commands_replay_from_their_record() {
     let shared = shared_from(ygo_cards::registry());
@@ -184,6 +240,16 @@ fn the_json_never_names_a_hidden_card() {
             for n in names {
                 text = text.replace(n, "#");
             }
+            // Each animation step shows only what its moment's observation
+            // shows (its log lines are left out).
+            let steps = answer["steps"].as_array().unwrap();
+            assert_eq!(steps.len(), host.step_observations().len());
+            for (step, obs) in steps.iter().zip(host.step_observations()) {
+                assert_eq!(step["view"]["log"], json!([]));
+                assert_no_hidden_names(&step.to_string(), obs, &shared);
+                ids_match_the_observation(&step["view"], obs);
+                assert!(!step["cues"].as_array().unwrap().is_empty());
+            }
             let obs = host.session().unwrap().observation();
             assert_no_hidden_names(&text, &obs, &shared);
             // A card's id (for its image) only when the human sees it: it
@@ -212,6 +278,66 @@ fn the_json_never_names_a_hidden_card() {
     }
 }
 
+/// Every move the human can see comes back as a step with cues naming
+/// what to animate; over whole games every common kind turns up, and each
+/// cue's card is one the step's view shows (or one that just left it).
+#[test]
+fn steps_carry_cues_for_each_visible_move() {
+    let mut host = ready_host();
+    let mut seen = std::collections::BTreeSet::new();
+    for seed in 20..24u64 {
+        let mut answer = start(&mut host, seed, "network", &[]);
+        let mut rng = seed;
+        loop {
+            for step in answer["steps"].as_array().unwrap() {
+                for cue in step["cues"].as_array().unwrap() {
+                    let kind = cue["kind"].as_str().unwrap().to_string();
+                    assert!(
+                        cue.get("name").is_none() && cue.get("id").is_none(),
+                        "{cue}"
+                    );
+                    if kind == "summon" || kind == "set" || kind == "attack" {
+                        let inst = cue["card"].as_u64().unwrap();
+                        let shown = step["view"].to_string();
+                        assert!(
+                            shown.contains(&format!("\"instance\":{inst},")),
+                            "{kind}: instance {inst} is in the step's view"
+                        );
+                    }
+                    seen.insert(kind);
+                }
+            }
+            if !answer["view"]["result"].is_null() {
+                assert!(seen.contains("game_over"));
+                break;
+            }
+            let n = answer["view"]["actions"].as_array().unwrap().len();
+            answer = ok(
+                &mut host,
+                json!({ "cmd": "play", "index": lcg(&mut rng) % n }),
+            );
+        }
+    }
+    for kind in [
+        "turn",
+        "battle",
+        "draw",
+        "summon",
+        "set",
+        "activate",
+        "attack",
+        "damage",
+        "destroy",
+        "graveyard",
+        "game_over",
+    ] {
+        assert!(seen.contains(kind), "no {kind} cue in four games: {seen:?}");
+    }
+    // A resumed game is shown as it stands: no steps.
+    let resumed = start(&mut host, 20, "network", &[0]);
+    assert_eq!(resumed["steps"], json!([]));
+}
+
 #[test]
 fn a_game_resumes_from_its_choices() {
     // The search bot thinks again on a resume and must choose the same.
@@ -233,8 +359,10 @@ fn a_game_resumes_from_its_choices() {
         assert!(!choices.is_empty());
         let mut fresh = ready_host();
         let resumed = start(&mut fresh, 21, bot, &choices);
+        // A resume has no animation steps; the rest is the same.
         assert_eq!(
-            resumed, answer,
+            (&resumed["view"], &resumed["choices"]),
+            (&answer["view"], &answer["choices"]),
             "{bot}: same view and choices after a resume"
         );
         assert_eq!(

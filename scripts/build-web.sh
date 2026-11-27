@@ -12,11 +12,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 images=images
+audio=audio
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-images) images=""; shift ;;
     --images) images="$2"; shift 2 ;;
-    *) echo "usage: $0 [--no-images | --images <dir>]" >&2; exit 2 ;;
+    --no-audio) audio=""; shift ;;
+    --audio) audio="$2"; shift 2 ;;
+    *) echo "usage: $0 [--no-images | --images <dir>] [--no-audio | --audio <dir>]" >&2; exit 2 ;;
   esac
 done
 
@@ -78,6 +81,28 @@ index["online"] = {c["id"]: [c["images"]["url_small"], c["images"]["url_full"]]
 (dst / "index.json").write_text(json.dumps(index))
 print(f"card images: {len(index['small'])} small and {len(index['full'])} full local copies, {len(index['online'])} online")
 PY
+fi
+
+# Sounds: the page makes its own; files in the git-ignored audio/ folder
+# (draw.mp3, summon.ogg, bgm.mp3, ...: see web/play/index.html, Sound)
+# replace them by name. --no-audio leaves them out (use it for anything
+# you publish).
+mkdir -p "$out/audio"
+if [ -n "$audio" ] && [ -d "$audio" ]; then
+  python3 -I - "$audio" "$out/audio" <<'PY'
+import json, shutil, sys
+from pathlib import Path
+src, dst = Path(sys.argv[1]), Path(sys.argv[2])
+index = {}
+for p in sorted(src.iterdir()):
+    if p.suffix.lower() in (".mp3", ".ogg", ".wav", ".m4a") and p.stem not in index:
+        shutil.copyfile(p, dst / p.name)
+        index[p.stem] = p.name
+(dst / "index.json").write_text(json.dumps(index))
+print(f"sound files: {len(index)} ({', '.join(index) or 'none'})")
+PY
+else
+  echo '{}' > "$out/audio/index.json"
 fi
 
 du -sh "$out"
