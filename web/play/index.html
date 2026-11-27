@@ -196,7 +196,7 @@ footer { color: var(--muted); font-size: 12px; }
     <span class="sub" id="sub">LOB, MRD, SRL, PSV and EXTRA card pool, house rules from the project's rules file</span>
   </header>
   <main id="main"><p class="note">Loading the rules engine…</p></main>
-  <footer>A fan-made rules engine for personal play. Not affiliated with or endorsed by Konami. No card images are included: the page shows only images you fetched to your own computer.</footer>
+  <footer>A fan-made rules engine for personal play. Not affiliated with or endorsed by Konami. Card images are not part of this project: they load from YGOPRODeck while you play, or from copies on your own computer.</footer>
 </div>
 
 <script>
@@ -274,7 +274,8 @@ const state = {
   selected: null,     // instance id of the card open (its moves and text)
   aim: null,          // { moves, picked }: a move waiting for its targets
   variants: null,     // moves with the same targets but other costs
-  images: null,       // { small: Set, full: Set } of card ids with images
+  images: null,       // { small: Set, full: Set, online: {id: [small, full]} }
+  badImages: new Set(), // "size:id" of images that failed to load
   pile: null,         // "you" or "opponent": the Graveyard shown in a panel
   cardText: null,
   seenLog: 0,         // log lines already seen before the last move
@@ -309,10 +310,10 @@ async function boot(data) {
     const files = JSON.parse(deckIndex);
     const decks = await Promise.all(files.map(async (file) => ({ file, text: await fetchText("data/decks/" + file) })));
     state.initArgs = { cmd: "init", rules, cards, banlist, tokens, decks };
-    // Card images only when the build copied local ones (never committed).
+    // Card images: local copies first, else YGOPRODeck (never committed).
     try {
       const r = await fetch("images/index.json");
-      if (r.ok) { const ix = await r.json(); state.images = { small: new Set(ix.small), full: new Set(ix.full) }; }
+      if (r.ok) { const ix = await r.json(); state.images = { small: new Set(ix.small), full: new Set(ix.full), online: ix.online ?? {} }; }
     } catch (_) { state.images = null; }
     state.init = Engine.call(state.initArgs);
     const resume = data?.game ?? loadSaved();
@@ -513,11 +514,29 @@ function select(inst) {
   renderGame();
 }
 
+// A card's image: a local copy if the build has one, else its YGOPRODeck
+// URL; none once it failed to load (the card then shows as text).
 function imageFor(c, size) {
   if (!c?.id || !state.images) return null;
-  const has = (s) => state.images[s]?.has(c.id);
-  if (has(size)) return `images/${size}/${c.id}.jpg`;
-  return has("small") ? `images/small/${c.id}.jpg` : null;
+  for (const s of size === "full" ? ["full", "small"] : ["small"]) {
+    if (state.images[s]?.has(c.id) && !state.badImages.has(s + ":" + c.id)) return `images/${s}/${c.id}.jpg`;
+  }
+  const url = state.images.online[c.id]?.[size === "full" ? 1 : 0];
+  return url && !state.badImages.has(url) ? url : null;
+}
+
+// An image that does not load (offline, blocked) is not asked for again.
+let redrawSoon = false;
+document.addEventListener("error", (ev) => {
+  const img = ev.target;
+  if (!(img instanceof HTMLImageElement) || !img.dataset.key) return;
+  state.badImages.add(img.dataset.key);
+  if (!redrawSoon && state.view) { redrawSoon = true; requestAnimationFrame(() => { redrawSoon = false; renderGame(); }); }
+}, true);
+// The key a failed image is remembered by: its local path's size and id, or its URL.
+function imgKey(src) {
+  const m = src.match(/^images\/(small|full)\/(\d+)\.jpg$/);
+  return m ? m[1] + ":" + m[2] : src;
 }
 
 function cardHtml(c, opts = {}) {
@@ -534,7 +553,7 @@ function cardHtml(c, opts = {}) {
   const label = `${name}${stats ? ", " + stats : ""}${pos ? ", " + pos : ""}${can ? ", has moves" : ""}${target ? ", a target" : ""}`;
   if (img) {
     return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" aria-label="${esc(label)}" title="${esc(name)}">
-      <img src="${img}" alt="" loading="lazy" draggable="false">
+      <img src="${img}" data-key="${esc(imgKey(img))}" alt="" loading="lazy" draggable="false" referrerpolicy="no-referrer">
       ${c.atk !== null && c.atk !== undefined ? `<span class="badge">${esc(stats)}</span>` : ""}
       ${pos && pos !== "ATK" ? `<span class="badge pos">${pos}</span>` : ""}</button>`;
   }
@@ -607,7 +626,7 @@ function dialogHtml() {
   const tile = (c, attrs) => {
     const img = c ? imageFor(c, "small") : null;
     const name = c?.name ?? "A card you cannot see";
-    return `<button class="tile" ${attrs} title="${esc(name)}">${img ? `<img src="${img}" alt="" loading="lazy">` : ""}<span>${esc(name)}</span></button>`;
+    return `<button class="tile" ${attrs} title="${esc(name)}">${img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}<span>${esc(name)}</span></button>`;
   };
   const qs = answers();
   if (qs.length) {
@@ -678,7 +697,7 @@ function renderGame() {
     const [name, ...meta] = head.split("\n");
     const big = known?.name ? imageFor(known, "full") : null;
     detail = `<section class="panel detail" aria-label="Card">
-      ${big ? `<img class="dimg" src="${big}" alt="${esc(name)}">` : ""}
+      ${big ? `<img class="dimg" src="${big}" data-key="${esc(imgKey(big))}" alt="${esc(name)}" referrerpolicy="no-referrer">` : ""}
       <div class="dname">${esc(name)}</div>
       ${meta.length ? `<div class="sub">${esc(meta.join(" "))}</div>` : ""}
       ${rest.length ? `<div class="dtext">${esc(rest.join("\n\n"))}</div>` : ""}</section>`;
