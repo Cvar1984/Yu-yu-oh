@@ -111,6 +111,8 @@ fn castle_on_field(g: &Game) -> bool {
 
 /// Sanga, Kazejin and Suijin: once while face-up, during damage
 /// calculation of an attack against them, the attacker's ATK becomes 0.
+/// The use is counted at activation (`cost`), so the effect cannot chain
+/// to itself.
 fn guardian() -> CardScript {
     single(Effect {
         kind: EffectKind::Quick,
@@ -124,8 +126,8 @@ fn guardian() -> CardScript {
                     .is_some_and(|(_, target)| target == Some(s.card))
         },
         targets: Some(|g, _| singles(g.current_attack().map(|(a, _)| a))),
+        cost: Some(|g, ctx| g.set_counter(ctx.source, 1)),
         ..Effect::activate(2, |g, ctx| {
-            g.set_counter(ctx.source, 1);
             let attacker = ctx.targets[0];
             let atk = g.atk(attacker);
             g.modify_during_damage_calculation(ctx.source, attacker, -atk, 0);

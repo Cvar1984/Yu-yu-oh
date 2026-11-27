@@ -176,3 +176,25 @@ fn the_network_search_is_repeatable_legal_and_counts_its_visits() {
     }
     assert!(g.result().is_some());
 }
+
+#[test]
+fn a_checkpoint_loads_at_its_own_widths() {
+    use ygo_ai::neural::Widths;
+    let device = cpu();
+    let batch = decisions(13, 10);
+    let x = Inputs::new(&batch, &device);
+    for w in Widths::ALL {
+        let net = Net::with_widths(&device, w);
+        assert_eq!(net.widths(), w);
+        let path =
+            std::env::temp_dir().join(format!("ygo-widths-{}-{}.bpk", w.state, std::process::id()));
+        net.save(&path).unwrap();
+        let loaded = Net::load(&path, &device).unwrap();
+        std::fs::remove_file(&path).ok();
+        assert_eq!(loaded.widths(), w, "the loader finds the file's widths");
+        assert_eq!(floats(net.forward(&x).0), floats(loaded.forward(&x).0));
+    }
+    let shipped = ygo_engine::testing::root().join("data/networks/best.bpk");
+    assert_eq!(Net::load(&shipped, &device).unwrap().widths(), Widths::WIDE);
+    assert!(Net::from_bytes(b"not a network".to_vec(), &device).is_err());
+}

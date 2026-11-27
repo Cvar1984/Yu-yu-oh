@@ -83,6 +83,9 @@ enum Command {
         /// Start from this network instead of a new one.
         #[arg(long)]
         from: Option<PathBuf>,
+        /// A new network twice as wide (`Widths::WIDE`); ignored with --from.
+        #[arg(long)]
+        wide: bool,
         /// Learn from players whose label starts with one of these
         /// (comma-separated); all but `random` when empty.
         #[arg(long, default_value = "")]
@@ -123,6 +126,9 @@ enum Command {
         /// Turns in which moves are drawn by the search's visits.
         #[arg(long, default_value_t = 4)]
         explore_turns: u32,
+        /// Learn the search's most visited move instead of its visit shares.
+        #[arg(long)]
+        hard_targets: bool,
         /// Games of candidate against best (the gate).
         #[arg(long, default_value_t = 2000)]
         gate_games: u32,
@@ -324,6 +330,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             records,
             out,
             from,
+            wide,
             teachers,
             epochs,
             batch,
@@ -336,6 +343,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                 &records,
                 &out,
                 from.as_deref(),
+                wide,
                 &teachers,
                 &ygo_train::imitation::Options {
                     epochs,
@@ -356,6 +364,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             games,
             buffer,
             explore_turns,
+            hard_targets,
             gate_games,
             epochs,
             batch,
@@ -383,6 +392,7 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
                     games,
                     buffer,
                     explore_turns,
+                    hard_targets,
                     gate_games,
                     search: bots.mcts.clone(),
                     train: ygo_train::imitation::Options {
@@ -479,10 +489,11 @@ fn imitate(
     dirs: &[PathBuf],
     out: &std::path::Path,
     from: Option<&std::path::Path>,
+    wide: bool,
     teachers: &str,
     opts: &ygo_train::imitation::Options,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use ygo_ai::neural::{Net, cpu};
+    use ygo_ai::neural::{Net, Widths, cpu};
     let mut records = Vec::new();
     for dir in dirs {
         let mut files: Vec<PathBuf> = std::fs::read_dir(dir)?
@@ -510,6 +521,7 @@ fn imitate(
         ygo_engine::Shared::new(bundle.rules.clone(), &bundle.cards, ygo_cards::registry());
     let net = match from {
         Some(path) => Net::load(path, &cpu())?,
+        None if wide => Net::with_widths(&cpu(), Widths::WIDE),
         None => Net::new(&cpu()),
     };
     println!("{} records from {} directories", records.len(), dirs.len());

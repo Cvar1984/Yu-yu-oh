@@ -98,7 +98,8 @@ select, input[type="text"] { font: inherit; padding: 8px 10px; border-radius: va
 .sidehead .who { font-weight: 700; color: var(--fg); font-family: var(--font-display); }
 .lp { font-weight: 700; font-size: 18px; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
 .side.you .lp { color: var(--you); } .side.them .lp { color: var(--them); }
-.mat { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.mat { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; width: 100%; max-width: 540px; margin-inline: auto; }
+.side .sidehead { width: 100%; max-width: 540px; margin-inline: auto; }
 .zone { min-height: 74px; border-radius: var(--radius); background: var(--zone); border: 1px dashed var(--line); min-width: 0; display: grid; place-items: center; padding: 4px; text-align: center; font-size: 10px; line-height: 1.2; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .zone.z-field { border-color: var(--z-field); } .zone.z-monster { border-color: var(--z-monster); } .zone.z-st { border-color: var(--z-st); }
 .pile { min-height: 74px; border-radius: var(--radius); border: 1px solid var(--z-pile); background: var(--zone); padding: 5px 6px; font-size: 10px; color: var(--muted); display: grid; align-content: space-between; gap: 2px; min-width: 0; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -112,7 +113,7 @@ button.pile:hover, button.pile[aria-expanded="true"] { border-color: var(--accen
 
 .card { width: 100%; min-height: 74px; height: 100%; text-align: left; border-radius: var(--radius); border: 1px solid var(--line); border-top: 4px solid var(--f-normal); background: var(--table); padding: 5px 6px; display: grid; align-content: space-between; gap: 2px; cursor: pointer; min-width: 0; }
 .card .cname { font-weight: 600; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.card .cstats { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; gap: 4px; }
+.card .cstats { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 4px; }
 .card .cpos { font-weight: 700; letter-spacing: 0.04em; }
 .card.k-monster { border-top-color: var(--f-normal); } .card.k-effect { border-top-color: var(--f-effect); }
 .card.k-fusion { border-top-color: var(--f-fusion); } .card.k-ritual { border-top-color: var(--f-ritual); }
@@ -120,15 +121,26 @@ button.pile:hover, button.pile[aria-expanded="true"] { border-color: var(--accen
 .card.pos-defense { background: color-mix(in srgb, var(--zone) 55%, var(--table)); }
 .card.back { background: repeating-linear-gradient(135deg, var(--back) 0 6px, var(--back-2) 6px 12px); border-top-color: var(--back-2); color: #f2f5f9; }
 .card.back .cname, .card.back .cstats { color: #f2f5f9; }
-.card.can { box-shadow: 0 0 0 2px var(--accent); }
-.card.target { box-shadow: 0 0 0 3px var(--them); }
-.hint { font-weight: 600; color: var(--them); }
+/* A card with moves glows; a card a move can aim at glows red. */
+.card.can, .pile.can { box-shadow: 0 0 0 2px var(--accent), 0 0 12px 2px color-mix(in srgb, var(--accent) 55%, transparent); }
+.card.target, .pile.target { box-shadow: 0 0 0 3px var(--them), 0 0 14px 3px color-mix(in srgb, var(--them) 55%, transparent); }
+.card.has-img { padding: 0; border: 0; border-radius: 5px; overflow: hidden; position: relative; aspect-ratio: 59 / 86; height: auto; background: var(--zone); display: block; }
+.card.has-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* On the field a defense-position card lies sideways; your own Set cards
+   show dimmed. In the hand and the piles cards stand upright. */
+.card.has-img.onfield.pos-defense img, .card.has-img.onfield.pos-set.k-monster img,
+.card.has-img.onfield.pos-set.k-effect img, .card.has-img.onfield.pos-set.k-ritual img,
+.card.has-img.onfield.pos-set.k-fusion img { transform: rotate(90deg) scale(0.69); }
+.card.has-img.onfield.pos-set img { filter: brightness(0.6) saturate(0.6); }
+.card .badge { position: absolute; left: 3px; bottom: 3px; background: rgb(10 14 20 / 0.78); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 4px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+.card .badge.pos { left: auto; right: 3px; }
+.mat .zone, .mat .pile { aspect-ratio: 59 / 86; min-height: 0; }
 .card.sel { outline: 3px solid var(--accent); outline-offset: 1px; }
 .mid { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 6px 2px; border-block: 1px solid var(--line); }
 .chain { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
 .chip { border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); background: var(--zone); }
 .chip.you { border-color: var(--you); } .chip.them { border-color: var(--them); }
-.hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 74px)); justify-content: center; gap: 6px; }
 .opp-hand { display: flex; gap: 4px; flex-wrap: wrap; }
 .opp-hand span { width: 16px; height: 22px; border-radius: 3px; background: repeating-linear-gradient(135deg, var(--back) 0 4px, var(--back-2) 4px 8px); }
 
@@ -136,13 +148,8 @@ button.pile:hover, button.pile[aria-expanded="true"] { border-color: var(--accen
 .panel { background: var(--table); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
 .prompt { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
 .result { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--good); }
-.moves { display: grid; gap: 6px; max-height: 46vh; overflow-y: auto; padding-right: 2px; }
-.move { display: grid; grid-template-columns: 1.7em minmax(0, 1fr); gap: 6px; align-items: baseline; text-align: left; padding: 7px 9px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
-.move:hover { border-color: var(--accent); }
-.move .n { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
-.move.for-card { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg)); }
-.move.k-end_turn, .move.k-pass, .move.k-end_battle { color: var(--muted); }
 .detail { display: grid; gap: 6px; }
+.detail .dimg { width: 100%; max-width: 260px; border-radius: 8px; justify-self: center; }
 .detail .dname { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
 .detail .dtext { white-space: pre-wrap; font-size: 13px; max-width: 65ch; }
 .log { font-family: var(--font-mono); font-size: 12px; max-height: 34vh; overflow-y: auto; display: grid; gap: 1px; }
@@ -151,6 +158,22 @@ button.pile:hover, button.pile[aria-expanded="true"] { border-color: var(--accen
 .log .new { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .copybox { width: 100%; min-height: 100px; font-family: var(--font-mono); font-size: 11px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
 footer { color: var(--muted); font-size: 12px; }
+/* The bar under the hand: what is asked, and the moves of no card. */
+.bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--line); }
+.barmoves { display: flex; flex-wrap: wrap; gap: 8px; }
+/* A card's moves, shown on the card. */
+.menu { position: fixed; z-index: 20; display: grid; gap: 2px; min-width: 180px; max-width: min(320px, calc(100vw - 16px)); padding: 4px; background: var(--table); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.25); }
+.menu button { text-align: left; border: 0; background: transparent; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.menu button:hover, .menu button:focus-visible { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.menu button.quiet { font-weight: 400; color: var(--muted); }
+/* Cards to pick that are off the table, and questions. */
+.dialog { position: fixed; z-index: 15; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(720px, calc(100vw - 24px)); max-height: 60vh; overflow-y: auto; display: grid; gap: 10px; padding: 14px; background: var(--table); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.3); }
+.dialog .dhead { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.dialog .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.tile { display: grid; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); cursor: pointer; text-align: center; font-size: 11px; font-weight: 600; }
+.tile img { width: 100%; aspect-ratio: 59 / 86; object-fit: cover; border-radius: 5px; }
+.tile:hover, .tile:focus-visible { border-color: var(--accent); }
 @media (max-width: 560px) {
   .table { padding: 8px; }
   .mat { gap: 3px; }
@@ -164,16 +187,16 @@ footer { color: var(--muted); font-size: 12px; }
   .pile .top { display: none; }
   .pile .lfull { display: none; } .pile .lshort { display: inline; }
 }
-@media (prefers-reduced-motion: no-preference) { .move, .card { transition: border-color 0.12s, box-shadow 0.12s; } }
+@media (prefers-reduced-motion: no-preference) { .pile, .card { transition: border-color 0.12s, box-shadow 0.12s; } }
 </style>
 
 <div class="app">
   <header class="top">
     <h1>Yu-yu-oh Duel Table</h1>
-    <span class="sub" id="sub">LOB, MRD and SRL card pool, house rules from the project's rules file</span>
+    <span class="sub" id="sub">LOB, MRD, SRL, PSV and EXTRA card pool, house rules from the project's rules file</span>
   </header>
   <main id="main"><p class="note">Loading the rules engine…</p></main>
-  <footer>A fan-made rules engine for personal play. Not affiliated with or endorsed by Konami. Card images are not included.</footer>
+  <footer>A fan-made rules engine for personal play. Not affiliated with or endorsed by Konami. No card images are included: the page shows only images you fetched to your own computer.</footer>
 </div>
 
 <script>
@@ -248,7 +271,10 @@ const state = {
   initArgs: null,     // the init command, kept to rebuild the engine
   game: null,         // { deck, bot_deck, bot, seed, first, choices }
   view: null,
-  selected: null,     // instance id of the card shown in detail
+  selected: null,     // instance id of the card open (its moves and text)
+  aim: null,          // { moves, picked }: a move waiting for its targets
+  variants: null,     // moves with the same targets but other costs
+  images: null,       // { small: Set, full: Set } of card ids with images
   pile: null,         // "you" or "opponent": the Graveyard shown in a panel
   cardText: null,
   seenLog: 0,         // log lines already seen before the last move
@@ -283,6 +309,11 @@ async function boot(data) {
     const files = JSON.parse(deckIndex);
     const decks = await Promise.all(files.map(async (file) => ({ file, text: await fetchText("data/decks/" + file) })));
     state.initArgs = { cmd: "init", rules, cards, banlist, tokens, decks };
+    // Card images only when the build copied local ones (never committed).
+    try {
+      const r = await fetch("images/index.json");
+      if (r.ok) { const ix = await r.json(); state.images = { small: new Set(ix.small), full: new Set(ix.full) }; }
+    } catch (_) { state.images = null; }
     state.init = Engine.call(state.initArgs);
     const resume = data?.game ?? loadSaved();
     if (resume && resume.choices) {
@@ -356,6 +387,7 @@ function startGame(game) {
   state.game = { ...game, choices: answer.choices };
   state.view = answer.view;
   state.selected = null; state.cardText = null; state.copyText = null; state.pile = null;
+  state.aim = null; state.variants = null;
   state.seenLog = 0;
   save();
   renderGame();
@@ -373,6 +405,7 @@ function play(index) {
     return;
   }
   save();
+  state.aim = null; state.variants = null;
   if (state.selected !== null && !cardOnTable(state.selected)) { state.selected = null; state.cardText = null; }
   renderGame();
 }
@@ -397,56 +430,115 @@ async function recover() {
   document.getElementById("restart").onclick = () => { state.error = null; state.game = null; save(); renderSetup(); };
 }
 
-function cardOnTable(inst) {
-  const v = state.view;
-  const all = [...v.hand, ...zonesOf(v.you), ...zonesOf(v.opponent)];
-  return all.some((c) => c && c.instance === inst);
-}
-function zonesOf(side) { return [...side.monsters, ...side.spells, side.field, ...side.graveyard, ...side.banished]; }
+// ---- Cards and moves ----
+// Every move belongs to a card except Pass, End turn and the Battle Phase
+// steps (the bar under the hand) and answers to a question (a dialog). A
+// card with moves glows; tapping it opens its moves on the card. A move
+// that needs targets glows the cards it can aim at, one tap each.
 
-// Every move about a card: as its subject (attacker, card played) or its target.
-function movesFor(inst) { return state.view.actions.filter((a) => a.card === inst || a.targets.includes(inst)); }
-function attacksBy(inst) { return state.view.actions.filter((a) => a.kind === "attack" && a.card === inst); }
-function attackOn(attacker, target) {
-  return state.view.actions.find((a) => a.kind === "attack" && a.card === attacker && a.targets.includes(target));
+function sideCards(side) { return [...side.monsters, ...side.spells, side.field, ...side.graveyard, ...side.banished].filter(Boolean); }
+function tableCards() { const v = state.view; return [...v.hand, ...sideCards(v.you), ...sideCards(v.opponent)]; }
+function cardOnTable(inst) { return tableCards().some((c) => c.instance === inst); }
+// A card as the human sees it: on the table, or offered by a move (a Deck
+// search). Hidden cards come without a name or id.
+function cardInfo(inst) {
+  return tableCards().find((c) => c.instance === inst)
+    ?? state.view.actions.find((a) => a.card === inst && a.subject)?.subject ?? null;
 }
-// Where a card is on the table, for naming cards the human cannot see.
-function locate(inst) {
-  const v = state.view;
-  for (const [side, who] of [[v.you, "Your"], [v.opponent, "Opponent's"]]) {
-    const m = side.monsters.findIndex((c) => c && c.instance === inst);
-    if (m >= 0) return { card: side.monsters[m], label: `${who} face-down monster, zone ${m + 1}` };
-    const st = side.spells.findIndex((c) => c && c.instance === inst);
-    if (st >= 0) return { card: side.spells[st], label: `${who} Set card, zone ${st + 1}` };
+function inPile(side, inst) { return side.graveyard.concat(side.banished).some((c) => c.instance === inst); }
+
+function movesOf(inst) { return state.view.actions.filter((a) => a.card === inst && a.kind !== "answer"); }
+function barMoves() { return state.view.actions.filter((a) => a.card === null && a.kind !== "answer"); }
+function answers() { return state.view.actions.filter((a) => a.kind === "answer"); }
+
+// While aiming: the moves still possible, and the targets picked so far.
+function aimMoves() {
+  const aim = state.aim;
+  return aim ? aim.moves.filter((a) => aim.picked.every((p) => a.targets.includes(p))) : [];
+}
+function aimTargets() {
+  const picked = state.aim?.picked ?? [];
+  return [...new Set(aimMoves().flatMap((a) => a.targets).filter((t) => !picked.includes(t)))];
+}
+
+// The items of a card's move menu, in the engine's order. Moves of one
+// kind and effect that differ only by target become one item that starts
+// aiming.
+function menuItems(inst) {
+  const items = [], groups = new Map();
+  for (const a of movesOf(inst)) {
+    if (!a.targets.length) { items.push({ label: a.text, move: a }); continue; }
+    const key = a.kind + ":" + (a.effect ?? "");
+    if (!groups.has(key)) { const g = { moves: [] }; groups.set(key, g); items.push(g); }
+    groups.get(key).moves.push(a);
   }
-  return null;
+  return items.map((it) => {
+    if (!it.moves) return it;
+    if (it.moves.length === 1) return { label: it.moves[0].text, move: it.moves[0] };
+    const what = it.moves[0].kind === "attack" ? "Attack" : "Activate";
+    return { label: what + ": choose the target", aim: it.moves };
+  });
 }
 
 function tapCard(inst) {
-  const attack = state.selected !== null ? attackOn(state.selected, inst) : null;
-  if (attack) { state.selected = null; state.cardText = null; play(attack.index); return; }
+  if (state.aim && aimTargets().includes(inst)) { pickTarget(inst); return; }
+  state.aim = null;
   select(inst);
 }
 
-function select(inst) {
-  state.selected = state.selected === inst ? null : inst;
-  state.cardText = null;
-  if (state.selected !== null) {
-    try { state.cardText = Engine.call({ cmd: "card", instance: inst }); } catch (_) { state.cardText = null; }
+function pickTarget(inst) {
+  state.aim.picked.push(inst);
+  const left = aimMoves();
+  const done = left.filter((a) => a.targets.length === state.aim.picked.length);
+  if (left.length === 1 && done.length === 1) { const a = done[0]; state.aim = null; state.selected = null; play(a.index); return; }
+  if (done.length && done.length === left.length) {
+    // Same targets, other costs: let the menu name them.
+    state.aim = null; state.variants = done; renderGame(); return;
   }
   renderGame();
 }
 
+function select(inst) {
+  const again = state.selected === inst;
+  state.selected = again ? null : inst;
+  state.variants = null;
+  state.cardText = null;
+  if (state.selected !== null) {
+    try { state.cardText = Engine.call({ cmd: "card", instance: inst }); } catch (_) { state.cardText = null; }
+    // A card in a Graveyard opens that pile, so it stays in sight.
+    for (const [side, key] of [[state.view.you, "you"], [state.view.opponent, "opponent"]]) {
+      if (inPile(side, inst)) state.pile = key;
+    }
+  }
+  renderGame();
+}
+
+function imageFor(c, size) {
+  if (!c?.id || !state.images) return null;
+  const has = (s) => state.images[s]?.has(c.id);
+  if (has(size)) return `images/${size}/${c.id}.jpg`;
+  return has("small") ? `images/small/${c.id}.jpg` : null;
+}
+
 function cardHtml(c, opts = {}) {
   if (!c) return `<div class="zone" aria-label="Empty zone"></div>`;
-  const can = state.view.actions.some((a) => a.card === c.instance);
+  const can = movesOf(c.instance).length > 0 && !state.aim;
   const sel = state.selected === c.instance;
-  const target = state.selected !== null && attackOn(state.selected, c.instance);
-  const cls = ["card", c.name ? "k-" + c.kind : "back", "pos-" + c.position, can ? "can" : "", sel ? "sel" : "", target ? "target" : ""].join(" ");
+  const target = aimTargets().includes(c.instance);
+  const img = c.name ? imageFor(c, "small") : null;
+  const cls = ["card", c.name ? "k-" + c.kind : "back", "pos-" + c.position, img ? "has-img" : "", opts.hand ? "" : "onfield",
+    can ? "can" : "", sel ? "sel" : "", target ? "target" : ""].join(" ");
   const name = c.name ?? (opts.monster ? "Face-down monster" : "Set card");
   const pos = opts.hand ? "" : c.position === "attack" ? "ATK" : c.position === "defense" ? "DEF" : c.position === "set" ? "SET" : "";
   const stats = c.atk !== null && c.atk !== undefined ? `${c.atk} / ${c.def}` : (c.detail ?? "");
-  return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" title="${esc(name)}">
+  const label = `${name}${stats ? ", " + stats : ""}${pos ? ", " + pos : ""}${can ? ", has moves" : ""}${target ? ", a target" : ""}`;
+  if (img) {
+    return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" aria-label="${esc(label)}" title="${esc(name)}">
+      <img src="${img}" alt="" loading="lazy" draggable="false">
+      ${c.atk !== null && c.atk !== undefined ? `<span class="badge">${esc(stats)}</span>` : ""}
+      ${pos && pos !== "ATK" ? `<span class="badge pos">${pos}</span>` : ""}</button>`;
+  }
+  return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" aria-label="${esc(label)}" title="${esc(name)}">
     <span class="cname">${esc(name)}</span>
     <span class="cstats"><span>${esc(stats)}</span><span class="cpos">${pos}</span></span></button>`;
 }
@@ -456,8 +548,10 @@ function slotHtml(label, kind) { return `<div class="zone z-${kind}" aria-label=
 
 function graveyardHtml(side, key) {
   const top = side.graveyard[side.graveyard.length - 1];
+  const all = side.graveyard.concat(side.banished);
+  const glow = all.some((c) => movesOf(c.instance).length && !state.aim) ? " can" : all.some((c) => aimTargets().includes(c.instance)) ? " target" : "";
   const banished = side.banished.length ? `<span class="lfull"> · ${side.banished.length} banished</span>` : "";
-  return `<button class="pile" data-pile="${key}" aria-expanded="${state.pile === key}" title="Show the Graveyard">
+  return `<button class="pile${glow}" data-pile="${key}" aria-expanded="${state.pile === key}" title="Show the Graveyard">
     <span>${lbl("Graveyard", "GY")}${banished}</span><span class="count">${side.graveyard.length}</span>
     <span class="top">${top ? esc(top.name ?? "?") : ""}</span></button>`;
 }
@@ -491,8 +585,8 @@ function sideHtml(side, who, mine) {
   return `<section class="side ${mine ? "you" : "them"}" aria-label="${who}">${head}${rows}</section>`;
 }
 
-// The open Graveyard: its cards, newest first (tap one for its text and
-// moves), and the same player's banished cards.
+// The open Graveyard: its cards, newest first, and the same player's
+// banished cards. Cards here glow and open their moves like any other.
 function pilePanelHtml() {
   if (!state.pile) return "";
   const side = state.pile === "you" ? state.view.you : state.view.opponent;
@@ -506,15 +600,66 @@ function pilePanelHtml() {
     <div class="actions-row"><button class="btn" id="close-pile">Close</button></div></section>`;
 }
 
+// Cards to pick that are not on the table (a Deck search, a revealed
+// hand), the targets of the move being aimed when some are off the table,
+// and questions: one small dialog.
+function dialogHtml() {
+  const tile = (c, attrs) => {
+    const img = c ? imageFor(c, "small") : null;
+    const name = c?.name ?? "A card you cannot see";
+    return `<button class="tile" ${attrs} title="${esc(name)}">${img ? `<img src="${img}" alt="" loading="lazy">` : ""}<span>${esc(name)}</span></button>`;
+  };
+  const qs = answers();
+  if (qs.length) {
+    return `<div class="dialog" role="dialog" aria-label="Question"><div class="dhead">${esc(state.view.prompt ?? "Choose an option")}</div>
+      <div class="opts">${qs.map((a) => `<button class="btn" data-move="${a.index}">${esc(a.text)}</button>`).join("")}</div></div>`;
+  }
+  if (state.aim) {
+    const ts = aimTargets();
+    if (ts.every(cardOnTable) && ts.every((t) => !inPile(state.view.you, t) && !inPile(state.view.opponent, t))) return "";
+    return `<div class="dialog" role="dialog" aria-label="Choose a target"><div class="dhead">Choose a target</div>
+      <div class="tiles">${ts.map((t) => tile(cardInfo(t) ?? locate(t)?.card, `data-target="${t}"`)).join("")}</div>
+      <div class="actions-row"><button class="btn" id="cancel-aim">Cancel</button></div></div>`;
+  }
+  const picks = state.view.actions.filter((a) => a.kind === "choose" && a.card !== null && !cardOnTable(a.card));
+  if (picks.length) {
+    return `<div class="dialog" role="dialog" aria-label="Choose a card"><div class="dhead">${esc(state.view.prompt ?? "Choose a card")}</div>
+      <div class="tiles">${picks.map((a) => tile(a.subject, `data-move="${a.index}"`)).join("")}</div></div>`;
+  }
+  return "";
+}
+
+// The open card's moves, shown on the card (placed after rendering).
+function menuHtml() {
+  if (state.variants) {
+    return `<div class="menu" id="menu" role="menu">${state.variants.map((a) => `<button role="menuitem" data-move="${a.index}">${esc(a.text)}</button>`).join("")}
+      <button role="menuitem" class="quiet" id="close-menu">Cancel</button></div>`;
+  }
+  if (state.selected === null || state.aim) return "";
+  const items = menuItems(state.selected);
+  if (!items.length) return "";
+  return `<div class="menu" id="menu" role="menu">${items.map((it, i) => it.move
+      ? `<button role="menuitem" data-move="${it.move.index}">${esc(it.label)}</button>`
+      : `<button role="menuitem" data-aim="${i}">${esc(it.label)}</button>`).join("")}
+    <button role="menuitem" class="quiet" id="close-menu">Cancel</button></div>`;
+}
+
+function placeMenu() {
+  const menu = document.getElementById("menu");
+  if (!menu) return;
+  const anchor = state.selected !== null ? main.querySelector(`[data-inst="${state.selected}"]`) : null;
+  const r = anchor?.getBoundingClientRect() ?? { left: innerWidth / 2 - 100, right: innerWidth / 2 + 100, top: innerHeight / 3, bottom: innerHeight / 3 };
+  const m = menu.getBoundingClientRect();
+  let left = Math.min(Math.max(8, r.left), innerWidth - m.width - 8);
+  let top = r.bottom + 6;
+  if (top + m.height > innerHeight - 8) top = Math.max(8, r.top - m.height - 6);
+  menu.style.left = left + "px"; menu.style.top = top + "px";
+}
+
+const BAR_LABEL = { pass: "Pass", end_turn: "End turn", battle: "Battle", end_battle: "End battle" };
+
 function renderGame() {
   const v = state.view;
-  const forCard = state.selected !== null ? movesFor(state.selected) : [];
-  const attacking = state.selected !== null ? attacksBy(state.selected) : [];
-  const hint = attacking.some((a) => a.targets.length)
-    ? `<span class="hint">Tap a monster outlined in red to attack it${attacking.some((a) => !a.targets.length) ? ", or attack directly from the card panel" : ""}.</span>`
-    : attacking.length ? `<span class="hint">This monster can attack directly: see the card panel.</span>` : "";
-  const moves = v.actions.map((a) => `<button class="move k-${a.kind}${state.selected !== null && forCard.includes(a) ? " for-card" : ""}" data-move="${a.index}">
-      <span class="n">${a.index < 9 ? a.index + 1 : ""}</span><span>${esc(a.text)}</span></button>`).join("");
   const chain = v.chain.length
     ? v.chain.map((l, i) => `<span class="chip ${l.yours ? "you" : "them"}">${i + 1}. ${esc(l.name)}</span>`).join("")
     : `<span class="sub">No chain</span>`;
@@ -527,46 +672,60 @@ function renderGame() {
 
   let detail = "";
   if (state.selected !== null) {
+    const known = cardInfo(state.selected);
     const text = state.cardText ?? (locate(state.selected)?.label ?? "A card you cannot see");
     const [head, ...rest] = text.split("\n\n");
     const [name, ...meta] = head.split("\n");
+    const big = known?.name ? imageFor(known, "full") : null;
     detail = `<section class="panel detail" aria-label="Card">
+      ${big ? `<img class="dimg" src="${big}" alt="${esc(name)}">` : ""}
       <div class="dname">${esc(name)}</div>
       ${meta.length ? `<div class="sub">${esc(meta.join(" "))}</div>` : ""}
-      ${rest.length ? `<div class="dtext">${esc(rest.join("\n\n"))}</div>` : ""}
-      ${forCard.length ? `<div class="label">Moves with this card</div>` + forCard.map((a) => `<button class="move for-card k-${a.kind}" data-move="${a.index}"><span class="n"></span><span>${esc(a.text)}</span></button>`).join("") : ""}
-      <div class="actions-row"><button class="btn" id="close-card">Close</button></div></section>`;
+      ${rest.length ? `<div class="dtext">${esc(rest.join("\n\n"))}</div>` : ""}</section>`;
   }
 
   const over = v.result !== null;
+  const aimName = state.aim ? (cardInfo(state.aim.moves[0].card)?.name ?? "the card") : "";
+  const say = over ? `<span class="result">${esc(v.result)}</span>`
+    : state.aim ? `<span class="prompt">Choose a target for ${esc(aimName)}</span>`
+    : `<span class="prompt">${esc(v.prompt ?? "Waiting for your opponent")}</span>`;
+  const bar = over ? "" : barMoves().map((a) => `<button class="btn${a.kind === "battle" ? " primary" : ""}" data-move="${a.index}">${BAR_LABEL[a.kind] ?? esc(a.text)}</button>`).join("")
+    + (state.aim ? `<button class="btn" id="cancel-aim">Cancel</button>` : "");
+
   main.innerHTML = `<div class="game">
     <div class="table">
       <div class="status"><span class="turn">Turn ${v.turn}</span><span>${v.your_turn ? "Your turn" : "Opponent's turn"}</span><span class="sub">${esc(v.phase)}</span><span class="sub">vs ${esc(botName(state.game.bot))}</span></div>
       ${sideHtml(v.opponent, "Opponent", false)}
-      <div class="mid"><div class="chain" aria-label="Chain">${chain}</div>${hint}</div>
+      <div class="mid"><div class="chain" aria-label="Chain">${chain}</div></div>
       ${sideHtml(v.you, "You", true)}
       <div class="label">Your hand</div>
       <div class="hand">${v.hand.map((c) => cardHtml(c, { hand: true })).join("") || `<span class="sub">Empty</span>`}</div>
+      <div class="bar" aria-live="polite">${say}<span class="barmoves">${bar}</span></div>
     </div>
     <div style="display:grid;gap:16px;min-width:0">
-      <section class="panel" aria-live="polite">
-        ${over ? `<div class="result">${esc(v.result)}</div>` : `<div class="prompt">${esc(v.prompt ?? "Waiting")}</div>`}
-        ${over ? "" : `<div class="moves">${moves}</div>`}
+      ${detail}
+      ${pilePanelHtml()}
+      <section class="panel"><div class="label">Log</div><div class="log" id="log">${log}</div>
         <div class="actions-row">
           <button class="btn" id="copy-record">Copy game record</button>
           <button class="btn${over ? " primary" : ""}" id="new-game">${over ? "New duel" : "Give up"}</button>
         </div>
         ${state.copyText !== null ? `<textarea class="copybox" id="copybox" readonly>${esc(state.copyText)}</textarea><span class="sub">Copying is blocked here: select the text above and copy it.</span>` : ""}
       </section>
-      ${detail}
-      ${pilePanelHtml()}
-      <section class="panel"><div class="label">Log</div><div class="log" id="log">${log}</div></section>
     </div>
-  </div>`;
+  </div>${over ? "" : dialogHtml() + menuHtml()}`;
 
-  main.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", () => play(Number(b.dataset.move))));
+  const items = state.selected !== null ? menuItems(state.selected) : [];
+  main.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", () => {
+    state.selected = null; state.aim = null; state.variants = null; state.cardText = null; play(Number(b.dataset.move));
+  }));
+  main.querySelectorAll("[data-aim]").forEach((b) => b.addEventListener("click", () => {
+    state.aim = { moves: items[Number(b.dataset.aim)].aim, picked: [] }; renderGame();
+  }));
+  main.querySelectorAll("[data-target]").forEach((b) => b.addEventListener("click", () => pickTarget(Number(b.dataset.target))));
   main.querySelectorAll("[data-inst]").forEach((b) => b.addEventListener("click", () => tapCard(Number(b.dataset.inst))));
-  document.getElementById("close-card")?.addEventListener("click", () => select(state.selected));
+  document.getElementById("close-menu")?.addEventListener("click", () => { state.variants = null; select(state.selected); });
+  document.getElementById("cancel-aim")?.addEventListener("click", () => { state.aim = null; renderGame(); });
   main.querySelectorAll("[data-pile]").forEach((b) => b.addEventListener("click", () => { state.pile = state.pile === b.dataset.pile ? null : b.dataset.pile; renderGame(); }));
   document.getElementById("close-pile")?.addEventListener("click", () => { state.pile = null; renderGame(); });
   document.getElementById("copy-record").addEventListener("click", () => copy(Engine.call({ cmd: "record" })));
@@ -578,7 +737,21 @@ function renderGame() {
   });
   const box = document.getElementById("copybox"); if (box) box.select();
   const logEl = document.getElementById("log"); logEl.scrollTop = logEl.scrollHeight;
+  placeMenu();
 }
+
+// Where a card is on the table, for naming cards the human cannot see.
+function locate(inst) {
+  const v = state.view;
+  for (const [side, who] of [[v.you, "Your"], [v.opponent, "Opponent's"]]) {
+    const m = side.monsters.findIndex((c) => c && c.instance === inst);
+    if (m >= 0) return { card: side.monsters[m], label: `${who} face-down monster, zone ${m + 1}` };
+    const st = side.spells.findIndex((c) => c && c.instance === inst);
+    if (st >= 0) return { card: side.spells[st], label: `${who} Set card, zone ${st + 1}` };
+  }
+  return null;
+}
+
 
 function copy(text) {
   const done = () => { state.copyText = null; };
@@ -592,12 +765,13 @@ function copy(text) {
   } catch (_) { fail(); }
 }
 
+// Escape steps back: out of aiming, then closes the open card.
 document.addEventListener("keydown", (ev) => {
-  if (!state.view || state.view.result !== null || ev.target.closest?.("select, input, textarea")) return;
-  const n = Number(ev.key);
-  if (n >= 1 && n <= 9 && state.view.actions[n - 1]) play(n - 1);
-  if (ev.key === "Escape" && state.selected !== null) select(state.selected);
+  if (!state.view || ev.key !== "Escape") return;
+  if (state.aim || state.variants) { state.aim = null; state.variants = null; renderGame(); }
+  else if (state.selected !== null) select(state.selected);
 });
+addEventListener("resize", () => { if (state.view) placeMenu(); });
 
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 </script>
