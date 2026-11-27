@@ -5,6 +5,9 @@
 // Needs Node with Playwright and the built page served at URL:
 //   scripts/build-web.sh && python3 -m http.server 8765 -d web/play/dist &
 //   node tools/web_ui_check.js [games] [screenshot.png] [url]
+// Failed image loads are not errors (offline or blocked, the card shows as
+// text). IMAGE_DIR=<dir> answers YGOPRODeck image URLs with <dir>/small or
+// <dir>/full/<id>.jpg, to test the online images without the network.
 const { chromium } = require('playwright');
 const games = Number(process.argv[2] || 2);
 const url = process.argv[4] || 'http://127.0.0.1:8765/';
@@ -13,7 +16,23 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    if (/\.(jpg|png)$/.test(m.location()?.url ?? '') || /^Failed to load resource/.test(m.text())) return;
+    errors.push(m.text());
+  });
+  let imagesServed = 0;
+  if (process.env.IMAGE_DIR) {
+    const fs = require('fs'), path = require('path');
+    await page.route('https://images.ygoprodeck.com/**', (route) => {
+      const u = new URL(route.request().url());
+      const size = u.pathname.includes('cards_small') ? 'small' : 'full';
+      const file = path.join(process.env.IMAGE_DIR, size, path.basename(u.pathname));
+      if (!fs.existsSync(file)) return route.fulfill({ status: 404 });
+      imagesServed++;
+      return route.fulfill({ status: 200, contentType: 'image/jpeg', body: fs.readFileSync(file) });
+    });
+  }
   const kinds = {};
   let total = 0;
   for (let g = 0; g < games; g++) {
@@ -83,6 +102,7 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
   await page.evaluate(() => { const c = document.querySelector('.card.can'); if (c) c.click(); });
   await page.screenshot({ path: process.argv[3] || 'shot.png' });
   console.log('moves made through the page:', total, JSON.stringify(kinds));
+  if (process.env.IMAGE_DIR) console.log('online images served:', imagesServed);
   console.log('errors', JSON.stringify(errors));
   await browser.close();
 })().catch((e) => { console.error('FAIL', e.message); process.exit(1); });
