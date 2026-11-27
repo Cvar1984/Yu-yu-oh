@@ -177,6 +177,9 @@ pub struct Observation {
     pub revealed: Vec<VisibleCard>,
     /// The labelled options of a pending `Ask` decision for the viewer.
     pub question: Vec<String>,
+    /// The chain link whose resolution waits for a `Choose` or `Ask`
+    /// answer: the card asking and its targets. Public, like every link.
+    pub resolving: Option<ChainView>,
     pub lingering: Vec<Lingering>,
     /// Face-up monsters whose current Type is not their printed one (DNA
     /// Surgery, D. Tribe), with that Type.
@@ -289,6 +292,18 @@ impl Game {
                 negated: l.negated,
             })
             .collect();
+        let resolving = self.pending_choice.as_ref().map(|pc| ChainView {
+            instance: pc.link.card,
+            card: self
+                .shared
+                .pool
+                .get(self.instances[pc.link.card.index()].card)
+                .id,
+            controller: pc.link.controller,
+            effect: pc.link.effect,
+            targets: pc.link.targets.clone(),
+            negated: pc.link.negated,
+        });
         let (revealed, question) = match &self.pending_choice {
             Some(pc) if pc.decider() == viewer => (
                 pc.card_options()
@@ -322,6 +337,7 @@ impl Game {
             pending_summon: self.pending_summon(),
             revealed,
             question,
+            resolving,
             lingering: self.lingering.clone(),
             types: self.changed_types(),
             attack: self.current_attack(),

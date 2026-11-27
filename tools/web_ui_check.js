@@ -34,11 +34,11 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
     });
   }
   const kinds = {};
-  let total = 0;
+  let total = 0, choices = 0;
   for (let g = 0; g < games; g++) {
     await page.goto(url);
     // Moves show at once (tools/web_fx_check.js covers the animations).
-    await page.evaluate(() => { window.localStorage.clear(); localStorage.setItem("duel-table-av", JSON.stringify({ motion: false, music: false, sfx: false })); });
+    await page.evaluate(() => { window.localStorage.clear(); localStorage.setItem("duel-table-av", JSON.stringify({ motion: false, music: false, sfx: false, auto: false })); });
     await page.reload();
     await page.waitForSelector('#bot', { timeout: 30000 });
     await page.selectOption('#bot', 'network');
@@ -55,6 +55,13 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
     for (let step = 0; step < 400; step++) {
       const v = await page.evaluate(() => ({ actions: state.view.actions, over: state.view.result !== null }));
       if (v.over || !v.actions.length) break;
+      // A choice an effect asks names that effect's card on the screen.
+      const named = await page.evaluate(() => {
+        const c = state.view.choice;
+        return !c || [...document.querySelectorAll('.choicehead .cwho')].some((e) => e.textContent.includes(c.name));
+      });
+      if (!named) throw new Error('a choice does not name its effect: ' + JSON.stringify(await page.evaluate(() => state.view.choice)));
+      if (await page.evaluate(() => state.view.choice !== null)) choices++;
       const a = v.actions[rand(v.actions.length)];
       kinds[a.kind] = (kinds[a.kind] || 0) + 1;
       const before = await page.evaluate(() => window.__played.length);
@@ -102,7 +109,7 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
   }
   await page.evaluate(() => { const c = document.querySelector('.card.can'); if (c) c.click(); });
   await page.screenshot({ path: process.argv[3] || 'shot.png' });
-  console.log('moves made through the page:', total, JSON.stringify(kinds));
+  console.log('moves made through the page:', total, JSON.stringify(kinds), 'effect choices named:', choices);
   if (process.env.IMAGE_DIR) console.log('online images served:', imagesServed);
   console.log('errors', JSON.stringify(errors));
   await browser.close();

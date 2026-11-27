@@ -1,6 +1,7 @@
-// Plays duels in the browser game with animations, effects and music on,
-// and checks: every common cue is animated and sounded, the music runs, a
-// tap skips the animations, the Animations switch turns them off, an
+// Plays duels in the browser game with animations, effects, music and
+// Auto-advance on, and checks: every common cue is animated and sounded,
+// the music runs, the duel never waits on a decision that offers only phase
+// changes, a tap skips the animations, the Animations switch turns them off, an
 // owner's sound file (if the build has audio/summon.*) is loaded in place
 // of the built-in sound, and the page logs no errors. Screenshots of an
 // attack and a banner go to the screenshot directory.
@@ -31,7 +32,8 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
       ? route.fulfill({ status: 200, contentType: 'image/jpeg', body: fs.readFileSync(file) })
       : route.fulfill({ status: 404 });
   });
-  const idle = () => page.waitForFunction(() => !state.busy, null, { timeout: 60000 });
+  const idle = () => page.waitForFunction(() => !state.busy && !state.autoTimer, null, { timeout: 60000 });
+  let waitedOnPhase = 0, decisions = 0;
   const shots = { attack: false, banner: false };
   let biggest = 0, moves = 0;
 
@@ -53,8 +55,11 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
     const rand = (n) => { rng = (rng * 1103515245 + 12345) % 2147483648; return rng % n; };
     for (let step = 0; step < 250; step++) {
       await idle();
-      const v = await page.evaluate(() => ({ n: state.view.actions.length, over: state.view.result !== null, kinds: state.view.actions.map((a) => a.kind) }));
+      const v = await page.evaluate(() => ({ n: state.view.actions.length, over: state.view.result !== null, kinds: state.view.actions.map((a) => a.kind),
+        phaseOnly: state.view.actions.length > 0 && state.view.actions.every((a) => a.card === null && PHASE_MOVES.includes(a.kind)) }));
       if (v.over || !v.n) break;
+      decisions++;
+      if (v.phaseOnly) waitedOnPhase++;
       // Prefer moves that make something happen, so the duel moves on.
       const lively = v.kinds.map((k, i) => [k, i]).filter(([k]) => ['summon', 'attack', 'activate', 'battle', 'set'].includes(k));
       const i = lively.length && rand(3) ? lively[rand(lively.length)][1] : rand(v.n);
@@ -83,6 +88,8 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
   for (const k of ['turn', 'draw', 'summon', 'set', 'activate', 'attack', 'damage', 'destroy']) assert(r.fx.includes(k), `no ${k} animation`);
   for (const k of ['turn', 'draw', 'summon', 'set', 'activate', 'attack', 'hit', 'damage', 'destroy']) assert(r.sounds.includes(k), `no ${k} sound`);
   assert(r.ctx === 'running', `audio is ${r.ctx}`);
+  assert(waitedOnPhase === 0, `Auto-advance: ${waitedOnPhase} of ${decisions} decisions offered only phase changes`);
+  console.log(`decisions left to the player: ${decisions}, none with only phase changes`);
   assert(r.music, 'the music is not playing');
   if (r.files.includes('summon')) {
     await page.waitForFunction(() => 'summon' in Sound.buffers, null, { timeout: 5000 });
@@ -106,7 +113,7 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
   await page.click('[data-av="motion"]');
   assert(await page.evaluate(() => av.motion === false && JSON.parse(localStorage.getItem('duel-table-av')).motion === false), 'Animations off is remembered');
   const instant = await page.evaluate(() => {
-    const a = state.view.actions.find((x) => x.kind === 'end_turn') ?? state.view.actions[0];
+    const a = state.view.actions.find((x) => x.card !== null) ?? state.view.actions[0];
     play(a.index);
     return !state.busy;
   });

@@ -4,8 +4,8 @@
 use serde::Serialize;
 use ygo_data::CardKind;
 use ygo_engine::{
-    Action, BattleStep, CardPool, DecisionKind, Event, InstanceId, Observation, Phase, PlayerId,
-    Position, Side, SpellTrapType, VisibleCard,
+    Action, BattleStep, CardPool, DecisionKind, Event, InstanceId, Location, Observation, Phase,
+    PlayerId, Position, Side, SpellTrapType, VisibleCard,
 };
 use ygo_play::describe;
 use ygo_play::session::PlaySession;
@@ -26,6 +26,11 @@ pub struct View {
     chain: Vec<ChainView>,
     /// The attack being made, if any: who attacks whom (no target: direct).
     attack: Option<AttackView>,
+    /// The effect waiting for a choice (a card to pick, a question), when
+    /// the human is the one choosing.
+    choice: Option<ChoiceView>,
+    /// The human orders their triggered effects (or declines them).
+    triggers: bool,
     actions: Vec<ActionView>,
     /// The latest lines, oldest first, and how many there are in all.
     log: Vec<String>,
@@ -74,6 +79,24 @@ struct ChainView {
     /// The card that started the link (activations are public).
     instance: u8,
     id: u32,
+}
+
+#[derive(Serialize)]
+struct ChoiceView {
+    /// The card whose effect asks (it is resolving, so it is public).
+    instance: u8,
+    id: u32,
+    name: String,
+    /// Its text, to read what the choice is for.
+    text: Option<String>,
+    /// Whether it is the human's own effect (no: the opponent's effect
+    /// asks the human, as Painful Choice does).
+    yours: bool,
+    /// The names of its targets, as the human sees them.
+    targets: Vec<String>,
+    /// Where the cards to pick are: "your Deck", "your opponent's hand",
+    /// "the field"; `None` for a question or a mixed set.
+    from: Option<&'static str>,
 }
 
 #[derive(Serialize)]
@@ -361,6 +384,59 @@ fn prompt(obs: &Observation) -> Option<&'static str> {
 
 /// The screen now; `with_log: false` leaves the log lines out (an
 /// animation step: the page takes them from the final view).
+/// Where the cards a choice offers are, said from the human's side: the
+/// decider knows where they choose from (the card text says so), even for
+/// cards revealed only to them.
+fn choice_from(session: &PlaySession, obs: &Observation) -> Option<&'static str> {
+    let g = session.game();
+    let mut places = session.actions().iter().filter_map(|a| match a {
+        Action::Choose { card } => {
+            let inst = g.instance(*card);
+            let mine = inst.owner == obs.viewer;
+            Some(match inst.location {
+                Location::Deck if mine => "your Deck",
+                Location::Deck => "your opponent's Deck",
+                Location::Hand if mine => "your hand",
+                Location::Hand => "your opponent's hand",
+                Location::Graveyard if mine => "your Graveyard",
+                Location::Graveyard => "your opponent's Graveyard",
+                Location::Banished => "the banished cards",
+                Location::Extra if mine => "your Extra Deck",
+                Location::Extra => "your opponent's Extra Deck",
+                Location::MonsterZone(_) | Location::SpellTrapZone(_) | Location::FieldZone => {
+                    "the field"
+                }
+                Location::Gone => return None,
+            })
+        }
+        _ => None,
+    });
+    let first = places.next()?;
+    places.all(|p| p == first).then_some(first)
+}
+
+fn choice(session: &PlaySession, obs: &Observation) -> Option<ChoiceView> {
+    let decision = obs.decision.filter(|d| d.player == obs.viewer)?;
+    if decision.kind != DecisionKind::Choose {
+        return None;
+    }
+    let link = obs.resolving.as_ref()?;
+    let pool = &session.game().shared().pool;
+    let name_of = |i: InstanceId| match obs.find(i).map(|f| f.card) {
+        Some(VisibleCard::Known { card, .. }) => describe::card_name(pool, *card).to_string(),
+        _ => "a face-down card".to_string(),
+    };
+    Some(ChoiceView {
+        instance: link.instance.0,
+        id: link.card.0,
+        name: describe::card_name(pool, link.card).to_string(),
+        text: session.card_text(link.instance),
+        yours: link.controller == obs.viewer,
+        targets: link.targets.iter().map(|&t| name_of(t)).collect(),
+        from: choice_from(session, obs),
+    })
+}
+
 pub fn build(session: &PlaySession, with_log: bool) -> View {
     let obs = session.observation();
     let pool = &session.game().shared().pool;
@@ -421,6 +497,10 @@ pub fn build(session: &PlaySession, with_log: bool) -> View {
                 .flatten()
                 .any(|c| c.instance() == a),
         }),
+        choice: choice(session, &obs),
+        triggers: obs
+            .decision
+            .is_some_and(|d| d.player == obs.viewer && d.kind == DecisionKind::Triggers),
         actions,
         log: if with_log {
             log[log.len().saturating_sub(LOG_LINES)..].to_vec()
