@@ -23,6 +23,8 @@ pub struct View {
     opponent: SideView,
     hand: Vec<CardView>,
     chain: Vec<ChainView>,
+    /// The attack being made, if any: who attacks whom (no target: direct).
+    attack: Option<AttackView>,
     actions: Vec<ActionView>,
     /// The latest lines, oldest first, and how many there are in all.
     log: Vec<String>,
@@ -67,6 +69,16 @@ struct CardView {
 #[derive(Serialize)]
 struct ChainView {
     name: String,
+    yours: bool,
+    /// The card that started the link (activations are public).
+    instance: u8,
+    id: u32,
+}
+
+#[derive(Serialize)]
+struct AttackView {
+    attacker: u8,
+    target: Option<u8>,
     yours: bool,
 }
 
@@ -265,8 +277,21 @@ pub fn build(session: &PlaySession) -> View {
             .map(|l| ChainView {
                 name: describe::card_name(pool, l.card).to_string(),
                 yours: l.controller == obs.viewer,
+                instance: l.instance.0,
+                id: l.card.0,
             })
             .collect(),
+        attack: obs.attack.map(|(a, t)| AttackView {
+            attacker: a.0,
+            target: t.map(|t| t.0),
+            // Your attack: the attacker is in your Monster Zones.
+            yours: obs
+                .me()
+                .monster_zones
+                .iter()
+                .flatten()
+                .any(|c| c.instance() == a),
+        }),
         actions,
         log: log[log.len().saturating_sub(LOG_LINES)..].to_vec(),
         log_total: log.len(),

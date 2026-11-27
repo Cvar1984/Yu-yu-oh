@@ -1,3 +1,6 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Yu-yu-oh Duel Table</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -119,8 +122,25 @@ button.pile:hover, button.pile[aria-expanded="true"] { border-color: var(--accen
 .card.k-fusion { border-top-color: var(--f-fusion); } .card.k-ritual { border-top-color: var(--f-ritual); }
 .card.k-spell { border-top-color: var(--f-spell); } .card.k-trap { border-top-color: var(--f-trap); }
 .card.pos-defense { background: color-mix(in srgb, var(--zone) 55%, var(--table)); }
-.card.back { background: repeating-linear-gradient(135deg, var(--back) 0 6px, var(--back-2) 6px 12px); border-top-color: var(--back-2); color: #f2f5f9; }
-.card.back .cname, .card.back .cstats { color: #f2f5f9; }
+/* The card sleeve: every face-down card on the field, either player's. */
+.card.sleeve { position: relative; padding: 0; overflow: hidden; border: 2px solid #1d2a44; border-radius: 6px; aspect-ratio: 59 / 86; height: auto; display: block;
+  background: radial-gradient(circle at 50% 50%, #3c5a96 0 14%, transparent 15%), radial-gradient(circle at 50% 50%, transparent 0 22%, #c8a04a 23% 25%, transparent 26%),
+  repeating-linear-gradient(45deg, #23365e 0 5px, #1b2b4d 5px 10px); }
+.card.sleeve .sleeve-face { position: absolute; inset: 5px; border: 1px solid #c8a04a; border-radius: 3px; }
+.card.sleeve.onfield.monster.pos-set { transform: rotate(90deg) scale(0.69); }
+.card.sleeve .tag { position: absolute; left: 3px; right: 3px; top: 3px; background: rgb(10 14 20 / 0.78); color: #fff; font-size: 9px; font-weight: 600; padding: 1px 3px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* What is happening: the attacker, its target, a card just activated. */
+.card .mark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 6px; border-radius: 999px; color: #fff; white-space: nowrap; z-index: 2; }
+.card .mark.atk { background: var(--them); } .card .mark.hit { background: #c77d16; } .card .mark.chain { background: #7c4fae; top: 22%; }
+.card { position: relative; }
+.card.attacking { box-shadow: 0 0 0 3px var(--them), 0 0 16px 4px color-mix(in srgb, var(--them) 60%, transparent); }
+.card.attacked { box-shadow: 0 0 0 3px #c77d16, 0 0 16px 4px color-mix(in srgb, #c77d16 60%, transparent); }
+.card.onchain { box-shadow: 0 0 0 3px #7c4fae, 0 0 16px 4px color-mix(in srgb, #7c4fae 60%, transparent); }
+.recent { border: 1px solid var(--line); border-left: 4px solid var(--them); border-radius: 8px; padding: 6px 10px; background: color-mix(in srgb, var(--them) 6%, var(--table)); font-size: 13px; }
+.recent ol { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 2px; }
+.chain .link { display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; padding: 3px 8px 3px 3px; border: 1px solid var(--line); background: var(--zone); font-size: 12px; line-height: 1.2; }
+.chain .link img { width: 26px; aspect-ratio: 59 / 86; object-fit: cover; border-radius: 3px; }
+.chain .link.you { border-color: var(--you); } .chain .link.them { border-color: var(--them); }
 /* A card with moves glows; a card a move can aim at glows red. */
 .card.can, .pile.can { box-shadow: 0 0 0 2px var(--accent), 0 0 12px 2px color-mix(in srgb, var(--accent) 55%, transparent); }
 .card.target, .pile.target { box-shadow: 0 0 0 3px var(--them), 0 0 14px 3px color-mix(in srgb, var(--them) 55%, transparent); }
@@ -142,7 +162,7 @@ button.pile:hover, button.pile[aria-expanded="true"] { border-color: var(--accen
 .chip.you { border-color: var(--you); } .chip.them { border-color: var(--them); }
 .hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 74px)); justify-content: center; gap: 6px; }
 .opp-hand { display: flex; gap: 4px; flex-wrap: wrap; }
-.opp-hand span { width: 16px; height: 22px; border-radius: 3px; background: repeating-linear-gradient(135deg, var(--back) 0 4px, var(--back-2) 4px 8px); }
+.opp-hand span { width: 16px; height: 22px; border-radius: 3px; border: 1px solid #1d2a44; background: radial-gradient(circle at 50% 50%, #c8a04a 0 18%, transparent 20%), repeating-linear-gradient(45deg, #23365e 0 3px, #1b2b4d 3px 6px); }
 
 /* Right column */
 .panel { background: var(--table); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
@@ -544,20 +564,34 @@ function cardHtml(c, opts = {}) {
   const can = movesOf(c.instance).length > 0 && !state.aim;
   const sel = state.selected === c.instance;
   const target = aimTargets().includes(c.instance);
-  const img = c.name ? imageFor(c, "small") : null;
-  const cls = ["card", c.name ? "k-" + c.kind : "back", "pos-" + c.position, img ? "has-img" : "", opts.hand ? "" : "onfield",
-    can ? "can" : "", sel ? "sel" : "", target ? "target" : ""].join(" ");
+  // Face-down on the field: the card sleeve, for both players (your own
+  // Set cards keep a small name tag, since you know them).
+  const faceDown = !opts.hand && (c.position === "set" || !c.name);
+  const img = c.name && !faceDown ? imageFor(c, "small") : null;
+  const atk = state.view.attack;
+  const attacking = atk?.attacker === c.instance, attacked = atk?.target === c.instance;
+  const onChain = state.view.chain.some((l) => l.instance === c.instance);
+  const cls = ["card", faceDown ? "sleeve" : "k-" + c.kind, "pos-" + c.position, img ? "has-img" : "", opts.hand ? "" : "onfield",
+    opts.monster ? "monster" : "", can ? "can" : "", sel ? "sel" : "", target ? "target" : "",
+    attacking ? "attacking" : "", attacked ? "attacked" : "", onChain ? "onchain" : ""].join(" ");
   const name = c.name ?? (opts.monster ? "Face-down monster" : "Set card");
   const pos = opts.hand ? "" : c.position === "attack" ? "ATK" : c.position === "defense" ? "DEF" : c.position === "set" ? "SET" : "";
   const stats = c.atk !== null && c.atk !== undefined ? `${c.atk} / ${c.def}` : (c.detail ?? "");
-  const label = `${name}${stats ? ", " + stats : ""}${pos ? ", " + pos : ""}${can ? ", has moves" : ""}${target ? ", a target" : ""}`;
+  const label = `${name}${stats ? ", " + stats : ""}${pos ? ", " + pos : ""}${can ? ", has moves" : ""}${target ? ", a target" : ""}${attacking ? ", attacking" : ""}${attacked ? ", being attacked" : ""}${onChain ? ", activated" : ""}`;
+  const marks = (attacking ? `<span class="mark atk">Attacking</span>` : "") + (attacked ? `<span class="mark hit">Attacked</span>` : "")
+    + (onChain ? `<span class="mark chain">Activated</span>` : "");
+  if (faceDown) {
+    return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" aria-label="${esc(label)}" title="${esc(name)}">
+      <span class="sleeve-face" aria-hidden="true"></span>${marks}
+      ${c.name ? `<span class="tag">${esc(c.name)}</span>` : ""}<span class="badge pos">SET</span></button>`;
+  }
   if (img) {
     return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" aria-label="${esc(label)}" title="${esc(name)}">
       <img src="${img}" data-key="${esc(imgKey(img))}" alt="" loading="lazy" draggable="false" referrerpolicy="no-referrer">
       ${c.atk !== null && c.atk !== undefined ? `<span class="badge">${esc(stats)}</span>` : ""}
-      ${pos && pos !== "ATK" ? `<span class="badge pos">${pos}</span>` : ""}</button>`;
+      ${pos && pos !== "ATK" ? `<span class="badge pos">${pos}</span>` : ""}${marks}</button>`;
   }
-  return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" aria-label="${esc(label)}" title="${esc(name)}">
+  return `<button class="${cls}" data-inst="${c.instance}" aria-pressed="${sel}" aria-label="${esc(label)}" title="${esc(name)}">${marks}
     <span class="cname">${esc(name)}</span>
     <span class="cstats"><span>${esc(stats)}</span><span class="cpos">${pos}</span></span></button>`;
 }
@@ -680,7 +714,10 @@ const BAR_LABEL = { pass: "Pass", end_turn: "End turn", battle: "Battle", end_ba
 function renderGame() {
   const v = state.view;
   const chain = v.chain.length
-    ? v.chain.map((l, i) => `<span class="chip ${l.yours ? "you" : "them"}">${i + 1}. ${esc(l.name)}</span>`).join("")
+    ? `<span class="label">Chain</span>` + v.chain.map((l, i) => {
+        const img = imageFor({ id: l.id }, "small");
+        return `<span class="link ${l.yours ? "you" : "them"}" title="${esc(l.name)}">${img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" referrerpolicy="no-referrer">` : ""}<span>${i + 1}. ${esc(l.name)}<br><span class="sub">${l.yours ? "yours" : "opponent's"}</span></span></span>`;
+      }).join("")
     : `<span class="sub">No chain</span>`;
   const firstLog = v.log_total - v.log.length;
   const log = v.log.map((line, i) => {
@@ -704,16 +741,34 @@ function renderGame() {
   }
 
   const over = v.result !== null;
+  // What your opponent did since your last move, from the log.
+  const fresh = state.seenLog > 0 ? v.log.slice(Math.max(0, state.seenLog - firstLog)) : [];
+  const recent = [];
+  for (const line of fresh) {
+    if (line.startsWith("Opponent:")) recent.push({ move: line.slice(9).trim(), fx: [] });
+    else if (line.startsWith("  ") && recent.length) recent[recent.length - 1].fx.push(line.trim());
+  }
+  const recentHtml = recent.length ? `<section class="recent" aria-label="Your opponent's moves">
+      <span class="label">Your opponent</span>
+      <ol>${recent.slice(-6).map((r) => `<li><b>${esc(r.move)}</b>${r.fx.length ? `<span class="sub"> — ${esc(r.fx.slice(0, 3).join("; "))}${r.fx.length > 3 ? "…" : ""}</span>` : ""}</li>`).join("")}</ol></section>` : "";
+  const nameOf = (inst) => cardInfo(inst)?.name ?? locate(inst)?.label ?? "a card";
+  let ask = v.prompt ?? "Waiting for your opponent";
+  if (v.prompt && v.prompt.startsWith("Respond")) {
+    const last = v.chain[v.chain.length - 1];
+    if (last && !last.yours) ask = `Your opponent activated ${last.name}: respond, or pass`;
+    else if (v.attack && !v.attack.yours) ask = `Your opponent's ${nameOf(v.attack.attacker)} attacks ${v.attack.target !== null ? "your " + nameOf(v.attack.target) : "you directly"}: respond, or pass`;
+  }
   const aimName = state.aim ? (cardInfo(state.aim.moves[0].card)?.name ?? "the card") : "";
   const say = over ? `<span class="result">${esc(v.result)}</span>`
     : state.aim ? `<span class="prompt">Choose a target for ${esc(aimName)}</span>`
-    : `<span class="prompt">${esc(v.prompt ?? "Waiting for your opponent")}</span>`;
+    : `<span class="prompt">${esc(ask)}</span>`;
   const bar = over ? "" : barMoves().map((a) => `<button class="btn${a.kind === "battle" ? " primary" : ""}" data-move="${a.index}">${BAR_LABEL[a.kind] ?? esc(a.text)}</button>`).join("")
     + (state.aim ? `<button class="btn" id="cancel-aim">Cancel</button>` : "");
 
   main.innerHTML = `<div class="game">
     <div class="table">
       <div class="status"><span class="turn">Turn ${v.turn}</span><span>${v.your_turn ? "Your turn" : "Opponent's turn"}</span><span class="sub">${esc(v.phase)}</span><span class="sub">vs ${esc(botName(state.game.bot))}</span></div>
+      ${recentHtml}
       ${sideHtml(v.opponent, "Opponent", false)}
       <div class="mid"><div class="chain" aria-label="Chain">${chain}</div></div>
       ${sideHtml(v.you, "You", true)}
