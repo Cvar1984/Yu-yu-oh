@@ -158,7 +158,11 @@ fn ask_zone(
     if options.is_empty() {
         return Flow::Done;
     }
-    Flow::Ask { options, then }
+    Flow::Ask {
+        options,
+        about: None,
+        then,
+    }
 }
 
 /// The `ZONE_LABELS` index of option `option` among the choosable zones.
@@ -321,6 +325,7 @@ pub fn register(r: &mut Registry) {
                     then: |_g, ctx, insect| {
                         ctx.targets = vec![insect];
                         Flow::Ask {
+                            about: Some(insect),
                             options: FACE_UP.to_vec(),
                             then: |g, ctx, option| {
                                 g.special_summon(ctx.targets[0], ctx.controller, face_up(option));
@@ -518,6 +523,7 @@ pub fn register(r: &mut Registry) {
                         )
                     }),
                     ..Effect::activate(1, |_g, _ctx| Flow::Ask {
+                        about: None,
                         options: vec!["Gain 700 ATK", "Gain 700 DEF"],
                         then: |g, ctx, option| {
                             seven_completed_equip(g, ctx, if option == 0 { 1 } else { 2 })

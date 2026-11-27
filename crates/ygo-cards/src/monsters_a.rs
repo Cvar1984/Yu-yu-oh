@@ -142,6 +142,7 @@ fn copies_loop(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
         .find(|&c| g.stats(c).id == id);
     match next {
         Some(_) if g.can_special_summon(ctx.controller) => Flow::Ask {
+            about: None,
             options: vec!["Special Summon a copy from the Deck", "Stop"],
             then: |g, ctx, option| {
                 if option != 0 {

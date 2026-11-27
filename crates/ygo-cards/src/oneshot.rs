@@ -202,6 +202,7 @@ fn coffin_pick(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
         return pick;
     }
     Flow::Ask {
+        about: None,
         options: vec!["Discard another", "Done"],
         then: |g, ctx, option| {
             if option == 0 {
@@ -266,6 +267,7 @@ fn banish_loop(
                 return banish_loop(g, ctx, max, from);
             }
             Flow::Ask {
+                about: None,
                 options: vec!["Banish another", "Done"],
                 then: |g, ctx, option| {
                     let max = if g.stats(ctx.source).id == SOUL_RELEASE {

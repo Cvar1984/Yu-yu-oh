@@ -458,9 +458,15 @@ fn ids_match_the_observation(v: &Value, obs: &ygo_engine::Observation) {
     match v {
         Value::Object(m) => {
             if let Some(inst) = m.get("instance").and_then(Value::as_u64) {
-                let seen = obs
-                    .find(ygo_engine::InstanceId(inst as u8))
-                    .and_then(|f| f.card.card());
+                let i = ygo_engine::InstanceId(inst as u8);
+                // A question's card is shown to the one answering (a
+                // Cyber Jar pick still in the Deck).
+                let seen = obs.find(i).and_then(|f| f.card.card()).or_else(|| {
+                    obs.asked_about
+                        .as_ref()
+                        .filter(|c| c.instance() == i)
+                        .and_then(|c| c.card())
+                });
                 let id = m.get("id").and_then(Value::as_u64);
                 assert_eq!(id, seen.map(|c| u64::from(c.0)), "instance {inst}: {v}");
             }

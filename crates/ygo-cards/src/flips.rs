@@ -125,6 +125,7 @@ fn cyber_jar_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
                 then: |g, ctx, picked| {
                     ctx.cost = vec![picked];
                     Flow::AskBy {
+                        about: Some(picked),
                         chooser: g.instance(picked).owner,
                         options: vec!["Face-up Attack Position", "Face-down Defense Position"],
                         then: |g, ctx, option| {
@@ -166,6 +167,7 @@ fn cretin_step(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
             if g.instance(c).location == Location::Graveyard && g.can_special_summon(owner) {
                 ctx.cost.push(c);
                 return Flow::AskBy {
+                    about: Some(c),
                     chooser: owner,
                     options: positions::ATTACK_OR_SET.to_vec(),
                     then: |g, ctx, option| {

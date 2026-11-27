@@ -34,7 +34,7 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
     });
   }
   const kinds = {};
-  let total = 0, choices = 0;
+  let total = 0, choices = 0, sheets = 0, cancels = 0;
   for (let g = 0; g < games; g++) {
     await page.goto(url);
     // Moves show at once (tools/web_fx_check.js covers the animations).
@@ -65,7 +65,7 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
       const a = v.actions[rand(v.actions.length)];
       kinds[a.kind] = (kinds[a.kind] || 0) + 1;
       const before = await page.evaluate(() => window.__played.length);
-      const did = await page.evaluate(async (a) => {
+      const tapMove = (a) => page.evaluate(async (a) => {
         const click = (sel) => { const el = document.querySelector(sel); if (!el) return false; el.click(); return true; };
         const showCard = (inst) => {
           // Open the pile that holds it, if it is in a Graveyard.
@@ -98,6 +98,32 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
         if (click(`#menu [data-move="${a.index}"]`)) return 'variant';
         return 'aimed';
       }, a);
+      let did = await tapMove(a);
+      // Cancel works: the first activations are cancelled on their sheet
+      // (nothing is played, the sheet closes), then made again.
+      if (a.kind === 'activate' && cancels < 5) {
+        const back = await page.evaluate(() => {
+          const c = document.getElementById('cancel-confirm');
+          if (!c) return 'no Cancel';
+          c.click();
+          return document.querySelector('[data-confirm]') ? 'sheet still open' : 'ok';
+        });
+        if (back !== 'ok') throw new Error(`Cancel on the sheet (${a.text}): ${back}`);
+        if ((await page.evaluate(() => window.__played.length)) !== before) throw new Error('Cancel played a move');
+        cancels++;
+        did = await tapMove(a);
+      }
+      // An activation waits on its Activate / Cancel sheet: it must show
+      // this move, then be confirmed.
+      const confirmed = await page.evaluate((i) => {
+        const c = document.querySelector('[data-confirm]');
+        if (!c) return null;
+        if (Number(c.dataset.confirm) !== i) return 'wrong move on the sheet';
+        c.click();
+        return 'confirmed';
+      }, a.index);
+      if (a.kind === 'activate' && confirmed !== 'confirmed') throw new Error(`activation without its confirm sheet (${a.text}): ${confirmed}`);
+      if (confirmed) sheets++;
       const after = await page.evaluate(() => window.__played);
       if (after.length !== before + 1 || after[after.length - 1] !== a.index) {
         throw new Error(`move ${a.index} (${a.kind}: ${a.text}) not played via the page: ${did}; played ${JSON.stringify(after.slice(before))}`);
@@ -109,7 +135,7 @@ const url = process.argv[4] || 'http://127.0.0.1:8765/';
   }
   await page.evaluate(() => { const c = document.querySelector('.card.can'); if (c) c.click(); });
   await page.screenshot({ path: process.argv[3] || 'shot.png' });
-  console.log('moves made through the page:', total, JSON.stringify(kinds), 'effect choices named:', choices);
+  console.log('moves made through the page:', total, JSON.stringify(kinds), 'effect choices named:', choices, 'activations confirmed on their sheet:', sheets, 'cancelled first:', cancels);
   if (process.env.IMAGE_DIR) console.log('online images served:', imagesServed);
   console.log('errors', JSON.stringify(errors));
   await browser.close();

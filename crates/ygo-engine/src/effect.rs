@@ -299,15 +299,19 @@ pub enum Flow {
         then: fn(&mut Game, &mut EffectCtx, InstanceId) -> Flow,
     },
     /// The controller answers a question with one of the labelled
-    /// options; the engine then calls `then` with the index.
+    /// options; the engine then calls `then` with the index. `about` is
+    /// the card the question is about, if any (the monster a position
+    /// question places), shown to the one answering.
     Ask {
         options: Vec<&'static str>,
+        about: Option<InstanceId>,
         then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
     },
     /// Like `Ask`, but `chooser` answers.
     AskBy {
         chooser: PlayerId,
         options: Vec<&'static str>,
+        about: Option<InstanceId>,
         then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
     },
 }

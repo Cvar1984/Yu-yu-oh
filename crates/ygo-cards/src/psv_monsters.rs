@@ -391,7 +391,8 @@ pub fn register(r: &mut Registry) {
                         .filter(|&c| g.special_summonable(c)),
                 )
             }),
-            ..Effect::trigger(false, |_g, _ctx| Flow::Ask {
+            ..Effect::trigger(false, |_g, ctx| Flow::Ask {
+                about: ctx.targets.first().copied(),
                 options: FACE_UP.to_vec(),
                 then: vampire_baby_summon,
             })
@@ -461,6 +462,7 @@ pub fn register(r: &mut Registry) {
                 return Flow::Done;
             }
             Flow::Ask {
+                about: None,
                 options: vec!["Special Summon a Bubonic Vermin from your Deck", "Do not"],
                 then: |g, ctx, option| {
                     if option == 0

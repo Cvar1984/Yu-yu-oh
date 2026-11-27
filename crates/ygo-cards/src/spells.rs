@@ -127,6 +127,7 @@ pub fn register(r: &mut Registry) {
                     return Flow::Done;
                 }
                 Flow::Ask {
+                    about: Some(target),
                     options: positions::FACE_UP.to_vec(),
                     then: |g, ctx, option| {
                         let target = ctx.targets[0];

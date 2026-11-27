@@ -56,7 +56,7 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
     for (let step = 0; step < 250; step++) {
       await idle();
       const v = await page.evaluate(() => ({ n: state.view.actions.length, over: state.view.result !== null, kinds: state.view.actions.map((a) => a.kind),
-        phaseOnly: state.view.actions.length > 0 && state.view.actions.every((a) => a.card === null && PHASE_MOVES.includes(a.kind)) }));
+        phaseOnly: state.view.quiet || (state.view.actions.length > 0 && state.view.actions.every((a) => a.card === null && PHASE_MOVES.includes(a.kind))) }));
       if (v.over || !v.n) break;
       decisions++;
       if (v.phaseOnly) waitedOnPhase++;
@@ -88,8 +88,8 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
   for (const k of ['turn', 'draw', 'summon', 'set', 'activate', 'attack', 'damage', 'destroy']) assert(r.fx.includes(k), `no ${k} animation`);
   for (const k of ['turn', 'draw', 'summon', 'set', 'activate', 'attack', 'hit', 'damage', 'destroy']) assert(r.sounds.includes(k), `no ${k} sound`);
   assert(r.ctx === 'running', `audio is ${r.ctx}`);
-  assert(waitedOnPhase === 0, `Auto-advance: ${waitedOnPhase} of ${decisions} decisions offered only phase changes`);
-  console.log(`decisions left to the player: ${decisions}, none with only phase changes`);
+  assert(waitedOnPhase === 0, `Auto-advance: ${waitedOnPhase} of ${decisions} decisions offered only phase changes or a quiet phase step`);
+  console.log(`decisions left to the player: ${decisions}, none with only phase changes or a quiet phase step`);
   assert(r.music, 'the music is not playing');
   if (r.files.includes('summon')) {
     await page.waitForFunction(() => 'summon' in Sound.buffers, null, { timeout: 5000 });

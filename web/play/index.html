@@ -210,6 +210,39 @@ footer { color: var(--muted); font-size: 12px; }
 
 
 
+
+/* Moves as cards */
+.mini { display: inline-grid; place-items: center; width: 42px; aspect-ratio: 59 / 86; border-radius: 4px; overflow: hidden; background: var(--zone); border-top: 3px solid var(--f-normal); flex: none; position: relative; }
+.mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mini .mname { font-size: 8px; line-height: 1.1; padding: 2px; text-align: center; overflow: hidden; }
+.mini.k-effect { border-top-color: var(--f-effect); } .mini.k-fusion { border-top-color: var(--f-fusion); } .mini.k-ritual { border-top-color: var(--f-ritual); }
+.mini.k-spell { border-top-color: var(--f-spell); } .mini.k-trap { border-top-color: var(--f-trap); }
+.mini.side { transform: rotate(90deg) scale(0.8); }
+.mini.sleeve { background: repeating-linear-gradient(45deg, #1d2a44 0 6px, #24365a 6px 12px); border: 2px solid #1d2a44; }
+.mini.sleeve .sleeve-face { position: absolute; inset: 4px; border: 1px solid #c8a04a; border-radius: 2px; }
+.mini.atk::after { content: "⚔"; position: absolute; right: -2px; bottom: -2px; font-size: 16px; color: #fff; text-shadow: 0 0 4px #b23b4e, 0 0 2px #000; }
+.mini.direct { background: radial-gradient(circle, #ff8fa0, #b23b4e); color: #fff; border: 0; font-family: var(--font-display); }
+.mini.x { background: transparent; border: 1px dashed var(--line); color: var(--muted); font-size: 16px; }
+.menu.tiles-menu { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; max-width: min(360px, calc(100vw - 16px)); }
+.mtile { display: grid; justify-items: center; gap: 4px; width: 78px; padding: 6px 4px !important; border: 1px solid transparent !important; border-radius: 8px; background: transparent; cursor: pointer; font-size: 11px; font-weight: 600; text-align: center !important; line-height: 1.2; }
+.mtile:hover, .mtile:focus-visible { border-color: var(--accent) !important; background: color-mix(in srgb, var(--accent) 12%, transparent) !important; }
+.mtile > span:last-child { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mtile.big { width: 104px; border-color: var(--line) !important; background: var(--bg); font-size: 13px; }
+.mtile.big .mini { width: 64px; }
+.ptiles { display: flex; flex-wrap: wrap; gap: 10px; }
+.menu .mtext { text-align: left; }
+.dialog .dhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dialog .dhead .mini { width: 36px; }
+.dialog.confirm .cfrow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.dialog.confirm .cfcard img, .dialog.confirm .cfcard .mini { width: 120px; border-radius: 6px; display: block; }
+.cfarrow { font-size: 22px; color: var(--accent); }
+.cftargets { display: flex; gap: 10px; flex-wrap: wrap; }
+.cft { display: grid; justify-items: center; gap: 4px; font-size: 12px; font-weight: 600; max-width: 90px; text-align: center; }
+.cft .mini { width: 64px; }
+.tile .tpic { display: grid; place-items: center; aspect-ratio: 1 / 1.2; }
+.tile .tpic .mini { width: 72%; }
+.cfwhat { font-family: var(--font-display); font-size: 17px; }
+
 /* What an effect asks */
 .choicehead { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: start; }
 .choicehead img, .choicehead .cthumb { width: 64px; aspect-ratio: 59 / 86; object-fit: cover; border-radius: 5px; display: block; background: var(--zone); border-top: 4px solid var(--f-effect); }
@@ -385,6 +418,7 @@ const state = {
   view: null,
   selected: null,     // instance id of the card open (its moves and text)
   aim: null,          // { moves, picked }: a move waiting for its targets
+  confirm: null,      // an activation waiting for Activate or Cancel
   variants: null,     // moves with the same targets but other costs
   images: null,       // { small: Set, full: Set, online: {id: [small, full]} }
   badImages: new Set(), // "size:id" of images that failed to load
@@ -523,8 +557,10 @@ const PHASE_MOVES = ["battle", "end_battle", "end_turn"];
 function autoAdvance() {
   const v = state.view;
   if (!av.auto || !v || v.result !== null || !v.actions.length) return;
-  if (!v.actions.every((a) => a.card === null && PHASE_MOVES.includes(a.kind))) return;
-  const next = PHASE_MOVES.map((k) => v.actions.find((a) => a.kind === k)).find(Boolean);
+  // A phase step where nothing happened to answer passes by itself.
+  const pass = v.quiet ? v.actions.find((a) => a.kind === "pass") : null;
+  if (!pass && !v.actions.every((a) => a.card === null && PHASE_MOVES.includes(a.kind))) return;
+  const next = pass ?? PHASE_MOVES.map((k) => v.actions.find((a) => a.kind === k)).find(Boolean);
   // A move the player makes in the pause replaces this one (play clears it).
   state.autoTimer = setTimeout(() => {
     state.autoTimer = null;
@@ -535,6 +571,7 @@ function autoAdvance() {
 function play(index) {
   if (state.busy) return;
   clearTimeout(state.autoTimer); state.autoTimer = null;
+  state.confirm = null;
   state.seenLog = state.view.log_total;
   let answer;
   try {
@@ -586,8 +623,17 @@ function cardOnTable(inst) { return tableCards().some((c) => c.instance === inst
 // A card as the human sees it: on the table, or offered by a move (a Deck
 // search). Hidden cards come without a name or id.
 function cardInfo(inst) {
+  const v = state.view;
   return tableCards().find((c) => c.instance === inst)
-    ?? state.view.actions.find((a) => a.card === inst && a.subject)?.subject ?? null;
+    ?? (v.summon?.card.instance === inst ? v.summon.card : null)
+    ?? v.actions.find((a) => a.card === inst && a.subject)?.subject ?? null;
+}
+// How a card lies: upright, sideways (Defense), or a card back when its
+// face is hidden from you. Your own Set cards show their face.
+function lie(c) {
+  const monster = MONSTER_KINDS.includes(c?.kind) || c?.kind === "hidden";
+  if (!c?.name) return monster ? "set" : "setst";
+  return c.position === "defense" || (c.position === "set" && monster) ? "def" : "up";
 }
 function inPile(side, inst) { return side.graveyard.concat(side.banished).some((c) => c.instance === inst); }
 
@@ -616,13 +662,53 @@ function menuItems(inst) {
     if (!groups.has(key)) { const g = { moves: [] }; groups.set(key, g); items.push(g); }
     groups.get(key).moves.push(a);
   }
+  const count = {};
+  for (const it of items) { const k = (it.move ?? it.moves[0]).kind; count[k] = (count[k] ?? 0) + 1; }
   return items.map((it) => {
-    if (!it.moves) return it;
-    if (it.moves.length === 1) return { label: it.moves[0].text, move: it.moves[0] };
+    if (!it.moves) return { ...it, ...moveLook(it.move, count[it.move.kind] > 1) };
+    // An attack always shows its target(s) first; so does any other move
+    // with a choice of targets.
+    if (it.moves.length === 1 && it.moves[0].kind !== "attack") return { label: it.moves[0].text, move: it.moves[0], ...moveLook(it.moves[0], count[it.moves[0].kind] > 1) };
     const what = it.moves[0].kind === "attack" ? "Attack" : "Activate";
-    return { label: what + ": choose the target", aim: it.moves };
+    return { label: what + ": choose the target", aim: it.moves, ...moveLook(it.moves[0], false) };
   });
 }
+
+// A small card drawn the way a move leaves it: upright, sideways (Defense),
+// face-down (a sleeve), or an attack on the opponent's Life Points.
+const MONSTER_KINDS = ["monster", "effect", "fusion", "ritual"];
+function mini(c, mode = "up") {
+  if (mode === "direct") return `<span class="mini direct" aria-hidden="true"><b>LP</b></span>`;
+  if (mode === "set" || mode === "setst") return `<span class="mini sleeve ${mode === "set" ? "side" : ""}" aria-hidden="true"><span class="sleeve-face"></span></span>`;
+  const img = c?.name ? imageFor(c, "small") : null;
+  const face = img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" draggable="false" referrerpolicy="no-referrer">`
+    : `<span class="mname">${esc(c?.name ?? "?")}</span>`;
+  return `<span class="mini k-${esc(c?.kind ?? "hidden")}${mode === "def" ? " side" : ""}${mode === "attack" ? " atk" : ""}" aria-hidden="true">${face}</span>`;
+}
+// How a move looks: the card's picture and a one-word caption.
+function moveLook(a, many) {
+  const c = a.subject ?? cardInfo(a.card);
+  const monster = MONSTER_KINDS.includes(c?.kind);
+  switch (a.kind) {
+    case "summon": return { mini: mini(c, "up"), cap: many ? a.text : "Summon" };
+    case "set": return { mini: mini(c, monster ? "set" : "setst"), cap: many ? a.text : "Set" };
+    case "flip": return { mini: mini(c, "up"), cap: "Flip" };
+    case "position": return { mini: mini(c, c?.position === "attack" ? "def" : "up"), cap: "Position" };
+    case "attack": return a.targets.length ? { mini: mini(c, "attack"), cap: "Attack" } : { mini: mini(null, "direct"), cap: "Direct attack" };
+    case "discard": return { mini: mini(c, "up"), cap: "Discard" };
+    case "choose": return { mini: mini(c, "up"), cap: "Choose" };
+    default: return { mini: mini(c, "up"), cap: many ? a.text : "Activate" };
+  }
+}
+// Every move goes through here: an activation first shows what it will do
+// (its card and targets) with Activate and Cancel; anything else is played.
+function go(a) {
+  state.aim = null; state.variants = null;
+  if (a.kind === "activate") { state.confirm = a; state.selected = null; renderGame(); return; }
+  state.selected = null; state.cardText = null;
+  play(a.index);
+}
+const moveByIndex = (i) => state.view.actions.find((a) => a.index === i);
 
 function tapCard(inst) {
   if (state.aim && aimTargets().includes(inst)) { pickTarget(inst); return; }
@@ -634,7 +720,7 @@ function pickTarget(inst) {
   state.aim.picked.push(inst);
   const left = aimMoves();
   const done = left.filter((a) => a.targets.length === state.aim.picked.length);
-  if (left.length === 1 && done.length === 1) { const a = done[0]; state.aim = null; state.selected = null; play(a.index); return; }
+  if (left.length === 1 && done.length === 1) { go(done[0]); return; }
   if (done.length && done.length === left.length) {
     // Same targets, other costs: let the menu name them.
     state.aim = null; state.variants = done; renderGame(); return;
@@ -802,20 +888,43 @@ function choiceHead(compact = false) {
 
 function dialogHtml() {
   const tile = (c, attrs, line = null) => {
-    const img = c ? imageFor(c, "small") : null;
-    const name = c?.name ?? "A card you cannot see";
-    return `<button class="tile" ${attrs} title="${esc(line ?? name)}">${img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}<span>${esc(name)}</span>${line ? `<span class="tline">${esc(line)}</span>` : ""}</button>`;
+    const name = c?.name ?? (MONSTER_KINDS.includes(c?.kind) || c?.position === "set" ? "Face-down card" : "A card you cannot see");
+    return `<button class="tile" ${attrs} title="${esc(line ?? name)}" aria-label="${esc(name + (line ? ", " + line : ""))}"><span class="tpic">${mini(c, lie(c))}</span><span>${esc(name)}</span>${line ? `<span class="tline">${esc(line)}</span>` : ""}</button>`;
   };
+  // An activation about to be made: its card and targets; Activate or Cancel.
+  if (state.confirm) {
+    const a = state.confirm, c = a.subject ?? cardInfo(a.card);
+    const img = c?.name ? imageFor(c, "full") : null;
+    const ts = a.targets.map((t) => cardInfo(t) ?? locate(t)?.card);
+    return `<div class="dialog confirm" id="confirm" role="dialog" aria-label="Activate ${esc(c?.name ?? "")}?">
+      <div class="cfrow">
+        <span class="cfcard">${img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" referrerpolicy="no-referrer">` : mini(c)}</span>
+        ${ts.length ? `<span class="cfarrow" aria-hidden="true">➜</span><span class="cftargets">${ts.map((t) => `<span class="cft">${mini(t, lie(t))}<span>${esc(t?.name ?? "Face-down")}</span></span>`).join("")}</span>` : ""}
+      </div>
+      <div class="cfwhat">Activate <b>${esc(c?.name ?? "this card")}</b>${ts.length ? "" : "?"}</div>
+      ${/\b(paying|discarding|tributing|sending|banishing)\b/i.test(a.text) ? `<div class="sub">${esc(a.text)}</div>` : ""}
+      <div class="actions-row"><button class="btn primary" data-confirm="${a.index}">Activate</button><button class="btn" id="cancel-confirm">Cancel</button></div></div>`;
+  }
   const qs = answers();
   if (qs.length) {
+    // A position question shows the card in each position.
+    const about = state.view.choice?.about;
+    const pos = about && qs.every((a) => a.text.includes("Position"));
+    const look = (t) => (t.startsWith("Face-down") ? ["set", "Face-down"] : t.includes("Defense") ? ["def", "Defense"] : ["up", "Attack"]);
     return `<div class="dialog" role="dialog" aria-label="Question">${choiceHead() || `<div class="dhead">${esc(state.view.prompt ?? "Choose an option")}</div>`}
-      <div class="opts">${qs.map((a) => `<button class="btn" data-move="${a.index}">${esc(a.text)}</button>`).join("")}</div></div>`;
+      ${pos ? `<div class="ptiles">${qs.map((a) => { const [m, cap] = look(a.text); return `<button class="mtile big" data-move="${a.index}" title="${esc(a.text)}" aria-label="${esc(about.name + ": " + a.text)}">${mini(about, m)}<span>${cap}</span></button>`; }).join("")}</div>`
+        : `<div class="opts">${qs.map((a) => `<button class="btn" data-move="${a.index}">${esc(a.text)}</button>`).join("")}</div>`}</div>`;
   }
   if (state.aim) {
+    // The targets as cards (and the opponent's Life Points for a direct
+    // attack), with the card that aims at them.
     const ts = aimTargets();
-    if (ts.every(cardOnTable) && ts.every((t) => !inPile(state.view.you, t) && !inPile(state.view.opponent, t))) return "";
-    return `<div class="dialog" role="dialog" aria-label="Choose a target"><div class="dhead">Choose a target</div>
-      <div class="tiles">${ts.map((t) => tile(cardInfo(t) ?? locate(t)?.card, `data-target="${t}"`)).join("")}</div>
+    const src = cardInfo(state.aim.moves[0].card);
+    const attack = state.aim.moves[0].kind === "attack";
+    const direct = attack && !state.aim.picked.length ? movesOf(state.aim.moves[0].card).find((a) => a.kind === "attack" && !a.targets.length) : null;
+    return `<div class="dialog aimbox" role="dialog" aria-label="Choose a target"><div class="dhead">${mini(src, attack ? "attack" : "up")}<span>${attack ? "Attack which monster?" : "Choose a target"}</span></div>
+      <div class="tiles">${ts.map((t) => tile(cardInfo(t) ?? locate(t)?.card, `data-target="${t}"`)).join("")}
+        ${direct ? `<button class="tile" data-move="${direct.index}" title="${esc(direct.text)}">${mini(null, "direct")}<span>Direct attack</span></button>` : ""}</div>
       <div class="actions-row"><button class="btn" id="cancel-aim">Cancel</button></div></div>`;
   }
   // Triggered effects to put on the chain, in order: each with its card
@@ -832,22 +941,45 @@ function dialogHtml() {
     return `<div class="dialog" role="dialog" aria-label="Choose a card">${choiceHead() || `<div class="dhead">${esc(state.view.prompt ?? "Choose a card")}</div>`}
       <div class="tiles">${picks.map((a) => tile(a.subject, `data-move="${a.index}"`)).join("")}</div></div>`;
   }
+  // A chance to respond: what is being answered, and every card that can
+  // answer it, each to activate or not.
+  const v = state.view;
+  if (v.prompt?.startsWith("Respond") && state.selected === null) {
+    const cards = [...new Set(v.actions.filter((a) => a.kind === "activate").map((a) => a.card))];
+    const pass = v.actions.find((a) => a.kind === "pass");
+    if (!cards.length) return "";
+    const last = v.chain[v.chain.length - 1];
+    // The opponent's latest move, if they made one since your last decision.
+    const firstLog = v.log_total - v.log.length;
+    const fresh = state.seenLog > 0 ? v.log.slice(Math.max(0, state.seenLog - firstLog)) : [];
+    const lastMove = [...fresh].reverse().find((l) => l.startsWith("Opponent:"));
+    let what = `<span>${esc(lastMove ? "Your opponent: " + lastMove.slice(9).trim() : "You can activate a card now")}</span>`;
+    if (v.summon && !v.summon.yours) what = `${mini(v.summon.card, lie(v.summon.card))}<span>Your opponent summons <b>${esc(v.summon.card.name ?? "a monster")}</b></span>`;
+    else if (last && !last.yours) what = `${mini({ id: last.id, name: last.name, kind: "effect" })}<span>Your opponent activated <b>${esc(last.name)}</b></span>`;
+    else if (v.attack && !v.attack.yours) {
+      const at = cardInfo(v.attack.attacker), tg = v.attack.target !== null ? cardInfo(v.attack.target) : null;
+      what = `${mini(at, "attack")}<span class="cfarrow" aria-hidden="true">➜</span>${tg ? mini(tg, lie(tg)) : mini(null, "direct")}<span><b>${esc(at?.name ?? "A monster")}</b> attacks ${tg ? "your <b>" + esc(tg.name ?? "face-down monster") + "</b>" : "you directly"}</span>`;
+    }
+    return `<div class="dialog respond" role="dialog" aria-label="Respond"><div class="dhead">${what}</div>
+      <div class="tiles">${cards.map((i) => tile(cardInfo(i) ?? v.actions.find((a) => a.card === i)?.subject, `data-respond="${i}"`, "Activate")).join("")}</div>
+      ${pass ? `<div class="actions-row"><button class="btn" data-move="${pass.index}">Don't activate</button></div>` : ""}</div>`;
+  }
   return "";
 }
 
 // The open card's moves, shown on the card (placed after rendering).
 function menuHtml() {
   if (state.variants) {
-    return `<div class="menu" id="menu" role="menu">${state.variants.map((a) => `<button role="menuitem" data-move="${a.index}">${esc(a.text)}</button>`).join("")}
+    return `<div class="menu" id="menu" role="menu">${state.variants.map((a) => `<button role="menuitem" class="mtext" data-move="${a.index}">${esc(a.text)}</button>`).join("")}
       <button role="menuitem" class="quiet" id="close-menu">Cancel</button></div>`;
   }
   if (state.selected === null || state.aim) return "";
   const items = menuItems(state.selected);
   if (!items.length) return "";
-  return `<div class="menu" id="menu" role="menu">${items.map((it, i) => it.move
-      ? `<button role="menuitem" data-move="${it.move.index}">${esc(it.label)}</button>`
-      : `<button role="menuitem" data-aim="${i}">${esc(it.label)}</button>`).join("")}
-    <button role="menuitem" class="quiet" id="close-menu">Cancel</button></div>`;
+  return `<div class="menu tiles-menu" id="menu" role="menu">${items.map((it, i) => it.move
+      ? `<button role="menuitem" class="mtile" data-move="${it.move.index}" title="${esc(it.label)}" aria-label="${esc(it.label)}">${it.mini}<span>${esc(it.cap)}</span></button>`
+      : `<button role="menuitem" class="mtile" data-aim="${i}" title="${esc(it.label)}" aria-label="${esc(it.label)}">${it.mini}<span>${esc(it.cap)}</span></button>`).join("")}
+    <button role="menuitem" class="mtile quiet" id="close-menu" aria-label="Cancel"><span class="mini x" aria-hidden="true">✕</span><span>Cancel</span></button></div>`;
 }
 
 function placeMenu() {
@@ -948,7 +1080,20 @@ function renderGame() {
   </div>${over ? "" : dialogHtml() + menuHtml()}`;
 
   const items = state.selected !== null ? menuItems(state.selected) : [];
+  main.querySelectorAll("[data-respond]").forEach((b) => b.addEventListener("click", () => {
+    // One move: aim it or confirm it; several: open the card's moves.
+    const inst = Number(b.dataset.respond), moves = movesOf(inst);
+    if (moves.length === 1 && moves[0].targets.length) { state.selected = inst; state.aim = { moves, picked: [] }; renderGame(); }
+    else if (moves.length === 1) go(moves[0]);
+    else select(inst);
+  }));
+  main.querySelectorAll("[data-confirm]").forEach((b) => b.addEventListener("click", () => {
+    state.confirm = null; state.selected = null; state.cardText = null; play(Number(b.dataset.confirm));
+  }));
+  document.getElementById("cancel-confirm")?.addEventListener("click", () => { state.confirm = null; renderGame(); });
   main.querySelectorAll("[data-move]").forEach((b) => b.addEventListener("click", () => {
+    const a = moveByIndex(Number(b.dataset.move));
+    if (a?.kind === "activate") { go(a); return; }
     state.selected = null; state.aim = null; state.variants = null; state.cardText = null; play(Number(b.dataset.move));
   }));
   main.querySelectorAll("[data-aim]").forEach((b) => b.addEventListener("click", () => {
@@ -1230,7 +1375,7 @@ function avHtml() {
         <input type="range" min="0" max="1" step="0.05" value="${av.sfxVol}" data-vol="sfxVol" aria-label="Effects volume"></div>
       <div class="avrow"><button type="button" class="btn" data-av="motion" ${pressed("motion")}>Animations ${av.motion ? "on" : "off"}</button></div>
       <div class="avrow"><button type="button" class="btn" data-av="auto" ${pressed("auto")}>Auto-advance ${av.auto ? "on" : "off"}</button>
-        <span class="note">Goes to the next phase when you have nothing else to do.</span></div>
+        <span class="note">Goes to the next phase when you have nothing else to do, and passes phase steps where nothing happened to answer.</span></div>
       <p class="note">Original sounds and music made in your browser. Files in this project's audio/ folder replace them by name.</p>
     </div></details>`;
 }
@@ -1920,7 +2065,8 @@ async function importDeck(ev) {
 document.addEventListener("keydown", (ev) => {
   if (builder.open && ev.key === "Escape" && builder.slot) { builder.slot = null; drawBuilder(); return; }
   if (!state.view || ev.key !== "Escape") return;
-  if (state.aim || state.variants) { state.aim = null; state.variants = null; renderGame(); }
+  if (state.confirm) { state.confirm = null; renderGame(); }
+  else if (state.aim || state.variants) { state.aim = null; state.variants = null; renderGame(); }
   else if (state.selected !== null) select(state.selected);
 });
 addEventListener("resize", () => { if (state.view) placeMenu(); });

@@ -5,7 +5,7 @@ use serde::Serialize;
 use ygo_data::CardKind;
 use ygo_engine::{
     Action, BattleStep, CardPool, DecisionKind, Event, InstanceId, Location, Observation, Phase,
-    PlayerId, Position, Side, SpellTrapType, VisibleCard,
+    PlayerId, Position, Side, SpellTrapType, VisibleCard, WindowKind,
 };
 use ygo_play::describe;
 use ygo_play::session::PlaySession;
@@ -26,11 +26,18 @@ pub struct View {
     chain: Vec<ChainView>,
     /// The attack being made, if any: who attacks whom (no target: direct).
     attack: Option<AttackView>,
+    /// A summon declared and not yet complete (the moment Counter Traps
+    /// answer): the monster as the human sees it, and whose it is.
+    summon: Option<SummonView>,
     /// The effect waiting for a choice (a card to pick, a question), when
     /// the human is the one choosing.
     choice: Option<ChoiceView>,
     /// The human orders their triggered effects (or declines them).
     triggers: bool,
+    /// A response window at a phase step where nothing happened that
+    /// could be answered (Standby, Battle start, End Phase): the page may
+    /// pass it by itself.
+    quiet: bool,
     actions: Vec<ActionView>,
     /// The latest lines, oldest first, and how many there are in all.
     log: Vec<String>,
@@ -97,6 +104,15 @@ struct ChoiceView {
     /// Where the cards to pick are: "your Deck", "your opponent's hand",
     /// "the field"; `None` for a question or a mixed set.
     from: Option<&'static str>,
+    /// The card a question is about (the monster a position question
+    /// places).
+    about: Option<CardView>,
+}
+
+#[derive(Serialize)]
+struct SummonView {
+    card: CardView,
+    yours: bool,
 }
 
 #[derive(Serialize)]
@@ -415,6 +431,31 @@ fn choice_from(session: &PlaySession, obs: &Observation) -> Option<&'static str>
     places.all(|p| p == first).then_some(first)
 }
 
+/// Whether the human is asked to respond at a bare phase step: an open
+/// window, no chain, no attack, and nothing in it but the turn and phase
+/// moving on (and draws).
+fn quiet_window(session: &PlaySession, obs: &Observation) -> bool {
+    let responding = obs
+        .decision
+        .is_some_and(|d| d.player == obs.viewer && d.kind == DecisionKind::Respond);
+    let Some((kind, events)) = session.game().window() else {
+        return false;
+    };
+    responding
+        && kind == WindowKind::Open
+        && obs.chain.is_empty()
+        && obs.attack.is_none()
+        && events.iter().all(|e| {
+            matches!(
+                e,
+                Event::PhaseEntered { .. }
+                    | Event::TurnStarted { .. }
+                    | Event::Drew { .. }
+                    | Event::DeckShuffled { .. }
+            )
+        })
+}
+
 fn choice(session: &PlaySession, obs: &Observation) -> Option<ChoiceView> {
     let decision = obs.decision.filter(|d| d.player == obs.viewer)?;
     if decision.kind != DecisionKind::Choose {
@@ -434,6 +475,7 @@ fn choice(session: &PlaySession, obs: &Observation) -> Option<ChoiceView> {
         yours: link.controller == obs.viewer,
         targets: link.targets.iter().map(|&t| name_of(t)).collect(),
         from: choice_from(session, obs),
+        about: obs.asked_about.as_ref().map(|c| card_view(pool, c)),
     })
 }
 
@@ -497,10 +539,17 @@ pub fn build(session: &PlaySession, with_log: bool) -> View {
                 .flatten()
                 .any(|c| c.instance() == a),
         }),
+        summon: obs.pending_summon.and_then(|ps| {
+            obs.find(ps.card).map(|f| SummonView {
+                card: card_view(pool, f.card),
+                yours: ps.player == obs.viewer,
+            })
+        }),
         choice: choice(session, &obs),
         triggers: obs
             .decision
             .is_some_and(|d| d.player == obs.viewer && d.kind == DecisionKind::Triggers),
+        quiet: quiet_window(session, &obs),
         actions,
         log: if with_log {
             log[log.len().saturating_sub(LOG_LINES)..].to_vec()

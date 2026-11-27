@@ -484,3 +484,56 @@ fn spear_cretin_lets_each_player_revive_a_monster() {
     assert!(g.on_field(cretin));
     assert_eq!(g.instance(cretin).position, Position::FaceUpAttack);
 }
+
+/// Each of Cyber Jar's position questions names the monster it places
+/// (the one just picked), for the player answering only (owner, 2026-11-27:
+/// show the card, face-up or face-down).
+#[test]
+fn cyber_jar_asks_each_position_about_the_picked_monster() {
+    let (mut g, _) = cyber_jar_game(|_| {});
+    let mut asked = 0;
+    while let Some(d) = g
+        .pending_decision()
+        .filter(|d| d.kind == DecisionKind::Choose)
+    {
+        let picked = match g.legal_actions()[0] {
+            Action::Choose { card } => Some(card),
+            _ => None,
+        };
+        let obs = g.observe(d.player);
+        if obs.question.is_empty() {
+            assert!(obs.asked_about.is_none(), "a card pick is not a question");
+        } else {
+            let about = obs
+                .asked_about
+                .as_ref()
+                .expect("the question names its card");
+            assert!(g.stats(about.instance()).is_monster());
+            assert_eq!(about.card(), Some(g.stats(about.instance()).id));
+            assert!(
+                g.observe(d.player.opponent()).asked_about.is_none(),
+                "only the one answering is shown it"
+            );
+            asked += 1;
+        }
+        let a = g.legal_actions()[0].clone();
+        play(&mut g, a);
+        pass_all(&mut g);
+        if let Some(card) = picked
+            && let Some(d) = g.pending_decision()
+        {
+            let obs = g.observe(d.player);
+            if !obs.question.is_empty() {
+                assert_eq!(
+                    obs.asked_about.map(|c| c.instance()),
+                    Some(card),
+                    "the card just picked"
+                );
+            }
+        }
+    }
+    assert_eq!(
+        asked, 5,
+        "a position question for each of the five monsters"
+    );
+}

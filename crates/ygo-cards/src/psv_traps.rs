@@ -81,6 +81,7 @@ fn declared_race(g: &Game, card: InstanceId) -> Option<&'static str> {
 /// Declares a Type on resolution and keeps it in the card's counter.
 fn declare_race(_g: &mut Game, _ctx: &mut EffectCtx) -> Flow {
     Flow::Ask {
+        about: None,
         options: RACES.to_vec(),
         then: |g, ctx, option| {
             if g.on_field(ctx.source) {
@@ -344,6 +345,7 @@ fn spells_in_hand(g: &Game, player: PlayerId) -> Vec<InstanceId> {
 fn earthshaker_second(ctx: &mut EffectCtx) -> Flow {
     let first = ctx.value as usize;
     Flow::Ask {
+        about: None,
         options: ATTRIBUTES
             .iter()
             .enumerate()
@@ -358,6 +360,7 @@ fn earthshaker_second(ctx: &mut EffectCtx) -> Flow {
                 .expect("an offered Attribute");
             ctx.value = (first | second << 8) as i32;
             Flow::AskBy {
+                about: None,
                 chooser: ctx.controller.opponent(),
                 options: vec![ATTRIBUTES[first], ATTRIBUTES[second]],
                 then: |g, ctx, pick| {
@@ -525,6 +528,7 @@ pub fn register(r: &mut Registry) {
                             return Flow::Done;
                         }
                         Flow::Ask {
+                            about: None,
                             options: vec!["Tribute a monster", "Destroy this card"],
                             then: |g, ctx, option| {
                                 if option != 0 {
@@ -705,6 +709,7 @@ pub fn register(r: &mut Registry) {
     r.register(
         EARTHSHAKER,
         single(Effect::activate(2, |_g, _ctx| Flow::Ask {
+            about: None,
             options: ATTRIBUTES.to_vec(),
             then: |_g, ctx, first| {
                 ctx.value = first as i32;
@@ -795,6 +800,7 @@ pub fn register(r: &mut Registry) {
                     return Flow::Done;
                 }
                 Flow::AskBy {
+                    about: None,
                     chooser: opponent,
                     options: vec!["Discard a Spell to negate Magic Drain", "Do not"],
                     then: |g, ctx, option| {
@@ -847,6 +853,7 @@ pub fn register(r: &mut Registry) {
                 g.hand(s.controller.opponent()).len() >= 6 && g.hand(s.controller).len() <= 2
             },
             ..Effect::activate(2, |_g, _ctx| Flow::Ask {
+                about: None,
                 options: vec!["Call heads", "Call tails"],
                 then: |g, ctx, option| {
                     let heads = g.coin(ctx.controller);
@@ -1031,6 +1038,7 @@ pub fn register(r: &mut Registry) {
                             return Flow::Done;
                         }
                         Flow::Ask {
+                            about: None,
                             options: vec!["Pay 2000 LP", "Destroy Mirror Wall"],
                             then: |g, ctx, option| {
                                 if option == 0 {

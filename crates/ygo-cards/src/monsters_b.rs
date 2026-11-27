@@ -165,6 +165,7 @@ fn yado_loop(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
         return Flow::Done;
     }
     Flow::Ask {
+        about: None,
         options: vec!["Place a card at the bottom of the Deck", "Done"],
         then: |g, ctx, option| {
             if option != 0 {
@@ -791,6 +792,7 @@ pub fn register(r: &mut Registry) {
                     then: |_g, ctx, picked| {
                         ctx.cost = vec![picked];
                         Flow::Ask {
+                            about: Some(picked),
                             options: positions::FACE_UP.to_vec(),
                             then: |g, ctx, option| {
                                 let picked = ctx.cost[0];
@@ -850,6 +852,7 @@ pub fn register(r: &mut Registry) {
                     };
                     ctx.cost = vec![shadow];
                     Flow::Ask {
+                        about: Some(shadow),
                         options: positions::FACE_UP.to_vec(),
                         then: |g, ctx, option| {
                             g.special_summon_properly(

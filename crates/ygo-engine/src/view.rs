@@ -113,6 +113,8 @@ impl<'a> PlayerView<'a> {
                 .for_each(&mut mark);
         }
         obs.revealed.iter().for_each(&mut mark);
+        // The card a question is about is shown to the one answering.
+        obs.asked_about.iter().for_each(&mut mark);
         // A card on the chain, or one whose resolution waits for an answer,
         // was activated in the open: it keeps its identity even if it has
         // since gone back to the hand or the Deck.
