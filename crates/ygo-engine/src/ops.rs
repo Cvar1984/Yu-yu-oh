@@ -809,6 +809,30 @@ impl Game {
             .any(|&(s, f)| s.card != card && f(self, s, card) && active(s))
     }
 
+    /// A negated card may still be activated from the hand or while Set
+    /// (it then resolves without effect) when every card negating it
+    /// negates effects only (`Tag::NegatesEffectsOnly`: Imperial Order).
+    /// A face-up card's effects stay off, and so does a card negated until
+    /// the End Phase (Metal Detector, Mystic Probe).
+    pub(crate) fn activation_allowed_while_negated(&self, card: InstanceId) -> bool {
+        let inst = &self.instances[card.index()];
+        let face_up_on_field = inst.position.is_face_up()
+            && matches!(
+                inst.location,
+                Location::MonsterZone(_) | Location::SpellTrapZone(_) | Location::FieldZone
+            );
+        if face_up_on_field || self.negated_this_turn(card) {
+            return false;
+        }
+        self.negators()
+            .into_iter()
+            .filter(|&(s, f)| s.card != card && f(self, s, card))
+            .all(|(s, _)| {
+                self.script(s.card)
+                    .is_some_and(|script| script.has(Tag::NegatesEffectsOnly))
+            })
+    }
+
     /// Negates `card`'s effects until this turn's End Phase.
     /// `card` takes the Type `source`'s `race` hook names until the End
     /// Phase, while it stays on the field (D. Tribe).

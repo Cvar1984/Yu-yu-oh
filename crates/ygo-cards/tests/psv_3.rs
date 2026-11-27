@@ -88,13 +88,17 @@ fn imperial_order_negates_spells_and_costs_700_each_standby() {
     next_turn(&mut g);
     activate(&mut g, IMPERIAL_ORDER);
     assert_eq!(g.atk(celtic), 1400, "the Equip Spell is negated");
+    // "Once per turn, during the Standby Phase": every Standby Phase,
+    // the opponent's too.
     next_turn(&mut g);
-    assert!(
-        activations(&g, DARK_HOLE).is_empty(),
-        "no Spell activations"
-    );
+    assert_eq!(lp(&g, P0), 7300, "paid in the opponent's Standby Phase");
+    // TCG rulings: Spells may still be activated; their effects are negated.
+    let dark_hole = in_hand(&g, P1, DARK_HOLE);
+    activate(&mut g, DARK_HOLE);
+    assert!(g.on_field(celtic), "Dark Hole resolved without effect");
+    assert_eq!(g.instance(dark_hole).location, Location::Graveyard);
     next_turn(&mut g);
-    assert_eq!(lp(&g, P0), 7300);
+    assert_eq!(lp(&g, P0), 6600, "and again in its controller's");
 }
 
 #[test]

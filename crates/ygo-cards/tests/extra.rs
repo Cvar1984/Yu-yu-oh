@@ -499,8 +499,19 @@ fn backup_soldier_returns_three_non_effect_monsters_of_1500_or_less() {
     }
     activate(&mut g, DARK_HOLE);
     next_own_turn(&mut g);
-    activate(&mut g, BACKUP_SOLDIER);
-    choose_first(&mut g);
+    // Up to 3 targets, chosen on activation (Mammoth, Celtic and Elf).
+    let three = activations(&g, BACKUP_SOLDIER)
+        .into_iter()
+        .find(|a| matches!(a, Action::Activate { targets, .. } if targets.len() == 3))
+        .expect("a three-target activation");
+    assert!(
+        activations(&g, BACKUP_SOLDIER).iter().all(
+            |a| matches!(a, Action::Activate { targets, .. } if (1..=3).contains(&targets.len()))
+        ),
+        "one to three targets"
+    );
+    play(&mut g, three);
+    pass_all(&mut g);
     let mut left: Vec<CardId> = g.graveyard(P0).iter().map(|&c| g.stats(c).id).collect();
     left.sort();
     let mut expected = vec![
@@ -591,6 +602,27 @@ fn enchanted_javelin_gains_the_attackers_atk() {
     pass_turn_player(&mut g);
     activate_on(&mut g, ENCHANTED_JAVELIN, &[celtic]);
     assert_eq!(lp(&g, P0), 8000 + 1400 - 1400, "gained, then hit");
+}
+
+#[test]
+fn enchanted_javelin_may_target_your_own_attacker() {
+    // "Target 1 attacking monster": either player's.
+    let mut g = game(&[ENCHANTED_JAVELIN, CELTIC_GUARDIAN], &[]);
+    set_card(&mut g, P0, ENCHANTED_JAVELIN);
+    next_turn(&mut g);
+    next_turn(&mut g);
+    let celtic = summon_now(&mut g, P0, CELTIC_GUARDIAN);
+    play(&mut g, Action::EnterBattlePhase);
+    pass_all(&mut g);
+    play(
+        &mut g,
+        Action::Attack {
+            attacker: celtic,
+            target: None,
+        },
+    );
+    activate_on(&mut g, ENCHANTED_JAVELIN, &[celtic]);
+    assert_eq!(lp(&g, P0), 8000 + 1400);
 }
 
 #[test]
