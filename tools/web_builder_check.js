@@ -39,7 +39,7 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
 
   await page.goto(url);
   // Moves show at once (tools/web_fx_check.js covers the animations).
-  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("duel-table-av", JSON.stringify({ motion: false, music: false, sfx: false })); });
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("duel-table-av", JSON.stringify({ motion: false, music: false, sfx: false, auto: false })); });
   await page.reload();
   await page.click('#open-builder');
   const found = () => page.textContent('#b-found');

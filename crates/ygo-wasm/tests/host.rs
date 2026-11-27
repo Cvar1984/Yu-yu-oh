@@ -338,6 +338,57 @@ fn steps_carry_cues_for_each_visible_move() {
     assert_eq!(resumed["steps"], json!([]));
 }
 
+/// Every choice an effect asks of the human names that effect's card (on
+/// the table for the human to see), and a card pick says where the cards
+/// are; other decisions carry no choice.
+#[test]
+fn a_choice_names_the_effect_that_asks() {
+    let mut host = ready_host();
+    let mut from = std::collections::BTreeSet::new();
+    let (mut picks, mut questions) = (0, 0);
+    for seed in 30..40u64 {
+        let mut answer = start(&mut host, seed, "network", &[]);
+        let mut rng = seed;
+        while answer["view"]["result"].is_null() && answer["view"]["turn"].as_u64().unwrap() < 40 {
+            let v = &answer["view"];
+            let prompt = v["prompt"].as_str().unwrap_or("");
+            let choice = &v["choice"];
+            if prompt == "Choose a card" || prompt == "Choose an option" {
+                let name = choice["name"]
+                    .as_str()
+                    .unwrap_or_else(|| panic!("no choice: {v}"));
+                assert!(!name.is_empty());
+                assert!(
+                    choice["text"].as_str().unwrap().starts_with(name),
+                    "{choice}"
+                );
+                if prompt == "Choose a card" {
+                    picks += 1;
+                    if let Some(f) = choice["from"].as_str() {
+                        from.insert(f.to_string());
+                    }
+                } else {
+                    questions += 1;
+                    assert!(choice["from"].is_null());
+                }
+            } else {
+                assert!(choice.is_null(), "{prompt}: {choice}");
+            }
+            let n = v["actions"].as_array().unwrap().len();
+            answer = ok(
+                &mut host,
+                json!({ "cmd": "play", "index": lcg(&mut rng) % n }),
+            );
+        }
+    }
+    assert!(
+        picks > 0 && questions > 0,
+        "picks {picks}, questions {questions}"
+    );
+    assert!(!from.is_empty(), "card picks say where the cards are");
+    println!("picks {picks}, questions {questions}, from {from:?}");
+}
+
 #[test]
 fn a_game_resumes_from_its_choices() {
     // The search bot thinks again on a resume and must choose the same.

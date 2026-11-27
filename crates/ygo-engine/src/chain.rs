@@ -208,7 +208,7 @@ impl Game {
     }
 
     /// The card whose resolution waits for a `Choose` or `Ask` answer, if
-    /// any. For analysis tools; players see the question, not its source.
+    /// any (players see it too: `Observation::resolving`).
     pub fn resolving_card(&self) -> Option<InstanceId> {
         self.pending_choice.as_ref().map(|pc| pc.link.card)
     }

@@ -209,6 +209,23 @@ footer { color: var(--muted); font-size: 12px; }
 }
 
 
+
+/* What an effect asks */
+.choicehead { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: start; }
+.choicehead img, .choicehead .cthumb { width: 64px; aspect-ratio: 59 / 86; object-fit: cover; border-radius: 5px; display: block; background: var(--zone); border-top: 4px solid var(--f-effect); }
+.choicehead .ctext { display: grid; gap: 3px; min-width: 0; }
+.choicehead .cwho { font-size: 13px; color: var(--muted); }
+.choicehead .cwho b { color: var(--fg); }
+.choicehead .cwhat { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+.choicehead .cread summary { cursor: pointer; font-size: 12px; color: var(--accent); }
+.choicehead .cread .dtext { font-size: 13px; white-space: pre-wrap; max-height: 140px; overflow: auto; margin-top: 4px; }
+.choicehead.compact { grid-template-columns: 44px minmax(0, 1fr); gap: 10px; flex: 1 1 320px; }
+.choicehead.compact img, .choicehead.compact .cthumb { width: 44px; }
+.choicehead.compact .cwhat { font-size: 15px; }
+.tiles.wide { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.tile .tline { font-weight: 400; color: var(--muted); font-size: 11px; text-align: left; overflow-wrap: anywhere; }
+.avrow .note { font-size: 12px; }
+
 /* Sound settings */
 header.top { align-items: center; }
 #av { margin-left: auto; position: relative; }
@@ -361,8 +378,10 @@ const state = {
   init: null,         // decks and bots on offer
   initArgs: null,     // the init command, kept to rebuild the engine
   game: null,         // { deck, bot_deck, bot, seed, first, choices }
-  busy: false,        // animating a move's steps; taps skip them
+  busy: false,        // animating a move's steps
+  playing: false,     // the same; a tap skips to the end
   skip: false,
+  autoTimer: null,    // a phase change waiting to be made (Auto-advance)
   view: null,
   selected: null,     // instance id of the card open (its moves and text)
   aim: null,          // { moves, picked }: a move waiting for its targets
@@ -494,11 +513,28 @@ function startGame(game) {
   save();
   // The first view: an empty table to animate the opening on.
   state.view = answer.steps?.length ? { ...answer.steps[0].view, log: [] } : answer.view;
-  playback(answer, renderGame);
+  playback(answer, () => { renderGame(); autoAdvance(); });
+}
+
+// When the only moves left are phase changes (no card can do anything),
+// take the next phase: Battle, else End battle, else End turn. A short
+// pause shows where the duel stands; Auto-advance off in Settings stops it.
+const PHASE_MOVES = ["battle", "end_battle", "end_turn"];
+function autoAdvance() {
+  const v = state.view;
+  if (!av.auto || !v || v.result !== null || !v.actions.length) return;
+  if (!v.actions.every((a) => a.card === null && PHASE_MOVES.includes(a.kind))) return;
+  const next = PHASE_MOVES.map((k) => v.actions.find((a) => a.kind === k)).find(Boolean);
+  // A move the player makes in the pause replaces this one (play clears it).
+  state.autoTimer = setTimeout(() => {
+    state.autoTimer = null;
+    if (state.view === v && av.auto) play(next.index);
+  }, av.motion ? 650 : 250);
 }
 
 function play(index) {
   if (state.busy) return;
+  clearTimeout(state.autoTimer); state.autoTimer = null;
   state.seenLog = state.view.log_total;
   let answer;
   try {
@@ -514,6 +550,7 @@ function play(index) {
   playback(answer, () => {
     if (state.selected !== null && !cardOnTable(state.selected)) { state.selected = null; state.cardText = null; }
     renderGame();
+    autoAdvance();
   });
 }
 
@@ -745,15 +782,33 @@ function pilePanelHtml() {
 // Cards to pick that are not on the table (a Deck search, a revealed
 // hand), the targets of the move being aimed when some are off the table,
 // and questions: one small dialog.
+// What an effect asks: its card, whose effect it is, what to pick and from
+// where, its targets, and its text to read.
+function choiceHead(compact = false) {
+  const c = state.view.choice;
+  if (!c) return "";
+  const img = imageFor({ id: c.id }, "small");
+  const qs = answers();
+  const what = qs.length ? (qs.every((a) => a.text.includes("Position")) ? "choose a position" : "choose an option")
+    : `choose a card${c.from ? " from " + c.from : ""}`;
+  const on = c.targets.length ? ` · on ${c.targets.join(", ")}` : "";
+  const body = c.text ? c.text.split("\n\n").slice(1).join("\n\n") : "";
+  return `<div class="choicehead${compact ? " compact" : ""}">
+    ${img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" referrerpolicy="no-referrer">` : `<span class="cthumb k-${esc(c.kind ?? "effect")}"></span>`}
+    <div class="ctext"><div class="cwho">${c.yours ? "" : "Your opponent's "}<b>${esc(c.name)}</b>${c.yours ? "'s effect" : " effect"}${esc(on)}</div>
+      <div class="cwhat">${esc(what.charAt(0).toUpperCase() + what.slice(1))}</div>
+      ${body ? `<details class="cread"><summary>Read the card</summary><div class="dtext">${esc(body)}</div></details>` : ""}</div></div>`;
+}
+
 function dialogHtml() {
-  const tile = (c, attrs) => {
+  const tile = (c, attrs, line = null) => {
     const img = c ? imageFor(c, "small") : null;
     const name = c?.name ?? "A card you cannot see";
-    return `<button class="tile" ${attrs} title="${esc(name)}">${img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}<span>${esc(name)}</span></button>`;
+    return `<button class="tile" ${attrs} title="${esc(line ?? name)}">${img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}<span>${esc(name)}</span>${line ? `<span class="tline">${esc(line)}</span>` : ""}</button>`;
   };
   const qs = answers();
   if (qs.length) {
-    return `<div class="dialog" role="dialog" aria-label="Question"><div class="dhead">${esc(state.view.prompt ?? "Choose an option")}</div>
+    return `<div class="dialog" role="dialog" aria-label="Question">${choiceHead() || `<div class="dhead">${esc(state.view.prompt ?? "Choose an option")}</div>`}
       <div class="opts">${qs.map((a) => `<button class="btn" data-move="${a.index}">${esc(a.text)}</button>`).join("")}</div></div>`;
   }
   if (state.aim) {
@@ -763,9 +818,18 @@ function dialogHtml() {
       <div class="tiles">${ts.map((t) => tile(cardInfo(t) ?? locate(t)?.card, `data-target="${t}"`)).join("")}</div>
       <div class="actions-row"><button class="btn" id="cancel-aim">Cancel</button></div></div>`;
   }
+  // Triggered effects to put on the chain, in order: each with its card
+  // and what it does, wherever the card is (often a Graveyard).
+  if (state.view.triggers) {
+    const acts = state.view.actions.filter((a) => a.kind === "activate");
+    const pass = state.view.actions.find((a) => a.kind === "pass");
+    return `<div class="dialog" role="dialog" aria-label="Triggered effects"><div class="dhead">${acts.length > 1 ? "Effects were triggered: which goes on the chain first?" : "An effect was triggered: activate it?"}</div>
+      <div class="tiles wide">${acts.map((a) => tile(a.subject, `data-move="${a.index}"`, a.text)).join("")}</div>
+      ${pass ? `<div class="actions-row"><button class="btn" data-move="${pass.index}">${acts.length > 1 ? "Activate none" : "Don't activate"}</button></div>` : ""}</div>`;
+  }
   const picks = state.view.actions.filter((a) => a.kind === "choose" && a.card !== null && !cardOnTable(a.card));
   if (picks.length) {
-    return `<div class="dialog" role="dialog" aria-label="Choose a card"><div class="dhead">${esc(state.view.prompt ?? "Choose a card")}</div>
+    return `<div class="dialog" role="dialog" aria-label="Choose a card">${choiceHead() || `<div class="dhead">${esc(state.view.prompt ?? "Choose a card")}</div>`}
       <div class="tiles">${picks.map((a) => tile(a.subject, `data-move="${a.index}"`)).join("")}</div></div>`;
   }
   return "";
@@ -843,13 +907,18 @@ function renderGame() {
   const nameOf = (inst) => cardInfo(inst)?.name ?? locate(inst)?.label ?? "a card";
   let ask = v.prompt ?? "Waiting for your opponent";
   if (v.prompt && v.prompt.startsWith("Respond")) {
+    // Name what is being answered and the cards that can answer it.
+    const usable = [...new Set(v.actions.filter((a) => a.kind === "activate").map((a) => a.subject?.name).filter(Boolean))];
+    const can = usable.length ? `you can activate ${usable.slice(0, 3).join(", ")}${usable.length > 3 ? "…" : ""}, or pass` : "respond, or pass";
     const last = v.chain[v.chain.length - 1];
-    if (last && !last.yours) ask = `Your opponent activated ${last.name}: respond, or pass`;
-    else if (v.attack && !v.attack.yours) ask = `Your opponent's ${nameOf(v.attack.attacker)} attacks ${v.attack.target !== null ? "your " + nameOf(v.attack.target) : "you directly"}: respond, or pass`;
+    if (last && !last.yours) ask = `Your opponent activated ${last.name}: ${can}`;
+    else if (v.attack && !v.attack.yours) ask = `Your opponent's ${nameOf(v.attack.attacker)} attacks ${v.attack.target !== null ? "your " + nameOf(v.attack.target) : "you directly"}: ${can}`;
+    else ask = can.charAt(0).toUpperCase() + can.slice(1);
   }
   const aimName = state.aim ? (cardInfo(state.aim.moves[0].card)?.name ?? "the card") : "";
   const say = over ? `<span class="result">${esc(v.result)}</span>`
     : state.aim ? `<span class="prompt">Choose a target for ${esc(aimName)}</span>`
+    : v.choice && !answers().length ? choiceHead(true)
     : `<span class="prompt">${esc(ask)}</span>`;
   const bar = over ? "" : barMoves().map((a) => `<button class="btn${a.kind === "battle" ? " primary" : ""}" data-move="${a.index}">${BAR_LABEL[a.kind] ?? esc(a.text)}</button>`).join("")
     + (state.aim ? `<button class="btn" id="cancel-aim">Cancel</button>` : "");
@@ -938,7 +1007,7 @@ function copy(text) {
 // Browsers allow sound only after the first tap; it starts then.
 const AV_KEY = "duel-table-av";
 const av = (() => {
-  const d = { music: true, sfx: true, musicVol: 0.45, sfxVol: 0.8, motion: true };
+  const d = { music: true, sfx: true, musicVol: 0.45, sfxVol: 0.8, motion: true, auto: true };
   try { return { ...d, ...JSON.parse(localStorage.getItem(AV_KEY) || "{}") }; } catch (_) { return d; }
 })();
 function saveAv() { try { localStorage.setItem(AV_KEY, JSON.stringify(av)); } catch (_) { /* storage may be blocked */ } }
@@ -1153,13 +1222,15 @@ document.addEventListener("visibilitychange", () => {
 
 function avHtml() {
   const pressed = (k) => `aria-pressed="${av[k]}"`;
-  return `<details class="av"><summary aria-label="Sound and motion settings"><span aria-hidden="true">${av.sfx || av.music ? "🔊" : "🔇"}</span> Sound</summary>
+  return `<details class="av"><summary aria-label="Sound, animation and play settings"><span aria-hidden="true">${av.sfx || av.music ? "🔊" : "🔇"}</span> Settings</summary>
     <div class="avbox">
       <div class="avrow"><button type="button" class="btn" data-av="music" ${pressed("music")}>Music ${av.music ? "on" : "off"}</button>
         <input type="range" min="0" max="1" step="0.05" value="${av.musicVol}" data-vol="musicVol" aria-label="Music volume"></div>
       <div class="avrow"><button type="button" class="btn" data-av="sfx" ${pressed("sfx")}>Effects ${av.sfx ? "on" : "off"}</button>
         <input type="range" min="0" max="1" step="0.05" value="${av.sfxVol}" data-vol="sfxVol" aria-label="Effects volume"></div>
       <div class="avrow"><button type="button" class="btn" data-av="motion" ${pressed("motion")}>Animations ${av.motion ? "on" : "off"}</button></div>
+      <div class="avrow"><button type="button" class="btn" data-av="auto" ${pressed("auto")}>Auto-advance ${av.auto ? "on" : "off"}</button>
+        <span class="note">Goes to the next phase when you have nothing else to do.</span></div>
       <p class="note">Original sounds and music made in your browser. Files in this project's audio/ folder replace them by name.</p>
     </div></details>`;
 }
@@ -1175,6 +1246,7 @@ document.addEventListener("click", (ev) => {
   av[b.dataset.av] = !av[b.dataset.av];
   saveAv(); Sound.volumes();
   if (b.dataset.av === "music") Music.restart();
+  if (b.dataset.av === "auto") { clearTimeout(state.autoTimer); state.autoTimer = null; if (av.auto && !state.busy) autoAdvance(); }
   drawAv();
 });
 document.addEventListener("input", (ev) => {
@@ -1406,7 +1478,7 @@ function playback(answer, done) {
     done();
     return;
   }
-  state.busy = true; state.skip = false;
+  state.busy = true; state.playing = true; state.skip = false;
   (async () => {
     const speed = reducedMotion() ? 0.5 : 1;
     for (const step of steps) {
@@ -1432,7 +1504,7 @@ function playback(answer, done) {
       }
       await wait(Math.min(Math.max(0, total * 0.4), 700));
     }
-    state.busy = false; state.skip = false;
+    state.busy = false; state.playing = false; state.skip = false;
     if (FX.layer) FX.layer.textContent = "";
     state.view = final;
     Music.intense = final.phase.startsWith("Battle") || final.phase === "Damage Step";
@@ -1442,7 +1514,7 @@ function playback(answer, done) {
 // A tap or Escape during the animations skips to the end of them.
 for (const ev of ["click", "keydown"]) {
   document.addEventListener(ev, (e) => {
-    if (!state.busy) return;
+    if (!state.playing) return;
     if (ev === "keydown" && e.key !== "Escape" && e.key !== " ") return;
     if (e.target.closest?.(".av")) return;
     state.skip = true;
