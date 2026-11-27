@@ -3,7 +3,12 @@
 //! the human's observation, so no hidden card ever reaches the browser.
 //!
 //! Commands (`cmd` names the variant):
-//! - `init`: the data files as text; returns the decks and bots on offer.
+//! - `init`: the data files as text; returns the decks and bots on offer,
+//!   the deck rules and, for the deck builder, each card's copy limit and
+//!   whether it goes in the Extra Deck.
+//! - `check_deck`: a deck's JSON text; returns its name and every problem
+//!   (cards, ban list, deck rules; not a collection). Decks built in the
+//!   page join the duel by being passed to `init` with the shipped ones.
 //! - `start`: deck and bot choices, a seed, who goes first, and optionally
 //!   the human's earlier choices to replay (resuming a game); returns a view.
 //! - `play`: the index of one of the offered actions; returns a view.
@@ -17,7 +22,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
-use ygo_data::{Banlist, Bundle, CardDb, Deck, Rules, TokenFile};
+use ygo_data::{Banlist, Bundle, CardDb, Deck, Rules, TokenFile, check_deck};
 use ygo_engine::{DeckList, GameSetup, InstanceId, PlayerId};
 use ygo_play::bots::Bots;
 use ygo_play::decks;
@@ -60,6 +65,9 @@ enum Command {
         instance: u8,
     },
     Record,
+    CheckDeck {
+        text: String,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -78,6 +86,7 @@ enum First {
 }
 
 struct Loaded {
+    bundle: Bundle,
     bots: Bots,
     /// Legal decks by file name.
     decks: Vec<(String, Deck)>,
@@ -140,6 +149,14 @@ impl Host {
                 let session = self.session.as_ref().ok_or("no game in progress")?;
                 Ok(json!(session.card_text(InstanceId(instance))))
             }
+            Command::CheckDeck { text } => {
+                let loaded = self.loaded.as_ref().ok_or("data not loaded")?;
+                let deck = Deck::parse(&text, Path::new("deck")).map_err(|e| e.to_string())?;
+                let b = &loaded.bundle;
+                let problems = check_deck(&deck, &b.cards, &b.banlist, &b.rules, None);
+                let problems: Vec<String> = problems.iter().map(ToString::to_string).collect();
+                Ok(json!({ "name": deck.name, "problems": problems }))
+            }
             Command::Record => {
                 let session = self.session.as_ref().ok_or("no game in progress")?;
                 Ok(json!(session.record().to_jsonl()))
@@ -179,8 +196,36 @@ impl Host {
         }
         // The first bot offered is the strongest.
         let names = bots.names();
-        let answer = json!({ "decks": offered, "default_bot": names[0], "bots": names });
-        self.loaded = Some(Loaded { bots, decks: legal });
+        let rules = &bundle.rules.deck;
+        let mut pool: Vec<Value> = bundle
+            .cards
+            .iter()
+            .map(|c| {
+                json!({
+                    "id": c.id.0,
+                    "limit": bundle.banlist.limit_for(c.id, rules.default_copy_limit),
+                    "extra": c.card_type.is_extra_deck(),
+                })
+            })
+            .collect();
+        pool.sort_by_key(|c| c["id"].as_u64());
+        let answer = json!({
+            "decks": offered,
+            "default_bot": names[0],
+            "bots": names,
+            "deck_rules": {
+                "main_min": rules.main_min,
+                "main_max": rules.main_max,
+                "extra_max": rules.extra_max,
+                "default_copy_limit": rules.default_copy_limit,
+            },
+            "pool": pool,
+        });
+        self.loaded = Some(Loaded {
+            bundle,
+            bots,
+            decks: legal,
+        });
         self.session = None;
         Ok(answer)
     }

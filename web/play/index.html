@@ -207,6 +207,45 @@ footer { color: var(--muted); font-size: 12px; }
   .pile .top { display: none; }
   .pile .lfull { display: none; } .pile .lshort { display: inline; }
 }
+
+/* Deck builder */
+.builder { display: grid; gap: 16px; }
+.bhead { gap: 12px; }
+.brow { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; justify-content: space-between; }
+.brow .bname { flex: 1 1 240px; }
+.brow > .field:not(.bname) { flex: 0 1 280px; }
+label.btn { display: inline-flex; align-items: center; }
+#b-status { display: grid; gap: 4px; }
+#b-status p { margin: 0; }
+.problems { margin: 0; padding-left: 18px; color: var(--them); font-size: 13px; }
+.ok { color: var(--good); font-weight: 600; font-size: 13px; }
+.bmsg { font-size: 13px; font-weight: 600; color: var(--good); }
+.bmsg.bad { color: var(--them); }
+.bcols { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 900px) { .bcols { grid-template-columns: minmax(0, 1fr); } }
+.bcols h3 { font-size: 15px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.filters .q { grid-column: 1 / -1; }
+input[type="number"] { font: inherit; padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg); color: var(--fg); min-width: 0; width: 100%; }
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 8px 6px; }
+.btile, .bslot { position: relative; min-width: 0; display: grid; gap: 2px; align-content: start; }
+.btile .card, .bslot .card, .bempty { aspect-ratio: 59 / 86; min-height: 0; height: auto; }
+.btile .card:not(.has-img), .bslot .card:not(.has-img) { padding: 3px; border-top-width: 3px; }
+.btile .card .cname, .bslot .card .cname { font-size: 9.5px; -webkit-line-clamp: 4; }
+.btile .card .cstats, .bslot .card .cstats { font-size: 9px; }
+.btile.focus .card { outline: 3px solid var(--accent); outline-offset: 1px; }
+.bplus { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 16px; line-height: 1; cursor: pointer; box-shadow: 0 1px 3px rgb(0 0 0 / 0.35); }
+.bplus:disabled { opacity: 0.35; cursor: default; }
+.bn, .bnum { font-size: 11px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.bn.full { color: var(--them); font-weight: 600; }
+.bempty { width: 100%; border: 1px dashed var(--line); border-radius: var(--radius); background: var(--zone); color: var(--muted); cursor: pointer; font-size: 12px; font-variant-numeric: tabular-nums; }
+.bempty.sel { outline: 3px solid var(--accent); outline-offset: 1px; }
+.bslot .bnum { visibility: visible; }
+.bdetail { display: grid; grid-template-columns: minmax(90px, 140px) minmax(0, 1fr); gap: 12px; align-items: start; }
+.bdetail img { width: 100%; border-radius: 6px; display: block; }
+.bdinfo { display: grid; gap: 6px; min-width: 0; }
+.bdinfo h3 { font-size: 16px; }
+.btext { white-space: pre-wrap; font-size: 13px; max-height: 170px; overflow: auto; margin: 0; }
 @media (prefers-reduced-motion: no-preference) { .pile, .card { transition: border-color 0.12s, box-shadow 0.12s; } }
 </style>
 
@@ -329,7 +368,9 @@ async function boot(data) {
     ]);
     const files = JSON.parse(deckIndex);
     const decks = await Promise.all(files.map(async (file) => ({ file, text: await fetchText("data/decks/" + file) })));
-    state.initArgs = { cmd: "init", rules, cards, banlist, tokens, decks };
+    // Decks built in the deck builder join the shipped ones.
+    state.shipped = decks;
+    state.initArgs = { cmd: "init", rules, cards, banlist, tokens, decks: [...decks, ...myDecks()] };
     // Card images: local copies first, else YGOPRODeck (never committed).
     try {
       const r = await fetch("images/index.json");
@@ -360,7 +401,9 @@ function renderSetup() {
   if (!offered(setup.deck)) setup.deck = decks[0]?.file;
   if (!offered(setup.bot_deck)) setup.bot_deck = decks[1]?.file ?? decks[0]?.file;
   if (!state.init.bots.includes(setup.bot)) setup.bot = state.init.default_bot;
-  const opts = (list, sel) => list.map((d) => `<option value="${esc(d.file)}"${d.file === sel ? " selected" : ""}>${esc(d.name)}</option>`).join("");
+  const opt = (d, sel) => `<option value="${esc(d.file)}"${d.file === sel ? " selected" : ""}>${esc(d.name)}</option>`;
+  const group = (label, list, sel) => (list.length ? `<optgroup label="${label}">${list.map((d) => opt(d, sel)).join("")}</optgroup>` : "");
+  const opts = (list, sel) => group("Your decks", list.filter((d) => isMine(d.file)), sel) + group("Shipped decks", list.filter((d) => !isMine(d.file)), sel);
   const bots = state.init.bots.map((b) => `<option value="${esc(b)}"${b === setup.bot ? " selected" : ""}>${esc(botName(b))}</option>`).join("");
   const illegal = state.init.decks.filter((d) => !d.legal)
     .map((d) => `<p class="problem">${esc(d.problem)}</p>`).join("");
@@ -377,9 +420,9 @@ function renderSetup() {
     <div class="field"><span class="label">Who goes first</span>
       <div class="seg" role="group" aria-label="Who goes first">${firstBtn("random", "Coin toss")}${firstBtn("me", "You")}${firstBtn("bot", "Opponent")}</div>
     </div>
-    <p class="note">Decks are checked against the ban list (Pot of Greed, Change of Heart and Raigeki at one copy) and the deck rules. The opponent is the trained network; with search it thinks each choice through many times before it decides, so it is stronger and slower.</p>
+    <p class="note">Decks are checked against the ban list and the deck rules; build your own with the deck builder. The opponent is the trained network; with search it thinks each choice through many times before it decides, so it is stronger and slower.</p>
     ${illegal}
-    <div class="actions-row"><button class="btn primary" type="submit">Start duel</button></div>
+    <div class="actions-row"><button class="btn primary" type="submit">Start duel</button><button class="btn" type="button" id="open-builder">Deck builder</button></div>
   </form>`;
   document.getElementById("setup").addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -393,6 +436,11 @@ function renderSetup() {
     catch (e) { state.error = e.message; renderSetup(); }
   });
   main.querySelectorAll("[data-first]").forEach((b) => b.addEventListener("click", () => { setup.first = b.dataset.first; renderSetup(); }));
+  document.getElementById("open-builder").addEventListener("click", () => {
+    setup.deck = document.getElementById("deck").value;
+    setup.bot_deck = document.getElementById("bot_deck").value;
+    openBuilder();
+  });
 }
 
 function botName(b) {
@@ -551,7 +599,10 @@ document.addEventListener("error", (ev) => {
   const img = ev.target;
   if (!(img instanceof HTMLImageElement) || !img.dataset.key) return;
   state.badImages.add(img.dataset.key);
-  if (!redrawSoon && state.view) { redrawSoon = true; requestAnimationFrame(() => { redrawSoon = false; renderGame(); }); }
+  if (!redrawSoon && (state.view || builder.open)) {
+    redrawSoon = true;
+    requestAnimationFrame(() => { redrawSoon = false; if (builder.open) drawBuilder(); else if (state.view) renderGame(); });
+  }
 }, true);
 // The key a failed image is remembered by: its local path's size and id, or its URL.
 function imgKey(src) {
@@ -840,7 +891,403 @@ function copy(text) {
 }
 
 // Escape steps back: out of aiming, then closes the open card.
+// ---- Deck builder ----
+// Any of the pool's cards, found with filters, fill numbered slots; a slot
+// can be swapped for another card. The engine checks the deck as it changes
+// (check_deck). Saved decks live in this browser and join the duel setup by
+// being passed to "init" with the shipped decks; export and import use the
+// project's deck file format (data/decks/*.json).
+const MY_DECKS_KEY = "duel-table-my-decks";
+const DRAFT_KEY = "duel-table-draft";
+const PAGE = 120;
+const FILTERS = { q: "", kind: "", attr: "", race: "", set: "", lmin: "", lmax: "", atk: "", def: "", sort: "name" };
+const builder = {
+  open: false,
+  file: null,          // the saved deck being edited; null for a new one
+  name: "", played_by: null, notes: null,
+  main: [], extra: [], // card ids, one per slot, in the player's order
+  slot: null,          // { zone, index }: where the next picked card goes
+  focus: null,         // the card id shown in the details
+  f: { ...FILTERS },
+  shown: PAGE,
+  problems: [], message: null, dirty: false,
+};
+
+function myDecks() { try { return JSON.parse(localStorage.getItem(MY_DECKS_KEY) || "[]"); } catch (_) { return []; } }
+function storeMyDecks(list) { try { localStorage.setItem(MY_DECKS_KEY, JSON.stringify(list)); return true; } catch (_) { return false; } }
+const isMine = (file) => file.startsWith("my-");
+// The engine learns about saved decks again (it also checks them).
+function reinit() {
+  state.initArgs.decks = [...state.shipped, ...myDecks()];
+  state.init = Engine.call(state.initArgs);
+}
+
+function kindOf(type) {
+  if (type === "Normal Monster") return "normal";
+  if (type === "Fusion Monster") return "fusion";
+  if (type.startsWith("Ritual")) return "ritual";
+  if (type === "Spell Card") return "spell";
+  if (type === "Trap Card") return "trap";
+  return "effect";
+}
+// The pool with each card's copy limit and deck (from the engine).
+let POOL = null;
+function pool() {
+  if (!POOL) {
+    const info = new Map(state.init.pool.map((p) => [p.id, p]));
+    POOL = JSON.parse(state.initArgs.cards).cards.filter((c) => info.has(c.id)).map((c) => ({
+      ...c, kind: kindOf(c.type), monster: c.type.includes("Monster"), limit: info.get(c.id).limit, extra: info.get(c.id).extra,
+    }));
+    POOL.byId = new Map(POOL.map((c) => [c.id, c]));
+  }
+  return POOL;
+}
+const card = (id) => pool().byId.get(id);
+const copies = (id) => builder.main.concat(builder.extra).filter((x) => x === id).length;
+
+function deckJson() {
+  const entries = (ids) => {
+    const m = new Map();
+    for (const id of ids) m.set(id, (m.get(id) ?? 0) + 1);
+    return [...m].map(([id, count]) => ({ id, name: card(id).name, count }));
+  };
+  const d = { schema_version: 1, name: builder.name.trim() || "Untitled deck" };
+  if (builder.played_by) d.for = builder.played_by;
+  d.notes = builder.notes ?? "Built in the browser deck builder.";
+  d.main = entries(builder.main);
+  d.extra = entries(builder.extra);
+  return d;
+}
+const deckText = () => JSON.stringify(deckJson(), null, 1) + "\n";
+
+function check() { builder.problems = Engine.call({ cmd: "check_deck", text: deckText() }).problems; }
+function saveDraft() {
+  const { file, name, played_by, notes, main, extra, dirty } = builder;
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ file, name, played_by, notes, main, extra, dirty })); } catch (_) { /* storage may be blocked */ }
+}
+function say(text, bad = false) { builder.message = { text, bad }; }
+
+// Loads deck JSON text (a saved, shipped or imported deck) into the slots.
+function loadDeck(text, file) {
+  const d = JSON.parse(text);
+  Engine.call({ cmd: "check_deck", text }); // refuses a file that is not a deck
+  const expand = (list) => (list ?? []).flatMap((e) => Array(e.count).fill(e.id));
+  const all = expand(d.main).concat(expand(d.extra));
+  const unknown = all.filter((id) => !card(id)).length;
+  Object.assign(builder, {
+    file, name: d.name ?? "", played_by: d.for ?? null, notes: d.notes ?? null,
+    main: expand(d.main).filter((id) => card(id)), extra: expand(d.extra).filter((id) => card(id)),
+    slot: null, focus: null, dirty: file === null,
+  });
+  builder.message = unknown ? { text: `${unknown} card${unknown > 1 ? "s" : ""} not in the pool left out.`, bad: true } : null;
+}
+function newDeck() {
+  Object.assign(builder, { file: null, name: "", played_by: null, notes: null, main: [], extra: [], slot: null, focus: null, dirty: false, message: null });
+}
+
+function addCard(id) {
+  const c = card(id), zone = c.extra ? "extra" : "main", list = builder[zone];
+  const max = c.extra ? state.init.deck_rules.extra_max : state.init.deck_rules.main_max;
+  if (copies(id) >= c.limit) return say(`${c.name}: at most ${c.limit} per deck.`, true);
+  if (list.length >= max) return say(`The ${c.extra ? "Extra" : "Main"} Deck holds at most ${max} cards.`, true);
+  list.push(id);
+  builder.focus = id;
+  changed();
+}
+// Puts a card in the chosen slot: swaps the card there, or fills an empty one.
+function putInSlot(id) {
+  const c = card(id), { zone, index } = builder.slot, list = builder[zone];
+  if (c.extra !== (zone === "extra")) return say(`${c.name} goes in the ${c.extra ? "Extra" : "Main"} Deck.`, true);
+  const old = list[index];
+  if (old === id) { builder.slot = null; return; }
+  if (copies(id) >= c.limit) return say(`${c.name}: at most ${c.limit} per deck.`, true);
+  if (old === undefined) list.push(id); else list[index] = id;
+  say(old === undefined ? `${c.name} added.` : `${card(old).name} swapped for ${c.name}.`);
+  builder.slot = null; builder.focus = id;
+  changed(true);
+}
+function removeOne(id) {
+  for (const zone of ["main", "extra"]) {
+    const i = builder[zone].lastIndexOf(id);
+    if (i >= 0) { builder[zone].splice(i, 1); break; }
+  }
+  builder.slot = null;
+  changed();
+}
+function changed(keepMessage = false) {
+  if (!keepMessage) builder.message = null;
+  builder.dirty = true;
+  check(); saveDraft(); drawBuilder();
+}
+
+function filtered() {
+  const f = builder.f, q = f.q.trim().toLowerCase();
+  const num = (v) => (v === "" ? null : Number(v));
+  const [lmin, lmax, atk, def] = [num(f.lmin), num(f.lmax), num(f.atk), num(f.def)];
+  const list = pool().filter((c) =>
+    (!q || c.name.toLowerCase().includes(q) || c.text.toLowerCase().includes(q))
+    && (!f.kind || (f.kind === "monster" ? c.monster : c.kind === f.kind))
+    && (!f.attr || c.attribute === f.attr) && (!f.race || c.race === f.race) && (!f.set || c.in_game_index === f.set)
+    && (lmin === null || (c.level ?? -1) >= lmin) && (lmax === null || (c.level !== null && c.level <= lmax))
+    && (atk === null || (c.atk ?? -1) >= atk) && (def === null || (c.def ?? -1) >= def));
+  const by = { name: () => 0, atk: (a, b) => (b.atk ?? -1) - (a.atk ?? -1), def: (a, b) => (b.def ?? -1) - (a.def ?? -1), level: (a, b) => (b.level ?? -1) - (a.level ?? -1) }[f.sort];
+  // With a search, cards whose name matches come before those whose text does.
+  const nameHit = (c) => (q && !c.name.toLowerCase().includes(q) ? 1 : 0);
+  return list.sort((a, b) => nameHit(a) - nameHit(b) || by(a, b) || a.name.localeCompare(b.name));
+}
+
+function faceHtml(c, attrs, cls = "") {
+  const img = imageFor(c, "small");
+  const stats = c.monster ? `${c.atk} / ${c.def}` : c.race;
+  const label = `${c.name}, ${stats}`;
+  if (img) {
+    return `<button class="card has-img k-${c.kind} ${cls}" ${attrs} title="${esc(c.name)}" aria-label="${esc(label)}">
+      <img src="${img}" data-key="${esc(imgKey(img))}" alt="" loading="lazy" draggable="false" referrerpolicy="no-referrer"></button>`;
+  }
+  return `<button class="card k-${c.kind} ${cls}" ${attrs} title="${esc(c.name)}" aria-label="${esc(label)}">
+    <span class="cname">${esc(c.name)}</span><span class="cstats"><span>${esc(stats)}</span></span></button>`;
+}
+function typeLine(c) {
+  return c.monster ? `${c.attribute} · ${c.race} · Level ${c.level} · ${c.type.replace(" Monster", "")}` : `${c.race} ${c.type.replace(" Card", "")}`;
+}
+
+function slotsHtml(zone, min, max) {
+  const list = builder[zone];
+  const n = Math.min(max, Math.max(min, list.length + 1));
+  let html = "";
+  for (let i = 0; i < n; i++) {
+    const sel = builder.slot?.zone === zone && builder.slot.index === i;
+    const id = list[i];
+    html += id !== undefined
+      ? `<div class="bslot">${faceHtml(card(id), `data-slot="${zone}:${i}" aria-pressed="${sel}"`, sel ? "sel" : "")}<span class="bnum">${i + 1}</span></div>`
+      : `<div class="bslot"><button class="bempty${sel ? " sel" : ""}" data-slot="${zone}:${i}" aria-pressed="${sel}" aria-label="Empty slot ${i + 1}">${i + 1}</button></div>`;
+  }
+  return html;
+}
+
+function detailHtml() {
+  const slot = builder.slot;
+  const id = slot ? builder[slot.zone][slot.index] : builder.focus;
+  const hint = slot ? `<p class="note">${id === undefined ? `Slot ${slot.index + 1} is empty: tap a card in the search to put it here.` : `Tap a card in the search to swap it into slot ${slot.index + 1}.`}</p>` : "";
+  if (id === undefined || id === null) return hint || `<p class="note">Tap a card to read it; + adds a copy. Tap a slot, then a card in the search, to swap it.</p>`;
+  const c = card(id), img = imageFor(c, "full"), n = copies(id);
+  return `<div class="bdetail">
+    ${img ? `<img src="${img}" data-key="${esc(imgKey(img))}" alt="" referrerpolicy="no-referrer">` : ""}
+    <div class="bdinfo">
+      <h3>${esc(c.name)}</h3>
+      <p class="sub">${esc(typeLine(c))}${c.monster ? ` · ATK ${c.atk} / DEF ${c.def}` : ""} · ${esc(c.in_game_index)}</p>
+      <p class="btext">${esc(c.text)}</p>
+      <p class="sub">In this deck: ${n} of ${c.limit}${c.limit < state.init.deck_rules.default_copy_limit ? " (ban list)" : ""}${c.extra ? " · Extra Deck" : ""}</p>
+      <div class="actions-row">
+        <button class="btn" data-add="${c.id}"${n >= c.limit ? " disabled" : ""}>Add a copy</button>
+        <button class="btn" data-remove="${c.id}"${n ? "" : " disabled"}>Remove a copy</button>
+        ${slot ? `<button class="btn" id="b-unslot">Done with slot ${slot.index + 1}</button>` : ""}
+      </div>
+    </div></div>${hint}`;
+}
+
+function openOptions() {
+  const mine = myDecks().map((d) => { try { return { file: d.file, name: JSON.parse(d.text).name }; } catch (_) { return null; } }).filter(Boolean);
+  const shipped = state.init.decks.filter((d) => !isMine(d.file) && d.legal);
+  const o = (d) => `<option value="${esc(d.file)}">${esc(d.name)}</option>`;
+  return `<option value="">Open a deck…</option>`
+    + (mine.length ? `<optgroup label="Your decks">${mine.map(o).join("")}</optgroup>` : "")
+    + `<optgroup label="Shipped decks (opens a copy)">${shipped.map(o).join("")}</optgroup>`;
+}
+
+function renderBuilder() {
+  builder.open = true;
+  const p = pool(), r = state.init.deck_rules;
+  const uniq = (xs) => [...new Set(xs)].sort((a, b) => (typeof a === "number" ? a - b : String(a).localeCompare(String(b))));
+  const opt = (v, label = v) => `<option value="${esc(v)}">${esc(label)}</option>`;
+  const races = uniq(p.filter((c) => c.monster).map((c) => c.race)), subs = uniq(p.filter((c) => !c.monster).map((c) => c.race));
+  const levels = uniq(p.filter((c) => c.level !== null).map((c) => c.level));
+  main.innerHTML = `<div class="builder" id="builder">
+  <section class="panel bhead">
+    <div class="brow">
+      <h2>Deck builder</h2>
+      <button class="btn" id="b-back">Back to the duel setup</button>
+    </div>
+    <div class="brow">
+      <label class="field bname"><span class="label">Deck name</span><input type="text" id="b-name" maxlength="60" placeholder="My deck"></label>
+      <label class="field"><span class="label">Open</span><select id="b-open"></select></label>
+    </div>
+    <div class="actions-row">
+      <button class="btn primary" id="b-save">Save</button>
+      <button class="btn" id="b-new">New deck</button>
+      <button class="btn" id="b-delete">Delete</button>
+      <button class="btn" id="b-export">Export file</button>
+      <label class="btn" for="b-import">Import file</label><input type="file" id="b-import" accept=".json,application/json" hidden>
+    </div>
+    <div id="b-status" aria-live="polite"></div>
+  </section>
+  <div class="bcols">
+    <section class="panel">
+      <h3>Find cards <span class="sub" id="b-found"></span></h3>
+      <form class="filters" id="b-filters" onsubmit="return false">
+        <label class="field q"><span class="label">Name or text</span><input type="text" name="q" placeholder="Search…" autocomplete="off"></label>
+        <label class="field"><span class="label">Kind</span><select name="kind">${opt("", "Any")}${opt("monster", "Monsters")}${opt("normal", "Normal Monsters")}${opt("effect", "Effect Monsters")}${opt("fusion", "Fusion Monsters")}${opt("ritual", "Ritual Monsters")}${opt("spell", "Spells")}${opt("trap", "Traps")}</select></label>
+        <label class="field"><span class="label">Attribute</span><select name="attr">${opt("", "Any")}${uniq(p.map((c) => c.attribute).filter(Boolean)).map((a) => opt(a)).join("")}</select></label>
+        <label class="field"><span class="label">Type</span><select name="race">${opt("", "Any")}<optgroup label="Monster type">${races.map((x) => opt(x)).join("")}</optgroup><optgroup label="Spell or Trap">${subs.map((x) => opt(x)).join("")}</optgroup></select></label>
+        <label class="field"><span class="label">Set</span><select name="set">${opt("", "Any")}${uniq(p.map((c) => c.in_game_index)).map((s) => opt(s)).join("")}</select></label>
+        <label class="field"><span class="label">Level from</span><select name="lmin">${opt("", "Any")}${levels.map((l) => opt(l)).join("")}</select></label>
+        <label class="field"><span class="label">Level to</span><select name="lmax">${opt("", "Any")}${levels.map((l) => opt(l)).join("")}</select></label>
+        <label class="field"><span class="label">ATK at least</span><input type="number" name="atk" min="0" step="100" inputmode="numeric"></label>
+        <label class="field"><span class="label">DEF at least</span><input type="number" name="def" min="0" step="100" inputmode="numeric"></label>
+        <label class="field"><span class="label">Sort by</span><select name="sort">${opt("name", "Name")}${opt("atk", "ATK, highest")}${opt("def", "DEF, highest")}${opt("level", "Level, highest")}</select></label>
+        <div class="field"><span class="label">&nbsp;</span><button type="button" class="btn" id="b-clear">Clear filters</button></div>
+      </form>
+      <div class="bgrid" id="b-results"></div>
+      <div id="b-more"></div>
+    </section>
+    <section class="panel">
+      <div id="b-detail"></div>
+      <h3>Main Deck <span class="sub" id="b-main-count"></span></h3>
+      <div class="bgrid slots" id="b-main"></div>
+      <h3>Extra Deck <span class="sub" id="b-extra-count"></span></h3>
+      <div class="bgrid slots" id="b-extra"></div>
+      <p class="note">Main Deck ${r.main_min} to ${r.main_max} cards, Extra Deck (Fusion Monsters) up to ${r.extra_max}; copy limits from the ban list.</p>
+    </section>
+  </div></div>`;
+  const root = document.getElementById("builder");
+  const form = document.getElementById("b-filters");
+  for (const [k, v] of Object.entries(builder.f)) form.elements[k].value = v;
+  document.getElementById("b-name").value = builder.name;
+  form.addEventListener("input", () => {
+    for (const k of Object.keys(FILTERS)) builder.f[k] = form.elements[k].value;
+    builder.shown = PAGE;
+    drawBuilder();
+  });
+  document.getElementById("b-name").addEventListener("input", (ev) => { builder.name = ev.target.value; builder.dirty = true; saveDraft(); drawStatus(); });
+  document.getElementById("b-open").addEventListener("change", (ev) => openDeck(ev.target.value));
+  document.getElementById("b-import").addEventListener("change", importDeck);
+  root.addEventListener("click", builderClick);
+  drawBuilder();
+}
+
+function builderClick(ev) {
+  const t = ev.target.closest("button");
+  if (!t) return;
+  const d = t.dataset;
+  if (d.add) addCard(Number(d.add));
+  else if (d.remove) removeOne(Number(d.remove));
+  else if (d.pick) {
+    const id = Number(d.pick);
+    if (builder.slot) putInSlot(id); else { builder.focus = id; builder.message = null; }
+    drawBuilder();
+  } else if (d.slot) {
+    const [zone, i] = d.slot.split(":"), index = Number(i);
+    const same = builder.slot?.zone === zone && builder.slot.index === index;
+    builder.slot = same ? null : { zone, index };
+    builder.message = null;
+    drawBuilder();
+  } else if (d.more) { builder.shown += PAGE; drawBuilder(); }
+  else if (t.id === "b-unslot") { builder.slot = null; drawBuilder(); }
+  else if (t.id === "b-clear") { builder.f = { ...FILTERS }; renderBuilder(); }
+  else if (t.id === "b-back") { builder.open = false; renderSetup(); }
+  else if (t.id === "b-save") saveDeck();
+  else if (t.id === "b-new") { if (!builder.dirty || confirm("Discard the changes to this deck?")) { newDeck(); check(); saveDraft(); renderBuilder(); } }
+  else if (t.id === "b-delete") deleteDeck();
+  else if (t.id === "b-export") exportDeck();
+}
+
+function drawStatus() {
+  const m = builder.message;
+  const saved = builder.file ? (builder.dirty ? "Unsaved changes." : "Saved in this browser.") : "Not saved yet.";
+  const problems = builder.problems.length
+    ? `<ul class="problems">${builder.problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`
+    : `<p class="ok">Legal: ready to duel${builder.file && !builder.dirty ? "; it is in the duel setup's deck lists" : " once saved"}.</p>`;
+  document.getElementById("b-status").innerHTML = `${m ? `<p class="bmsg${m.bad ? " bad" : ""}">${esc(m.text)}</p>` : ""}<p class="sub">${saved}</p>${problems}`;
+  document.getElementById("b-delete").disabled = !builder.file;
+}
+
+function drawBuilder() {
+  const r = state.init.deck_rules, list = filtered();
+  document.getElementById("b-found").textContent = `${list.length} of ${pool().length}`;
+  document.getElementById("b-results").innerHTML = list.slice(0, builder.shown).map((c) => {
+    const n = copies(c.id), full = n >= c.limit;
+    return `<div class="btile${builder.focus === c.id && !builder.slot ? " focus" : ""}">${faceHtml(c, `data-pick="${c.id}"`)}
+      <button class="bplus" data-add="${c.id}" aria-label="Add a copy of ${esc(c.name)}"${full ? " disabled" : ""}>+</button>
+      <span class="bn${full ? " full" : ""}">${n}/${c.limit}</span></div>`;
+  }).join("") || `<p class="note">No card matches these filters.</p>`;
+  document.getElementById("b-more").innerHTML = list.length > builder.shown
+    ? `<button class="btn" data-more="1">Show more (${list.length - builder.shown} left)</button>` : "";
+  const kinds = (ids) => ["monster", "spell", "trap"].map((k) => ids.filter((id) => (k === "monster" ? card(id).monster : card(id).kind === k)).length);
+  const [m, s, t] = kinds(builder.main);
+  document.getElementById("b-main-count").textContent = `${builder.main.length} (${r.main_min}–${r.main_max}) · ${m} monsters, ${s} spells, ${t} traps`;
+  document.getElementById("b-extra-count").textContent = `${builder.extra.length} (up to ${r.extra_max})`;
+  document.getElementById("b-main").innerHTML = slotsHtml("main", r.main_min, r.main_max);
+  document.getElementById("b-extra").innerHTML = slotsHtml("extra", 1, r.extra_max);
+  document.getElementById("b-detail").innerHTML = detailHtml();
+  document.getElementById("b-open").innerHTML = openOptions();
+  drawStatus();
+}
+
+function openBuilder() {
+  pool();
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (_) { /* storage may be blocked */ }
+  if (draft) {
+    Object.assign(builder, draft, { slot: null, focus: null, message: null });
+    builder.main = builder.main.filter((id) => card(id)); builder.extra = builder.extra.filter((id) => card(id));
+  } else newDeck();
+  check();
+  renderBuilder();
+}
+
+function openDeck(file) {
+  if (!file) return;
+  if (builder.dirty && !confirm("Discard the changes to this deck?")) { drawBuilder(); return; }
+  const mine = myDecks().find((d) => d.file === file);
+  const text = mine ? mine.text : state.initArgs.decks.find((d) => d.file === file).text;
+  loadDeck(text, mine ? file : null);
+  // A copy may use any card of the pool, so it is no longer a save's deck.
+  if (!mine) { builder.name = "Copy of " + builder.name; builder.played_by = null; }
+  check(); saveDraft(); renderBuilder();
+}
+
+function saveDeck() {
+  if (!builder.name.trim()) { say("Give the deck a name first.", true); drawStatus(); document.getElementById("b-name").focus(); return; }
+  const file = builder.file ?? `my-${Date.now().toString(36)}.json`;
+  const list = myDecks().filter((d) => d.file !== file).concat([{ file, text: deckText() }]);
+  if (!storeMyDecks(list)) { say("This browser does not allow saving here: export the deck to keep it.", true); drawStatus(); return; }
+  builder.file = file; builder.dirty = false;
+  try { reinit(); } catch (e) { say(e.message, true); }
+  say(builder.problems.length ? "Saved. It joins the duel setup once it is legal." : "Saved: pick it in the duel setup.");
+  saveDraft(); drawBuilder();
+}
+
+function deleteDeck() {
+  if (!builder.file || !confirm(`Delete “${builder.name}” from this browser?`)) return;
+  storeMyDecks(myDecks().filter((d) => d.file !== builder.file));
+  try { reinit(); } catch (e) { say(e.message, true); }
+  newDeck(); check(); saveDraft(); renderBuilder();
+  say("Deleted."); drawStatus();
+}
+
+function exportDeck() {
+  const slug = (builder.name.trim() || "deck").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "deck";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([deckText()], { type: "application/json" }));
+  a.download = slug + ".json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+async function importDeck(ev) {
+  const f = ev.target.files[0];
+  ev.target.value = "";
+  if (!f) return;
+  if (builder.dirty && !confirm("Discard the changes to this deck?")) return;
+  try {
+    loadDeck(await f.text(), null);
+    check(); saveDraft(); renderBuilder();
+    if (!builder.message) { say(`Imported ${f.name}: save it to keep it here.`); drawStatus(); }
+  } catch (e) { say(`${f.name} is not a deck file: ${e.message}`, true); drawStatus(); }
+}
+
 document.addEventListener("keydown", (ev) => {
+  if (builder.open && ev.key === "Escape" && builder.slot) { builder.slot = null; drawBuilder(); return; }
   if (!state.view || ev.key !== "Escape") return;
   if (state.aim || state.variants) { state.aim = null; state.variants = null; renderGame(); }
   else if (state.selected !== null) select(state.selected);
