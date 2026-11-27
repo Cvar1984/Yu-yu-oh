@@ -185,6 +185,7 @@ pub fn register(r: &mut Registry) {
                             return Flow::Done;
                         }
                         Flow::Ask {
+                            about: Some(monster),
                             options: positions::FACE_UP.to_vec(),
                             then: |g, ctx, option| {
                                 let (monster, tributes) =

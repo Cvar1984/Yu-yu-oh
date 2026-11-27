@@ -137,6 +137,7 @@ fn flute_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
         then: |_, ctx, picked| {
             ctx.targets = vec![picked];
             Flow::Ask {
+                about: Some(picked),
                 options: positions::FACE_UP.to_vec(),
                 then: |g, ctx, option| {
                     g.special_summon(ctx.targets[0], ctx.controller, positions::face_up(option));
@@ -379,6 +380,7 @@ pub fn register(r: &mut Registry) {
                     then: |_, ctx, picked| {
                         ctx.targets = vec![picked];
                         Flow::Ask {
+                            about: Some(picked),
                             options: positions::FACE_UP.to_vec(),
                             then: |g, ctx, option| {
                                 g.special_summon(

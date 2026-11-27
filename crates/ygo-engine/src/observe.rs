@@ -177,6 +177,9 @@ pub struct Observation {
     pub revealed: Vec<VisibleCard>,
     /// The labelled options of a pending `Ask` decision for the viewer.
     pub question: Vec<String>,
+    /// The card that question is about (the monster a position question
+    /// places), shown to the viewer answering it.
+    pub asked_about: Option<VisibleCard>,
     /// The chain link whose resolution waits for a `Choose` or `Ask`
     /// answer: the card asking and its targets. Public, like every link.
     pub resolving: Option<ChainView>,
@@ -304,6 +307,17 @@ impl Game {
             targets: pc.link.targets.clone(),
             negated: pc.link.negated,
         });
+        let asked_about = self
+            .pending_choice
+            .as_ref()
+            .filter(|pc| pc.decider() == viewer)
+            .and_then(|pc| pc.about())
+            .map(|id| VisibleCard::Known {
+                instance: id,
+                card: self.shared.pool.get(self.instances[id.index()].card).id,
+                position: self.instances[id.index()].position,
+                stats: None,
+            });
         let (revealed, question) = match &self.pending_choice {
             Some(pc) if pc.decider() == viewer => (
                 pc.card_options()
@@ -337,6 +351,7 @@ impl Game {
             pending_summon: self.pending_summon(),
             revealed,
             question,
+            asked_about,
             resolving,
             lingering: self.lingering.clone(),
             types: self.changed_types(),

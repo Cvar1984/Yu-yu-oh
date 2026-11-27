@@ -164,6 +164,7 @@ pub fn register(r: &mut Registry) {
                             return Flow::Done;
                         }
                         Flow::Ask {
+                            about: None,
                             options: vec!["Pay 100 LP", "Destroy Messenger of Peace"],
                             then: |g, ctx, option| {
                                 if option == 0 {

@@ -247,6 +247,7 @@ fn offering_next(g: &mut Game, ctx: &mut EffectCtx) -> Flow {
         options.insert(0, "Normal Summon it (face-up Attack Position)");
     }
     Flow::Ask {
+        about: None,
         options,
         then: |g, ctx, option| {
             let set = option == 1 || g.summons_locked(ctx.controller);
@@ -497,6 +498,7 @@ pub fn register(r: &mut Registry) {
                     return Flow::Done;
                 }
                 Flow::Ask {
+                    about: None,
                     options: vec!["Set a Spell or Trap from your hand", "Set nothing"],
                     then: |g, ctx, option| {
                         let options = settable(g, ctx.controller);

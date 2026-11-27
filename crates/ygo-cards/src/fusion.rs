@@ -180,6 +180,7 @@ fn poly_step(g: &mut Game, ctx: &mut ygo_engine::EffectCtx) -> Flow {
     let picked = ctx.targets.len() - 1;
     if picked == required.len() {
         return Flow::Ask {
+            about: ctx.targets.first().copied(),
             options: positions::FACE_UP.to_vec(),
             then: |g, ctx, option| {
                 let (fusion, materials) = (ctx.targets[0], ctx.targets[1..].to_vec());

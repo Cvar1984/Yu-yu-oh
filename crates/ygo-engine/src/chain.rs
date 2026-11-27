@@ -127,6 +127,7 @@ pub(crate) enum Prompt {
     Ask {
         chooser: PlayerId,
         options: Vec<&'static str>,
+        about: Option<InstanceId>,
         then: fn(&mut Game, &mut EffectCtx, usize) -> Flow,
     },
 }
@@ -151,6 +152,14 @@ impl PendingChoice {
         match &self.prompt {
             Prompt::Choose { options, .. } => options,
             Prompt::Ask { .. } => &[],
+        }
+    }
+
+    /// The card a question is about, if it names one.
+    pub fn about(&self) -> Option<InstanceId> {
+        match &self.prompt {
+            Prompt::Ask { about, .. } => *about,
+            Prompt::Choose { .. } => None,
         }
     }
 
@@ -871,7 +880,11 @@ impl Game {
                     },
                 });
             }
-            Flow::Ask { options, then } => {
+            Flow::Ask {
+                options,
+                about,
+                then,
+            } => {
                 assert!(!options.is_empty(), "a question needs options");
                 let chooser = ctx.controller;
                 self.pending_choice = Some(PendingChoice {
@@ -880,6 +893,7 @@ impl Game {
                     prompt: Prompt::Ask {
                         chooser,
                         options,
+                        about,
                         then,
                     },
                 });
@@ -887,6 +901,7 @@ impl Game {
             Flow::AskBy {
                 chooser,
                 options,
+                about,
                 then,
             } => {
                 assert!(!options.is_empty(), "a question needs options");
@@ -896,6 +911,7 @@ impl Game {
                     prompt: Prompt::Ask {
                         chooser,
                         options,
+                        about,
                         then,
                     },
                 });
