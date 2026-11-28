@@ -4,10 +4,43 @@ Gate (handoff): **each promoted checkpoint beats the previous one.** A
 candidate is promoted only if it beats the current best over enough games
 for a 95% interval that excludes 50% (handoff, Testing: bot evaluation).
 
-Status (2026-11-24): steps 1 to 4 done; step 5 started: the network
-alone, and the network-guided search bot, each beat every reference bot
-with the owner's deck (below). Owner (2026-11-24): burn is the library; the plan is
-approved.
+Status (2026-11-28): **gate passed** (gate report below): each shipped
+network beats the one before it on fresh seeds. Owner (2026-11-24): burn is
+the library; the plan is approved.
+
+## Gate report (2026-11-28)
+
+`tools/ladder.py`: one bot against each opponent bot, the same deck on both
+sides, on the eight decks (`save_a_tuned_40`, `save_a_owner_current_40`, the
+six enemy decks), each player first in half the games, seeds never used in
+training or promotion. Draws count half; 95% intervals.
+
+The chain of shipped networks (`data/networks/best.bpk` over time; the
+checkpoints are local, git-ignored, matched to the shipped files by SHA-256):
+
+| Shipped | Against the one before | Games | Result |
+| --- | --- | --- | --- |
+| 1. `owner-2` (imitation of search, `bb77076`) | the old bots (step 5) | 6,000 | beat all 14 |
+| 2. self-play best, base widths (`ea7145f`) | `owner-2` | 2,000 (seed 780000) | **66.65% ±2.07** |
+| 3. self-play best, wide (`d5d840a`, shipped now) | 2 | 2,000 (seed 777000) | 51.40% ±2.19 |
+| | 2 | 4,000 (seed 779000) | **52.18% ±1.55** |
+
+Each link's interval excludes 50% (the third on the larger run; the smaller
+one touches it). The third network's lead is small and comes from the enemy
+decks: on the owner's two decks it is level with the second (47.6% to 49.6%
+across both runs, every interval containing 50%).
+
+The ladder for the shipped network (`network`, seeds 777000 and 778000):
+
+| Opponent | Games | Shipped network wins |
+| --- | --- | --- |
+| `random` | 2,000 | 99.10% ±0.41 (96.4% to 100% per deck) |
+| `owner-2` (shipped 1) | 2,000 | 68.00% ±2.04 (56.4% to 80.0% per deck) |
+| shipped 2 | 6,000 (both runs) | 51.92% ±1.26 |
+| itself with search (`network-search` against `network`) | 400 | the search wins 58.25% ±4.83 |
+
+Speed here (4 cores): about 45 games a second with the network alone on
+both sides, about 1 with search on one side.
 
 ## Step 1: the library trial (done)
 
