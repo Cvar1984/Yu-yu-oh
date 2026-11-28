@@ -1,12 +1,9 @@
 # M7 plan: the league
 
 Status (2026-11-28): approved by the owner (built as planned); M6 gate
-passed (`docs/m6-plan.md`). Steps 1 and 2 done (`ygo_train::glicko`,
-`ygo_train::league`, `tests/league.rs`; `ygo league run` and `ygo league
-table`); step 3, the gate run, next.
-
-Gate (handoff, owner 2026-11-28): **the ratings table runs unattended for 50
-generations.**
+passed (`docs/m6-plan.md`). Steps 1 to 3 done; the gate run passed (report
+below). Open: the population collapsed onto one lineage (below), for the
+owner to decide on before M8.
 
 Owner's answers (2026-11-28):
 
@@ -99,3 +96,63 @@ Agents never change once made, so a pair's games are played once and kept.
 2. `play_match`, `ygo league run` and `ygo league table`; a short run.
 3. The gate: 50 generations unattended here; report the table, the top decks
    against the fixed decks, the time per generation, and CLAUDE.md.
+
+## Gate report (2026-11-28)
+
+`ygo league run --league league/main.json --generations 50 --threads 4
+--seed 1`, one process, nobody touching it: **50 generations, no error, 23.5
+minutes** (generation 0, all 325 pairs: 114 s; later ones 19 to 35 s, 26 s
+on average). 80,280 league games plus 14,000 in the exploiter searches; 165
+agents made, 4,014 pairs played; the league file saved after every
+generation. **The gate passes.**
+
+The table after 50 generations (top and the fixed decks; score is against
+the whole league, 95% intervals):
+
+| # | Agent | Kind | Rating ±2 dev. | Score | First | Second |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | DARK Plasma #161 (hall) | population | 1547 ±31 | 63.3% ±3.9 | 69.3% | 57.2% |
+| 2 | DARK Plasma #154 | population | 1550 ±40 | 61.8% ±3.7 | 67.6% | 55.9% |
+| 3 | DARK Plasma #150 (hall) | population | 1554 ±45 | 60.6% ±3.4 | 66.8% | 54.5% |
+| 15 | enemy E6 Gate Guardian | fixed | 1482 ±53 | 54.9% ±1.7 | 57.1% | 52.7% |
+| 16 | save_a_beatdown_40 | fixed | 1437 ±53 | 49.0% ±1.7 | 54.4% | 43.7% |
+| 17 | enemy E5 DARK Plasma | fixed | 1434 ±54 | 53.4% ±1.7 | 57.4% | 49.3% |
+| 18 | save_a_tuned_40 | fixed | 1402 ±54 | 48.4% ±1.7 | 53.2% | 43.6% |
+| 19 | enemy E2 Special Summon | fixed | 1373 ±53 | 43.0% ±1.7 | 47.1% | 38.9% |
+| 20 | save_a_control_no_tribute_40 | fixed | 1367 ±53 | 45.2% ±1.7 | 49.2% | 41.2% |
+| 21 | save_a_best_overall_40 | fixed | 1354 ±54 | 44.1% ±1.7 | 50.9% | 37.3% |
+| 22 | save_a_crafted_40 | fixed | 1344 ±54 | 43.0% ±1.7 | 48.8% | 37.1% |
+| 23 | enemy E3 Removal | fixed | 1297 ±55 | 39.7% ±1.7 | 40.0% | 39.3% |
+| 24 | save_a_owner_current_40 | fixed | 1268 ±55 | 35.9% ±1.7 | 41.2% | 30.6% |
+| 25 | enemy E4 Big Beatdown | fixed | 1255 ±56 | 34.1% ±1.6 | 37.5% | 30.8% |
+| 26 | enemy E1 Toon | fixed | 1247 ±56 | 29.5% ±1.6 | 32.2% | 26.9% |
+| 27 | save_b_dark_plasma_40 | fixed | 969 ±67 | 12.8% ±1.2 | 14.3% | 11.3% |
+
+What the run shows:
+
+- **The league finds stronger decks.** The best mutants score 72.7% ±5.4
+  against the 13 fixed decks (260 games each); the first champion (#17,
+  generation 0) scored 68.8%. Against the best four, the owner's decks score
+  31.2% ±10.2 (`save_a_tuned_40`), 36.2% (`save_a_beatdown_40`) and 21.2%
+  (`save_a_owner_current_40`). The top deck (#161) is the E5 DARK Plasma
+  enemy deck with seven swaps: out Dark Elf, Mystic Plasma Zone, Whiptail
+  Crow, Ryu-Kishin Powered, Dark Hole, Shadow Spell, Snatch Steal; in
+  Hyosube, Trap Hole, Mirror Force, Princess of Tsurugi, Firegrass, Dust
+  Tornado, Graceful Charity.
+- **Going first is worth about 5 to 12 points** for every deck.
+- **The hall and exploiters work as built**: 8 champions in the hall (the
+  oldest still playing), 39 of 50 generations made an exploiter that beat
+  its parent against the leader, and three exploiters reached the top 12.
+- **The population collapsed onto one lineage.** Every living mutable agent
+  descends from the E5 DARK Plasma deck. The other lineages died out
+  early: Toon and save B in generation 0, the other save A decks by
+  generation 19, Gate Guardian by 46. Every style is still in the league
+  through its fixed deck, but only DARK Plasma is being improved. The
+  "four best agents of different lineages" rule for parents cannot hold a
+  lineage that has no living member. Ways to keep styles evolving (for the
+  owner): a quota of at least one living agent per lineage, with the
+  population seeded two per lineage; or leave it to M8's per-style search
+  (MAP-Elites), which is built for exactly this.
+- Ratings settle at a deviation of about ±53 (two deviations) for veterans:
+  each period widens it slightly and new games narrow it again. Agents born
+  in the last generation show 0 games and ±700 until they play.
