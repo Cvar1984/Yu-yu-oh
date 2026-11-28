@@ -274,6 +274,8 @@ header.top { align-items: center; }
 /* Animations: everything drawn above the page lives in #fx. */
 #fx { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
 #fx .ghost { position: fixed; }
+#fx .ghost.shown { border-radius: 6px; background: var(--table); }
+#fx .ghost.shown .card { opacity: 1; }
 #fx .ghost > * { width: 100%; height: 100%; }
 #fx .float { position: fixed; font-family: var(--font-display); font-weight: 700; font-size: 22px; text-shadow: 0 2px 6px rgb(0 0 0 / 0.45); white-space: nowrap; }
 #fx .float.damage { color: #ff4d4d; } #fx .float.pay { color: #ffae3b; } #fx .float.gain { color: #3ddc84; }
@@ -1419,6 +1421,8 @@ const SOUND_OF = {
   turn: "turn", battle: "battle", coin: "coin", shuffle: "shuffle",
 };
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+// How long an activated Spell or Trap stays shown on the field.
+const SHOWN_MS = 1500;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const FX = {
@@ -1431,17 +1435,33 @@ const FX = {
     return this.layer;
   },
   // Where every card and pile is now, to animate a card that leaves.
+  // Each rect is kept with the area it sits in (a side of the table or the
+  // hand), so it can follow that area when the next screen moves it (the
+  // strip of the opponent's moves above the table comes and goes).
   snapshot() {
     const m = new Map();
-    for (const e of main.querySelectorAll("[data-inst]")) m.set(Number(e.dataset.inst), { rect: e.getBoundingClientRect(), html: e.outerHTML });
+    for (const e of main.querySelectorAll("[data-inst]")) {
+      const area = e.closest(".side.you, .side.them, .hand");
+      const key = area ? (area.classList.contains("hand") ? ".hand" : area.classList.contains("you") ? ".side.you" : ".side.them") : null;
+      m.set(Number(e.dataset.inst), { rect: e.getBoundingClientRect(), html: e.outerHTML, area: key, areaRect: area?.getBoundingClientRect() });
+    }
     return m;
+  },
+  // Where a remembered card would be now.
+  now(was) {
+    const area = was.area ? main.querySelector(was.area)?.getBoundingClientRect() : null;
+    if (!area || !was.areaRect) return was.rect;
+    const dx = area.left - was.areaRect.left, dy = area.top - was.areaRect.top;
+    const r = was.rect;
+    return { left: r.left + dx, top: r.top + dy, width: r.width, height: r.height };
   },
   // A copy of a card where it was, for a card that has gone.
   ghost(old) {
     const g = document.createElement("div");
     g.className = "ghost";
     g.innerHTML = old.html;
-    Object.assign(g.style, { left: old.rect.left + "px", top: old.rect.top + "px", width: old.rect.width + "px", height: old.rect.height + "px" });
+    const r = this.now(old);
+    Object.assign(g.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
     this.overlay().append(g);
     return g;
   },
@@ -1482,6 +1502,41 @@ const FX = {
     return null;
   },
 
+  // A Spell or Trap activated and gone within one move (no one responded,
+  // so it resolved at once): draw it face-up in the zone it was played to
+  // (where it was Set, or a free Spell & Trap zone for one from the hand),
+  // glowing while it resolves, then send it to its pile. Returns whether
+  // it did; the step then waits for it (`placed`).
+  showOnField(c, old) {
+    const v = state.view;
+    const card = ["you", "opponent"].flatMap((k) => [...v[k].graveyard, ...v[k].banished]).find((x) => x.instance === c.card);
+    if (!card || !["spell", "trap"].includes(card.kind)) return false;
+    const was = old.get(c.card);
+    let rect = was && /\bonfield\b/.test(was.html) ? this.now(was) : null;
+    if (!rect) {
+      const side = main.querySelector(`.side.${c.yours ? "you" : "them"}`);
+      rect = (side?.querySelector(".zone.z-st") ?? side?.querySelector(".zone"))?.getBoundingClientRect();
+    }
+    if (!rect) return false;
+    const g = this.ghost({ rect, html: cardHtml({ ...card, position: "up" }) });
+    g.classList.add("shown");
+    const still = reducedMotion();
+    const pile = this.pileOf(c.card)?.getBoundingClientRect();
+    const dx = pile ? pile.left - rect.left : 0, dy = pile ? pile.top - rect.top : 0;
+    const glow = "0 0 26px 10px rgb(255 210 80 / 0.95)";
+    g.animate([
+      { opacity: 0, transform: still ? "none" : "scale(1.35)", boxShadow: "none" },
+      { opacity: 1, transform: "none", boxShadow: glow, offset: 0.12 },
+      { opacity: 1, transform: "none", boxShadow: glow, offset: 0.55 },
+      { opacity: 1, transform: "none", boxShadow: "none", offset: 0.75 },
+      { opacity: 0, transform: still ? "none" : `translate(${dx}px, ${dy}px) scale(0.6)` },
+    ], { duration: SHOWN_MS, easing: "ease-in-out" }).onfinish = () => g.remove();
+    this.placed.add(c.card);
+    this.log.push("shown_on_field");
+    return true;
+  },
+  placed: new Set(),  // cards shown on the field in this step
+
   // One cue: its animation and sound. `old` holds where cards were before
   // this step was drawn.
   cue(c, old, gone) {
@@ -1517,6 +1572,9 @@ const FX = {
         return;
       }
       case "activate": {
+        // A Spell or Trap that resolved and left within this move is first
+        // shown face-up on the field, as it was while it resolved.
+        if (!e && this.showOnField(c, old)) return;
         const target = e ?? main.querySelector(".chain .link:last-of-type");
         target?.animate([{ boxShadow: "0 0 0 0 rgb(255 210 80 / 0)", transform: "none" },
           { boxShadow: "0 0 26px 10px rgb(255 210 80 / 0.95)", transform: still ? "none" : "scale(1.08)", offset: 0.35 },
@@ -1561,12 +1619,13 @@ const FX = {
         if (!was || !gone(c.card)) return e && this.shake(e, 4);
         const g = this.ghost(was);
         const pile = this.pileOf(c.card)?.getBoundingClientRect();
-        const dx = pile ? pile.left - was.rect.left : 0, dy = pile ? pile.top - was.rect.top : 0;
+        const at0 = this.now(was);
+        const dx = pile ? pile.left - at0.left : 0, dy = pile ? pile.top - at0.top : 0;
         if (c.kind === "destroy") {
           for (let i = 0; i < 10; i++) {
             const s = document.createElement("div");
             s.className = "shard";
-            const at = this.center(was.rect);
+            const at = this.center(at0);
             Object.assign(s.style, { left: at.x + "px", top: at.y + "px" });
             this.overlay().append(s);
             const ang = Math.random() * Math.PI * 2, dist = 40 + Math.random() * 60;
@@ -1587,7 +1646,7 @@ const FX = {
         return;
       }
       case "negate": {
-        const at = e ? e.getBoundingClientRect() : old.get(c.card)?.rect;
+        const at = e ? e.getBoundingClientRect() : old.get(c.card) && this.now(old.get(c.card));
         if (!at) return;
         const s = document.createElement("div");
         s.className = "stamp"; s.textContent = "Negated";
@@ -1639,10 +1698,15 @@ function playback(answer, done) {
       // Moving to the Graveyard right after being destroyed is one animation.
       const destroyed = new Set(step.cues.filter((c) => c.kind === "destroy").map((c) => c.card));
       let total = 0;
+      FX.placed.clear();
       for (const c of step.cues) {
         if (state.skip) break;
         if (c.kind === "graveyard" && destroyed.has(c.card)) continue;
+        // A card shown on the field goes to its pile with that animation.
+        if (["graveyard", "destroy", "banish"].includes(c.kind) && FX.placed.has(c.card)) continue;
         try { FX.cue(c, old, gone); } catch (e) { console.warn("animation", c.kind, e); }
+        // Hold on a card shown on the field so its effect is seen after it.
+        if (c.kind === "activate" && FX.placed.has(c.card)) { total += SHOWN_MS; await wait(SHOWN_MS * 0.6); continue; }
         const ms = (FX_TIME[c.kind] ?? 250) * speed;
         total += ms;
         await wait(Math.min(ms * 0.6, 500));
