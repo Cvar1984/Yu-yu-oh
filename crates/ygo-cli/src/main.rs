@@ -1,6 +1,6 @@
 //! `ygo`: quick access to everything.
 
-use ygo_cli::{bots, decks, play, replay, sim, train, tui};
+use ygo_cli::{bots, decks, league, play, replay, sim, train, tui};
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -147,6 +147,12 @@ enum Command {
         #[command(flatten)]
         search: SearchArgs,
     },
+    /// The league (M7): decks played by the network, rated generation after
+    /// generation; the weakest leave, mutants of the best come in.
+    League {
+        #[command(subcommand)]
+        action: LeagueCommand,
+    },
     /// Play against a bot in a full-screen terminal UI.
     Play {
         /// Your deck.
@@ -187,6 +193,51 @@ enum Command {
 }
 
 /// How hard search bots (`network-search`, `neural-search:`) think.
+#[derive(Subcommand)]
+enum LeagueCommand {
+    /// Start a league file, or resume it, and run more generations.
+    Run {
+        /// The league file; a Markdown log is written beside it.
+        #[arg(long, default_value = "league/main.json")]
+        league: PathBuf,
+        /// Generations to run now.
+        #[arg(long, default_value_t = 1)]
+        generations: u32,
+        /// The bot both decks of every game play with.
+        #[arg(long, default_value = "network")]
+        bot: String,
+        /// Games played at once; results do not depend on it.
+        #[arg(long, default_value_t = 4)]
+        threads: usize,
+        /// A game still running after this many turns is a draw.
+        #[arg(long, default_value_t = ygo_engine::GameSetup::DEFAULT_MAX_TURNS)]
+        max_turns: u32,
+        /// For a new league: the shipped decks (fixed members).
+        #[arg(long, default_value = "data/decks")]
+        decks: PathBuf,
+        /// For a new league: games each pair plays.
+        #[arg(long, default_value_t = 20)]
+        games: u32,
+        /// For a new league: living population agents.
+        #[arg(long, default_value_t = 13)]
+        population: usize,
+        /// For a new league: its seed.
+        #[arg(long, default_value_t = 1)]
+        seed: u64,
+    },
+    /// Show the ratings table.
+    Table {
+        #[arg(long, default_value = "league/main.json")]
+        league: PathBuf,
+        /// Write the best non-fixed decks into this directory.
+        #[arg(long)]
+        export: Option<PathBuf>,
+        /// How many decks `--export` writes.
+        #[arg(long, default_value_t = 5)]
+        top: usize,
+    },
+}
+
 #[derive(clap::Args)]
 struct SearchArgs {
     /// Network evaluations per decision [default: 100, or no limit with
@@ -326,6 +377,53 @@ fn run(cli: Cli) -> Result<bool, Box<dyn std::error::Error>> {
             )?;
             Ok(true)
         }
+        Command::League { action } => match action {
+            LeagueCommand::Run {
+                league: path,
+                generations,
+                bot,
+                threads,
+                max_turns,
+                decks,
+                games,
+                population,
+                seed,
+            } => {
+                let mut bots = bots::Bots::new(&bundle);
+                load_network(&mut bots, &cli.network)?;
+                let arena = league::BotArena {
+                    bots: &bots,
+                    bot: &bot,
+                    threads,
+                    max_turns,
+                };
+                let settings = ygo_train::league::Settings {
+                    games,
+                    population,
+                    ..Default::default()
+                };
+                league::run(
+                    &arena,
+                    &bundle,
+                    league::RunOptions {
+                        league: path,
+                        generations,
+                        settings,
+                        seed,
+                        decks,
+                    },
+                )?;
+                Ok(true)
+            }
+            LeagueCommand::Table {
+                league: path,
+                export,
+                top,
+            } => {
+                league::table(&path, export.as_deref(), top)?;
+                Ok(true)
+            }
+        },
         Command::Imitate {
             records,
             out,

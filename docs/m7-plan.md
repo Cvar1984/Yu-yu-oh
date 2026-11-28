@@ -1,7 +1,9 @@
 # M7 plan: the league
 
-Status (2026-11-28): draft, waiting for the owner's approval; M7 starts
-once the M6 gate report is written (`docs/m6-plan.md`).
+Status (2026-11-28): approved by the owner (built as planned); M6 gate
+passed (`docs/m6-plan.md`). Steps 1 and 2 done (`ygo_train::glicko`,
+`ygo_train::league`, `tests/league.rs`; `ygo league run` and `ygo league
+table`); step 3, the gate run, next.
 
 Gate (handoff, owner 2026-11-28): **the ratings table runs unattended for 50
 generations.**
@@ -45,12 +47,15 @@ Agents never change once made, so a pair's games are played once and kept.
    interval, overall and split by who went first.
 3. **Hall of fame.** The best population agent joins the hall if it is not
    there yet.
-4. **Elimination.** The two lowest population agents (not fixed, not in the
-   hall) leave, but never the last living agent of a lineage, so every style
-   stays in the league. Removed agents stay in the file's archive with their
-   last rating.
-5. **Replacement.** Two mutants of top population agents (each parent drawn
-   from the best four): 1 to 3 card swaps in the Main Deck. A swap takes out
+4. **Elimination.** The two lowest population agents (not in the hall)
+   leave. Every style stays in the league through its fixed deck. Removed
+   agents stay in the file's archive with their last rating. (Changed while
+   building, 2026-11-28: the planned "never the last agent of a lineage"
+   rule protected every agent of a population seeded one per lineage, so
+   nobody could ever leave.)
+5. **Replacement.** Two mutants of top agents (each parent drawn from the
+   four best agents of different lineages, so the population does not
+   collapse onto one style): 1 to 3 card swaps in the Main Deck. A swap takes out
    one copy and puts in a card from the pool (half the time another copy of a
    card already in the deck), keeping the deck legal (`check_deck`: 40 to 60
    cards, copy limits, ban list).

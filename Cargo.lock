@@ -8082,6 +8082,7 @@ dependencies = [
  "rand_chacha 0.10.0",
  "rand_core 0.10.1",
  "ratatui",
+ "serde_json",
  "ygo-ai",
  "ygo-cards",
  "ygo-data",
@@ -8139,8 +8140,11 @@ dependencies = [
  "burn",
  "rand_chacha 0.10.0",
  "rand_core 0.10.1",
+ "serde",
+ "serde_json",
  "ygo-ai",
  "ygo-cards",
+ "ygo-data",
  "ygo-engine",
 ]
 

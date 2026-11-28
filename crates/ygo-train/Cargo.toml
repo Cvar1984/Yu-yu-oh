@@ -7,7 +7,10 @@ repository.workspace = true
 description = "Training the neural bot: imitation, self-play, checkpoints"
 
 [dependencies]
+ygo-data.workspace = true
 ygo-engine.workspace = true
+serde.workspace = true
+serde_json = { workspace = true, features = ["float_roundtrip"] }
 ygo-ai = { workspace = true, features = ["neural"] }
 burn = { workspace = true, features = ["autodiff", "optim"] }
 rand_core = "0.10"

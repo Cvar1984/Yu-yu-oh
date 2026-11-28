@@ -22,6 +22,7 @@ ygo-ai.workspace = true
 ygo-play = { workspace = true, features = ["neural"] }
 ygo-train.workspace = true
 clap.workspace = true
+serde_json.workspace = true
 rand_core = "0.10"
 rand_chacha = "0.10"
 ratatui = "0.30"

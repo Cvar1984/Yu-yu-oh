@@ -26,11 +26,11 @@ pub struct SimOptions<'a> {
 }
 
 /// What one game left for the report.
-struct Played {
-    first: PlayerId,
-    result: GameResult,
-    turns: u32,
-    actions: usize,
+pub struct Played {
+    pub first: PlayerId,
+    pub result: GameResult,
+    pub turns: u32,
+    pub actions: usize,
 }
 
 /// Outcome counts, split by who went first.
@@ -69,14 +69,65 @@ impl Tally {
 
 /// Plays the games, prints the report and returns the tally.
 pub fn run(bots: &Bots, opts: &SimOptions) -> Result<Tally, Box<dyn std::error::Error>> {
+    let started = Instant::now();
+    let games = play_games(bots, opts)?;
+    let mut tally = Tally::default();
+    let mut actions = 0u64;
+    for p in &games {
+        tally.record(p.first, p.result, p.turns);
+        actions += p.actions as u64;
+    }
+    let elapsed = started.elapsed().as_secs_f64();
+
+    println!("A: {}", opts.deck_a.name);
+    println!("B: {}", opts.deck_b.name);
+    println!(
+        "games: {}  {} vs {}  seed {}",
+        opts.games, opts.bot_a, opts.bot_b, opts.seed
+    );
+    report("overall", tally.total(0), tally.total(1), tally.total(2));
+    report(
+        "A first",
+        tally.by_first[0][0],
+        tally.by_first[0][1],
+        tally.by_first[0][2],
+    );
+    report(
+        "B first",
+        tally.by_first[1][0],
+        tally.by_first[1][1],
+        tally.by_first[1][2],
+    );
+    for (label, r) in [("A", tally.by_reason[0]), ("B", tally.by_reason[1])] {
+        println!(
+            "{label:>8} wins by: Life Points {}, deck-out {}, Exodia {}",
+            r[0], r[1], r[2]
+        );
+    }
+    println!(
+        "mean turns: {:.1}   actions/game: {:.0}",
+        tally.turns as f64 / f64::from(opts.games).max(1.0),
+        actions as f64 / f64::from(opts.games).max(1.0)
+    );
+    println!(
+        "speed: {:.0} games/s, {:.0} actions/s ({elapsed:.2}s)",
+        f64::from(opts.games) / elapsed,
+        actions as f64 / elapsed
+    );
+    Ok(tally)
+}
+
+/// Plays the games without a report: game `i` uses seed `seed + i`, and A
+/// goes first in the even-numbered ones.
+pub fn play_games(
+    bots: &Bots,
+    opts: &SimOptions,
+) -> Result<Vec<Played>, Box<dyn std::error::Error>> {
     let shared = bots.shared.clone();
     // Refuse unknown names before the first game.
     bots.make(opts.bot_a, 0)?;
     bots.make(opts.bot_b, 0)?;
-    let (deck_a, deck_b) = (opts.deck_a, opts.deck_b);
-    let decks = [DeckList::from(deck_a), DeckList::from(deck_b)];
-
-    let started = Instant::now();
+    let decks = [DeckList::from(opts.deck_a), DeckList::from(opts.deck_b)];
     let threads = opts.threads.clamp(1, opts.games.max(1) as usize);
     let play = |i: u32| -> Result<Played, String> {
         let mut setup = GameSetup::new(decks.clone(), opts.seed.wrapping_add(u64::from(i)));
@@ -118,52 +169,11 @@ pub fn run(bots: &Bots, opts: &SimOptions) -> Result<Tally, Box<dyn std::error::
             .map(|h| h.join().expect("a game panicked"))
             .collect()
     });
-    let mut tally = Tally::default();
-    let mut actions = 0u64;
+    let mut games = Vec::with_capacity(opts.games as usize);
     for played in per_worker {
-        for p in played? {
-            tally.record(p.first, p.result, p.turns);
-            actions += p.actions as u64;
-        }
+        games.extend(played?);
     }
-    let elapsed = started.elapsed().as_secs_f64();
-
-    println!("A: {}", deck_a.name);
-    println!("B: {}", deck_b.name);
-    println!(
-        "games: {}  {} vs {}  seed {}",
-        opts.games, opts.bot_a, opts.bot_b, opts.seed
-    );
-    report("overall", tally.total(0), tally.total(1), tally.total(2));
-    report(
-        "A first",
-        tally.by_first[0][0],
-        tally.by_first[0][1],
-        tally.by_first[0][2],
-    );
-    report(
-        "B first",
-        tally.by_first[1][0],
-        tally.by_first[1][1],
-        tally.by_first[1][2],
-    );
-    for (label, r) in [("A", tally.by_reason[0]), ("B", tally.by_reason[1])] {
-        println!(
-            "{label:>8} wins by: Life Points {}, deck-out {}, Exodia {}",
-            r[0], r[1], r[2]
-        );
-    }
-    println!(
-        "mean turns: {:.1}   actions/game: {:.0}",
-        tally.turns as f64 / f64::from(opts.games).max(1.0),
-        actions as f64 / f64::from(opts.games).max(1.0)
-    );
-    println!(
-        "speed: {:.0} games/s, {:.0} actions/s ({elapsed:.2}s)",
-        f64::from(opts.games) / elapsed,
-        actions as f64 / elapsed
-    );
-    Ok(tally)
+    Ok(games)
 }
 
 /// Win rate for A with a 95% normal-approximation confidence interval.

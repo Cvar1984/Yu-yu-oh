@@ -3,5 +3,7 @@
 //! self-play (`selfplay`: the network-guided search's visit shares and
 //! who won), both trained with `imitation::train_on`.
 
+pub mod glicko;
 pub mod imitation;
+pub mod league;
 pub mod selfplay;

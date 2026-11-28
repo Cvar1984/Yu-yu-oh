@@ -37,3 +37,6 @@ rustc-ice-*.txt
 
 # Neural network checkpoints (M6)
 /checkpoints/
+
+# League files and logs (M7, ygo league run)
+/league/
