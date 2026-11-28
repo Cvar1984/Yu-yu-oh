@@ -33,8 +33,8 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
       : route.fulfill({ status: 404 });
   });
   const idle = () => page.waitForFunction(() => !state.busy && !state.autoTimer, null, { timeout: 60000 });
-  let waitedOnPhase = 0, decisions = 0;
-  const shots = { attack: false, banner: false };
+  let waitedOnPhase = 0, decisions = 0, shownTotal = 0;
+  const shots = { attack: false, banner: false, shown: false };
   let biggest = 0, moves = 0;
 
   for (let g = 0; g < games; g++) {
@@ -47,6 +47,19 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
       const call = Engine.call.bind(Engine);
       window.__biggest = 0;
       Engine.call = (cmd) => { const a = call(cmd); window.__biggest = Math.max(window.__biggest, JSON.stringify(a).length); return a; };
+      // Where each activated Spell or Trap is shown: on a Spell & Trap zone.
+      window.__shown = [];
+      const show = FX.showOnField.bind(FX);
+      FX.showOnField = (c, old) => {
+        const r = show(c, old);
+        if (!r) return r;
+        const gh = [...document.querySelectorAll('#fx .ghost.shown')].pop(), b = gh.getBoundingClientRect();
+        gh.style.display = 'none';
+        const under = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+        gh.style.display = '';
+        window.__shown.push(!!under?.closest('.side .zone.z-st'));
+        return r;
+      };
     });
     await page.selectOption('#bot', 'network');
     await page.click('button[type=submit]');   // a real tap: sound starts
@@ -65,16 +78,20 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
       const i = lively.length && rand(3) ? lively[rand(lively.length)][1] : rand(v.n);
       await page.evaluate((i) => play(state.view.actions[i].index), i);
       moves++;
-      for (let k = 0; k < 12 && !(shots.attack && shots.banner); k++) {
-        const seen = await page.evaluate(() => ({ busy: state.busy, burst: !!document.querySelector('#fx .burst.hit'), banner: !!document.querySelector('#fx .banner') }));
+      for (let k = 0; k < 12 && !(shots.attack && shots.banner && shots.shown); k++) {
+        const seen = await page.evaluate(() => ({ busy: state.busy, burst: !!document.querySelector('#fx .burst.hit'), banner: !!document.querySelector('#fx .banner'), shown: !!document.querySelector('#fx .ghost.shown') }));
         if (!seen.busy) break;
         if (seen.burst && !shots.attack) { await page.screenshot({ path: `${dir}/fx-attack.png` }); shots.attack = true; }
         if (seen.banner && !shots.banner) { await page.screenshot({ path: `${dir}/fx-banner.png` }); shots.banner = true; }
+        if (seen.shown && !shots.shown) { await page.waitForTimeout(500); await page.screenshot({ path: `${dir}/fx-shown.png` }); shots.shown = true; }
         await page.waitForTimeout(60);
       }
     }
     await idle();
     biggest = Math.max(biggest, await page.evaluate(() => window.__biggest));
+    const shown = await page.evaluate(() => window.__shown);
+    assert(shown.every(Boolean), `an activated Spell or Trap was shown off its zone: ${JSON.stringify(shown)}`);
+    shownTotal += shown.length;
     console.log(`game ${g + 1}:`, await page.evaluate(() => state.view.result ?? 'turn ' + state.view.turn));
   }
 
@@ -86,6 +103,9 @@ function assert(cond, what) { if (!cond) throw new Error(what); }
   console.log('animated:', r.fx.join(' '));
   console.log('sounds:', r.sounds.join(' '));
   for (const k of ['turn', 'draw', 'summon', 'set', 'activate', 'attack', 'damage', 'destroy']) assert(r.fx.includes(k), `no ${k} animation`);
+  // A Spell or Trap that resolved within one move is shown on the field first.
+  assert(r.fx.includes('shown_on_field'), 'no activated Spell or Trap was shown on the field');
+  console.log(`Spells and Traps shown on their zone before resolving: ${shownTotal}`);
   for (const k of ['turn', 'draw', 'summon', 'set', 'activate', 'attack', 'hit', 'damage', 'destroy']) assert(r.sounds.includes(k), `no ${k} sound`);
   assert(r.ctx === 'running', `audio is ${r.ctx}`);
   assert(waitedOnPhase === 0, `Auto-advance: ${waitedOnPhase} of ${decisions} decisions offered only phase changes or a quiet phase step`);
